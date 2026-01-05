@@ -51,6 +51,8 @@ struct PatternEditorState {
     float scrollOffsetY = 0.0f;
     float contentHeight = 600.0f; // Estimated content height
     
+
+    
     // Track which field is being edited
     int focusedFieldId = -1; // 0: Name, 1: Sample, 2: BPM, 3: Steps
 };
@@ -66,6 +68,10 @@ struct GuiState {
     int renamingColumnIndex = -1;
     char columnRenameBuffer[64] = {0};
     int focusedFieldId = -1; // Global focus tracker
+    
+    // Main View Scroll
+    float mainScrollX = 0.0f;
+    float mainContentWidth = 0.0f;
     
     // Transport state mirroring AudioEngine
     bool isPlaying = false;

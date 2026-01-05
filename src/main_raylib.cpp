@@ -16,7 +16,7 @@ int main() {
     const int screenHeight = 700;
     
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(screenWidth, screenHeight, "BlackLang GUI");
+    InitWindow(screenWidth, screenHeight, "Quadracollision BlackLang");
     SetTargetFPS(60);
     
     // Init State

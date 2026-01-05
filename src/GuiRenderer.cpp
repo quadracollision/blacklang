@@ -27,31 +27,96 @@ void GuiRenderer::Draw() {
     // Draw Headers
     Rectangle headerRect = {0, 0, (float)GetScreenWidth(), (float)state.HEADER_HEIGHT};
     DrawRectangleRec(headerRect, Color{30, 30, 30, 255});
-    DrawText("BlackLang", 20, 15, 30, WHITE);
+    DrawText("Quadracollision BlackLang", 20, 15, 30, WHITE);
     
-    // Draw Columns
-    float startY = state.HEADER_HEIGHT + 20;
+    // Main View Area
+    Rectangle viewRect = {0, (float)state.HEADER_HEIGHT, (float)GetScreenWidth(), (float)GetScreenHeight() - state.HEADER_HEIGHT - state.FOOTER_HEIGHT};
+    
+    // Calculate Content Width
     float startX = 20;
+    float contentW = startX + state.columns.size() * (state.COLUMN_WIDTH + 10) + 60; // + Add Button + Margin
+    state.mainContentWidth = contentW;
     
-    for (size_t i = 0; i < state.columns.size(); ++i) {
-        Rectangle colRect = {
-            startX + i * (state.COLUMN_WIDTH + 10),
-            startY,
-            (float)state.COLUMN_WIDTH,
-            (float)GetScreenHeight() - state.HEADER_HEIGHT - state.FOOTER_HEIGHT - 40
-        };
-        state.columns[i].bounds = colRect;
-        DrawColumn(i, state.columns[i]);
+    // Scroll Input (Shift + Wheel)
+    if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT)) {
+        state.mainScrollX -= GetMouseWheelMove() * 30.0f;
     }
     
-    // Add Column Button
-    float addColX = startX + state.columns.size() * (state.COLUMN_WIDTH + 10);
-    Rectangle addColRect = {addColX, startY, 40, (float)state.PATTERN_HEIGHT};
-    DrawRectangleRounded(addColRect, 0.2f, 4, Color{40, 40, 40, 255});
-    DrawText("+", addColX + 13, startY + 30, 30, GRAY);
+    // Clamp Scroll
+    float maxScroll = std::max(0.0f, state.mainContentWidth - GetScreenWidth());
+    if (state.mainScrollX < 0) state.mainScrollX = 0;
+    if (state.mainScrollX > maxScroll) state.mainScrollX = maxScroll;
     
-    if (CheckCollisionPointRec(GetMousePosition(), addColRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        state.columns.push_back({"Track " + std::to_string(state.columns.size() + 1), {}, {0,0,0,0}});
+    // Draw Columns (Scissored)
+    BeginScissorMode((int)viewRect.x, (int)viewRect.y, (int)viewRect.width, (int)viewRect.height);
+        
+        float currentX = startX - state.mainScrollX;
+        float startY = state.HEADER_HEIGHT + 20;
+        
+        for (size_t i = 0; i < state.columns.size(); ++i) {
+            Rectangle colRect = {
+                currentX + i * (state.COLUMN_WIDTH + 10),
+                startY,
+                (float)state.COLUMN_WIDTH,
+                (float)GetScreenHeight() - state.HEADER_HEIGHT - state.FOOTER_HEIGHT - 40
+            };
+            state.columns[i].bounds = colRect; // Update bounds for collision logic
+            DrawColumn(i, state.columns[i]);
+        }
+        
+        // Add Column Button
+        float addColX = currentX + state.columns.size() * (state.COLUMN_WIDTH + 10);
+        Rectangle addColRect = {addColX, startY, 40, (float)state.PATTERN_HEIGHT};
+        DrawRectangleRec(addColRect, Color{40, 40, 40, 255});
+        DrawText("+", addColX + 13, startY + 30, 30, GRAY);
+        
+        // Only allow click if visible/in-bounds (Scissor handles visibility, but we check collision)
+        if (CheckCollisionPointRec(GetMousePosition(), addColRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+             // Basic collision check passes, but we should ensure we are not clicking scrollbar area if checked there.
+             // Rely on z-order: input handled before scrollbar?
+             // Actually, ScissorMode clips *drawing*. It does NOT prevent *input*.
+             // We should check if mouse is within viewRect too.
+             if (CheckCollisionPointRec(GetMousePosition(), viewRect)) {
+                 state.columns.push_back({"Track " + std::to_string(state.columns.size() + 1), {}, {0,0,0,0}});
+             }
+        }
+        
+    EndScissorMode();
+    
+    // Draw Horizontal Scrollbar (if needed)
+    if (state.mainContentWidth > GetScreenWidth()) {
+        float barH = 10;
+        float barY = viewRect.y + viewRect.height - barH - 5;
+        
+        float viewRatio = GetScreenWidth() / state.mainContentWidth;
+        float thumbW = std::max(30.0f, GetScreenWidth() * viewRatio);
+        float thumbX = (state.mainScrollX / (state.mainContentWidth - GetScreenWidth())) * (GetScreenWidth() - thumbW);
+        
+        // Track
+        DrawRectangle(0, barY, GetScreenWidth(), barH, Color{20, 20, 20, 200});
+        // Thumb
+        Rectangle thumbRect = {thumbX, barY, thumbW, barH};
+        DrawRectangleRec(thumbRect, Color{100, 100, 100, 255});
+        
+        // Drag Scrollbar Logic
+        static bool isDraggingScroll = false;
+        static float dragOffsetX = 0;
+        
+        if (CheckCollisionPointRec(GetMousePosition(), thumbRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            isDraggingScroll = true;
+            dragOffsetX = GetMousePosition().x - thumbRect.x;
+        }
+        
+        if (isDraggingScroll) {
+            if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) isDraggingScroll = false;
+            else {
+                float targetX = GetMousePosition().x - dragOffsetX;
+                float pct = targetX / (GetScreenWidth() - thumbW);
+                state.mainScrollX = pct * (state.mainContentWidth - GetScreenWidth());
+                if (state.mainScrollX < 0) state.mainScrollX = 0;
+                if (state.mainScrollX > maxScroll) state.mainScrollX = maxScroll;
+            }
+        }
     }
     
     DrawTransportBar();
@@ -73,7 +138,7 @@ void GuiRenderer::Draw() {
 }
 
 void GuiRenderer::DrawColumn(int index, PatternColumn& col) {
-    DrawRectangleRounded(col.bounds, 0.1f, 4, Color{35, 35, 35, 255});
+    DrawRectangleRec(col.bounds, Color{35, 35, 35, 255});
     
     // Header Renaming
     Rectangle headerRect = {col.bounds.x + 10, col.bounds.y + 10, col.bounds.width - 20, 25};
@@ -136,7 +201,7 @@ void GuiRenderer::DrawColumn(int index, PatternColumn& col) {
             state.drag.sourceColumnIndex == index && 
             state.drag.patternName == col.patternNames[i]) {
             // Draw placeholder
-            DrawRectangleRoundedLines(patRect, 0.1f, 4, 2.0f, DARKGRAY);
+            DrawRectangleLinesEx(patRect, 2.0f, DARKGRAY);
         } else {
             // Check if holding this specific pattern
             bool isHoldingThis = state.drag.isHolding && 
@@ -229,7 +294,7 @@ void GuiRenderer::DrawColumn(int index, PatternColumn& col) {
             }
         }
     }
-    DrawRectangleRounded(addBtnRect, 0.2f, 4, Color{50, 50, 50, 255});
+    DrawRectangleRec(addBtnRect, Color{50, 50, 50, 255});
     DrawText("+ Add", addBtnRect.x + 40, addBtnRect.y + 5, 10, WHITE);
     
     if (CheckCollisionPointRec(GetMousePosition(), addBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -385,7 +450,7 @@ void GuiRenderer::DrawPatternEditor() {
     DrawTextInput({winRect.x + 100, startY, 240, 30}, state.editor.samplePathBuffer, 255, 1, state.editor.focusedFieldId);
     
     Rectangle loadBtnRect = {winRect.x + 350, startY, 50, 30};
-    DrawRectangleRounded(loadBtnRect, 0.2f, 4, DARKGRAY);
+    DrawRectangleRec(loadBtnRect, DARKGRAY);
     DrawText("Load", loadBtnRect.x + 8, loadBtnRect.y + 5, 10, WHITE);
     
     if (CheckCollisionPointRec(GetMousePosition(), loadBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -457,7 +522,7 @@ void GuiRenderer::DrawPatternEditor() {
     
     // Melodic Toggle
     Rectangle melodyToggleRect = {winRect.x + 380, startY, 80, 30};
-    DrawRectangleRounded(melodyToggleRect, 0.2f, 4, state.editor.showMelodicControls ? BLUE : DARKGRAY);
+    DrawRectangleRec(melodyToggleRect, state.editor.showMelodicControls ? BLUE : DARKGRAY);
     DrawText("Melodic", melodyToggleRect.x + 8, melodyToggleRect.y + 5, 10, WHITE);
     if (CheckCollisionPointRec(GetMousePosition(), melodyToggleRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.editor.showMelodicControls = !state.editor.showMelodicControls;
@@ -661,8 +726,8 @@ void GuiRenderer::DrawPatternEditor() {
 
 void GuiRenderer::DrawPatternBox(const std::string& name, Rectangle bounds, bool selected) {
     Color bgColor = selected ? Color{58, 123, 213, 255} : Color{60, 60, 60, 255};
-    DrawRectangleRounded(bounds, 0.1f, 4, bgColor);
-    DrawRectangleRoundedLines(bounds, 0.1f, 4, 1.0f, selected ? WHITE : GRAY);
+    DrawRectangleRec(bounds, bgColor);
+    DrawRectangleLinesEx(bounds, 1.0f, selected ? WHITE : GRAY);
     
     DrawText(name.c_str(), bounds.x + 5, bounds.y + 5, 10, WHITE);
     
@@ -727,7 +792,7 @@ void GuiRenderer::DrawTransportBar() {
     
     // Play
     Rectangle playRect = {centerX - 60, rect.y + 10, 40, 40};
-    DrawRectangleRounded(playRect, 0.2f, 4, state.isPlaying ? GREEN : GRAY);
+    DrawRectangleRec(playRect, state.isPlaying ? GREEN : GRAY);
     DrawText(">", playRect.x + 15, playRect.y + 10, 20, BLACK);
     if (CheckCollisionPointRec(GetMousePosition(), playRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         if (!state.activePatterns.empty()) {
@@ -739,7 +804,7 @@ void GuiRenderer::DrawTransportBar() {
     
     // Stop
     Rectangle stopRect = {centerX, rect.y + 10, 40, 40};
-    DrawRectangleRounded(stopRect, 0.2f, 4, RED);
+    DrawRectangleRec(stopRect, RED);
     DrawRectangle(stopRect.x + 10, stopRect.y + 10, 20, 20, WHITE);
     if (CheckCollisionPointRec(GetMousePosition(), stopRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         engine.stop();
