@@ -1,5 +1,6 @@
 #include "AudioEngine.h"
 #include <iostream>
+#include <cmath>
 
 AudioEngine::AudioEngine() {
     formatManager.registerBasicFormats();
@@ -135,6 +136,82 @@ void AudioEngine::pause() {
     }
 }
 
+void AudioEngine::updateActivePatterns(const std::vector<std::string>& names) {
+    if (names.empty()) {
+        stop();
+        return;
+    }
+    
+    std::lock_guard<std::mutex> lock(patternMutex);
+    
+    // Find a reference state from currently playing patterns for sync
+    PatternPlayState refState;
+    bool hasRef = false;
+    if (!activePatternNames.empty()) {
+        for (const auto& existing : activePatternNames) {
+            if (patternStates.count(existing)) {
+                refState = patternStates[existing];
+                hasRef = true;
+                break;
+            }
+        }
+    }
+    
+    activePatternNames = names;
+    
+    // Sync new patterns
+    for (const auto& name : names) {
+        if (patternStates.find(name) == patternStates.end()) {
+            PatternPlayState newState;
+            newState.currentStep = 1; // Start at step 1
+            if (hasRef) {
+                // Approximate sync: copy sample position
+                newState.samplePosition = refState.samplePosition;
+                // We let currentStep be calculated/corrected in the next callback loop 
+                // or we can calculate it here if needed.
+                // But since 'patterns' map might be needed to calculate step, 
+                // and we are in lock, we can do it.
+                if (patterns.count(name)) {
+                     Pattern& p = patterns[name];
+                     double stepSamples = p.getStepDurationSamples(globalBpm.load());
+                     if (stepSamples > 0) {
+                         newState.currentStep = (int)((newState.samplePosition / (int64_t)stepSamples) % p.steps) + 1;
+                         newState.stepStartSample = newState.samplePosition - (newState.samplePosition % (int64_t)stepSamples);
+                     }
+                }
+            }
+            patternStates[name] = newState;
+        }
+    }
+    
+    // Cleanup old states
+    std::vector<std::string> toRemove;
+    for (auto& pair : patternStates) {
+        bool found = false;
+        for (const auto& n : names) if (n == pair.first) found = true;
+        if (!found) toRemove.push_back(pair.first);
+    }
+    // Actually we don't strictly need to remove them from map, but it keeps it clean
+    for (const auto& r : toRemove) patternStates.erase(r);
+    
+    if (!playing.load()) {
+        playing.store(true);
+        paused.store(false);
+    }
+}
+
+int AudioEngine::getPatternProgress(const std::string& name) {
+    if (!playing.load()) return -1;
+    // Use blocking lock to ensure we get the state
+    // try_lock can cause flickering cursor if audio thread is busy
+    std::lock_guard<std::mutex> lock(patternMutex);
+    
+    if (patternStates.count(name)) {
+        return patternStates[name].currentStep;
+    }
+    return -1;
+}
+
 void AudioEngine::resume() {
     if (playing.load() && paused.load()) {
         paused.store(false);
@@ -176,10 +253,8 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                 Pattern& pattern = patIt->second;
                 auto& state = patternStates[patName];
                 
-                if (pattern.sampleBuffer.getNumSamples() == 0) continue;
-                
                 // Check if we need to advance to next step
-                double stepDuration = pattern.getStepDurationSamples();
+                double stepDuration = pattern.getStepDurationSamples(globalBpm.load());
                 if (state.samplePosition >= state.stepStartSample + (int64_t)stepDuration) {
                     state.currentStep++;
                     state.stepStartSample = state.samplePosition;
@@ -191,18 +266,50 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                     }
                     
                     if (pattern.shouldTriggerAt(state.currentStep)) {
-                        state.samplePlaybackPosition = 0;
+                        state.samplePlaybackPosition = 0.0;
                         state.sampleIsPlaying = true;
+                        
+                        // Calculate Pitch
+                        int semitones = 0;
+                        if (pattern.stepPitches.count(state.currentStep)) {
+                            semitones = pattern.stepPitches[state.currentStep];
+                        }
+                        state.currentSpeedRatio = std::pow(2.0, semitones / 12.0);
+                        
+                        // Calculate Velocity
+                        state.currentVelocity = 1.0f;
+                        if (pattern.stepVelocities.count(state.currentStep)) {
+                            state.currentVelocity = pattern.stepVelocities[state.currentStep];
+                        }
                     }
                 }
                 
-                // Mix sample if playing
-                if (state.sampleIsPlaying && state.samplePlaybackPosition < pattern.sampleBuffer.getNumSamples()) {
+                // Mix sample if playing and exists
+                if (pattern.sampleBuffer.getNumSamples() > 0 && state.sampleIsPlaying) {
                     for (int ch = 0; ch < numOutputChannels; ++ch) {
                         int srcCh = std::min(ch, pattern.sampleBuffer.getNumChannels() - 1);
-                        outputChannelData[ch][i] += pattern.sampleBuffer.getSample(srcCh, (int)state.samplePlaybackPosition);
+                        const float* inData = pattern.sampleBuffer.getReadPointer(srcCh);
+                        float* outData = outputChannelData[ch];
+                        
+                        // Linear Interpolation
+                        double pos = state.samplePlaybackPosition;
+                        int idx = (int)pos;
+                        float frac = (float)(pos - idx);
+                        
+                        if (idx < pattern.sampleBuffer.getNumSamples() - 1) {
+                            float s1 = inData[idx];
+                            float s2 = inData[idx + 1];
+                            outData[i] += (s1 + frac * (s2 - s1)) * state.currentVelocity;
+                        } else if (idx < pattern.sampleBuffer.getNumSamples()) {
+                             outData[i] += inData[idx] * state.currentVelocity;
+                        }
                     }
-                    state.samplePlaybackPosition++;
+                    
+                    state.samplePlaybackPosition += state.currentSpeedRatio;
+                    // Stop if we passed the end
+                    if (state.samplePlaybackPosition >= pattern.sampleBuffer.getNumSamples()) {
+                         state.sampleIsPlaying = false;
+                    }
                 }
                 
                 state.samplePosition++;
@@ -223,7 +330,7 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
     // Process audio
     for (int i = 0; i < numSamples; ++i) {
         // Check if we need to advance to next step
-        double stepDuration = pattern->getStepDurationSamples();
+        double stepDuration = pattern->getStepDurationSamples(globalBpm.load());
         if (samplePosition >= stepStartSample + (int64_t)stepDuration) {
             currentStep++;
             stepStartSample = samplePosition;

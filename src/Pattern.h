@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 #include <juce_audio_basics/juce_audio_basics.h>
 
 struct Pattern {
@@ -10,6 +11,9 @@ struct Pattern {
     int bpm = 120;
     int steps = 16;
     std::vector<int> activeSteps;  // 1-indexed step positions
+
+    std::map<int, int> stepPitches; // Step (1-indexed) -> Semitone Offset (relative to C4/Root)
+    std::map<int, float> stepVelocities; // Step (1-indexed) -> Velocity [0.0 - 1.0][0;39m
     
     // Audio data (loaded at runtime)
     juce::AudioBuffer<float> sampleBuffer;
@@ -20,9 +24,22 @@ struct Pattern {
     }
     
     // Get step duration in samples
-    double getStepDurationSamples() const {
-        double beatsPerStep = 4.0 / steps;  // Assumes 4/4 time
-        double secondsPerBeat = 60.0 / bpm;
+    double getStepDurationSamples(int currentBpm) const {
+        // Use standard 1/16th note steps mechanism usually?
+        // Or "4.0 / steps" implies 1 bar?
+        // If 16 steps = 1 bar.
+        // 4 beats per bar.
+        // 4 steps per beat.
+        // step = 1/4 beat.
+        // secondsPerBeat = 60 / bpm.
+        // secondsPerStep = (60/bpm) / (steps/4.0) ?
+        
+        // Existing logic: double beatsPerStep = 4.0 / steps;
+        // If steps=16 -> beatsPerStep = 0.25.
+        // duration = (60/bpm) * 0.25. Correct for 16th notes.
+        
+        double beatsPerStep = 4.0 / steps;  
+        double secondsPerBeat = 60.0 / currentBpm;
         return secondsPerBeat * beatsPerStep * sampleRate;
     }
     

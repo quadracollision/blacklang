@@ -29,11 +29,17 @@ public:
     void playPattern(const std::string& name);
     void playChain(const PatternChain& chain);
     void playMultiplePatterns(const std::vector<std::string>& names);
+    void updateActivePatterns(const std::vector<std::string>& names); // Live switching
+    int getPatternProgress(const std::string& name); // Visual feedback
     void stop();
     void pause();
     void resume();
     bool isPlaying() const { return playing.load(); }
+
     bool isPaused() const { return paused.load(); }
+
+    void setBPM(int newBpm) { globalBpm.store(newBpm); }
+    int getBPM() const { return globalBpm.load(); }
     
     // AudioIODeviceCallback
     void audioDeviceIOCallbackWithContext(
@@ -67,8 +73,10 @@ private:
         int64_t samplePosition = 0;
         int currentStep = 0;
         int64_t stepStartSample = 0;
-        int64_t samplePlaybackPosition = 0;
+        double samplePlaybackPosition = 0.0;
         bool sampleIsPlaying = false;
+        double currentSpeedRatio = 1.0;
+        float currentVelocity = 1.0f;
     };
     std::map<std::string, PatternPlayState> patternStates;
     
@@ -77,6 +85,7 @@ private:
     int64_t samplePosition = 0;
     int currentStep = 0;
     int64_t stepStartSample = 0;
+    std::atomic<int> globalBpm{120};
     
     // Sample playback
     int64_t samplePlaybackPosition = 0;

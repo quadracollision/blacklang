@@ -27,5 +27,5 @@ private:
     void HandlePatternClick(const std::string& name, int colIndex);
     
     // Helper to draw step grid
-    void DrawStepGrid(Rectangle bounds, const Pattern& pattern);
+    void DrawStepGrid(Rectangle bounds, const Pattern& pattern, int activeStep = -1);
 };

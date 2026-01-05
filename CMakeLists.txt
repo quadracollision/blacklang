@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(BlackLang VERSION 1.0.0 LANGUAGES CXX)
+project(BlackLang VERSION 1.0.0 LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -87,6 +87,7 @@ add_executable(blacklang-raylib
     src/AudioEngine.cpp
     src/CLIParser.cpp
     src/ProjectFile.cpp
+    src/tinyfiledialogs.c
 )
 
 target_include_directories(blacklang-raylib PRIVATE src)
