@@ -86,6 +86,44 @@ private:
         // Stutter State
         bool isStuttering = false;
         int stutterIntervalSamples = 0;
+        int stutterCounter = 0;
+    
+        // Filter State
+        struct SimpleFilter {
+            float low = 0.0f, band = 0.0f, high = 0.0f;
+            void reset() { low=0; band=0; high=0; }
+            
+            // Simple SVF (State Variable Filter)
+            float process(float input, float cutoff, float res) {
+                cutoff = (cutoff > 0.99f) ? 0.99f : cutoff;
+                // f = 2 * sin(pi * cutoff / sampleRate) -> approx for low cutoffs: 2*pi*fc/fs
+                // We'll treat 'cutoff' as the generic f coefficient directly for simplicity here
+                // or do quick calc: 
+                float f = cutoff; 
+                
+                low = low + f * band;
+                high = input - low - res * band;
+                band = band + f * high;
+                return low;
+            }
+        } filter;
+
+        void reset() {
+            samplePosition = 0;
+            currentStep = 0;
+            stepStartSample = 0;
+            samplePlaybackPosition = 0.0;
+            sampleIsPlaying = false;
+            currentSpeedRatio = 1.0;
+            currentVelocity = 1.0f;
+            isSliding = false;
+            slideTargetRatio = 1.0;
+            slideStepIncrement = 0.0;
+            isStuttering = false;
+            stutterIntervalSamples = 0;
+            stutterCounter = 0;
+            filter.reset();
+        }
     };
     std::map<std::string, PatternPlayState> patternStates;
     

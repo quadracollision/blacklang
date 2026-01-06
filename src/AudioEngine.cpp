@@ -318,10 +318,24 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                                          double stepDur = pattern.getStepDurationSamples(globalBpm.load());
                                          double samplesDist = (nextStep - state.currentStep) * stepDur;
                                          
+                                         // Apply Slide Time Parameter
+                                         float timeParam = 1.0f;
+                                         if (pattern.stepFXParams.count(state.currentStep) && 
+                                             pattern.stepFXParams.at(state.currentStep).count(Pattern::PAR_SLIDE_TIME)) {
+                                             timeParam = pattern.stepFXParams.at(state.currentStep).at(Pattern::PAR_SLIDE_TIME);
+                                         }
+                                         if (timeParam < 0.01f) timeParam = 0.01f;
+                                         
+                                         // Shorten distance based on time param (faster slide = less distance to cover target)
+                                         // Actually "Time" usually means duration. 
+                                         // If Time = 1.0 -> Full gap duration.
+                                         // If Time = 0.5 -> Half gap duration (faster slide).
+                                         samplesDist *= (double)timeParam;
+
                                          if (samplesDist > 0) {
                                              state.slideStepIncrement = (state.slideTargetRatio - state.currentSpeedRatio) / samplesDist;
                                          }
-                                          }
+                                     }
                                  }
                                  else if (fx == Pattern::FX_STUTTER) {
                                       state.isStuttering = true;
@@ -384,16 +398,72 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                          }
                     }
                     // Stop if we passed the end
-                    if (state.samplePlaybackPosition >= pattern.sampleBuffer.getNumSamples()) {
+                     if (state.samplePlaybackPosition >= pattern.sampleBuffer.getNumSamples()) {
                          state.sampleIsPlaying = false;
-                    }
-                }
+                     }
+
+                     float currentSample = 0.0f;
+                     int sampleIdx = (int)state.samplePlaybackPosition;
+                     
+                     if (state.sampleIsPlaying && sampleIdx >= 0 && sampleIdx < pattern.sampleBuffer.getNumSamples()) {
+                        float sample = pattern.sampleBuffer.getSample(0, sampleIdx);
+                        
+                        // Apply Filter if Squelch is active (Slide FX mainly)
+                        if (pattern.stepFXParams.count(state.currentStep) && 
+                            pattern.stepFXParams.at(state.currentStep).count(Pattern::PAR_SLIDE_SQUELCH)) {
+                            
+                            float squelch = pattern.stepFXParams.at(state.currentStep).at(Pattern::PAR_SLIDE_SQUELCH);
+                            if (squelch > 0.01f) {
+                                float baseFreq = 440.0f; 
+                                float currentFreq = baseFreq * (float)state.currentSpeedRatio;
+                                float cutoffNorm = currentFreq / (float)sampleRate * 2.0f * 3.14159f;
+                                cutoffNorm *= 2.0f; 
+                                if (cutoffNorm > 0.8f) cutoffNorm = 0.8f;
+
+                                float res = 1.0f + (squelch * 4.0f); // 1.0 .. 5.0
+                                sample = state.filter.process(sample, cutoffNorm, 1.0f / res);
+                            } else {
+                                state.filter.reset();
+                            }
+                        } else {
+                             state.filter.reset();
+                        }
+                        
+                        currentSample = sample * state.currentVelocity;
+                     }
+
+                     for (int ch = 0; ch < numOutputChannels; ++ch) {
+                         outputChannelData[ch][i] += currentSample;
+                     }
+                } // Close if sampleIsPlaying
                 
                 state.samplePosition++;
-            }
-        }
-        return;
-    }
+            } // Close for patName
+        } // Close for i
+    
+    // If we processed multi-patterns, we are done.
+    return;
+} // Close if activePatternNames not empty (Wait, if I return, I don't need else. But I need to close the IF)
+
+// Actually, I want to return from FUNCTION if multi-pattern was handled?
+// If I close 'if', then execution continues to legacy.
+// So:
+// } // Close Loop
+// return;
+// } // Close partial logic?
+
+// Let's look at the START again.
+// if (!activePatternNames.empty()) {
+//    for (...) ...
+//    return;
+// }
+
+// So I need:
+// } (Close 360 if)
+// } (Close 249 for patName)
+// } (Close 248 for i)
+// return;
+// } (Close 247 if)
     
     // Single pattern / chain mode (legacy)
     Pattern* pattern = nullptr;

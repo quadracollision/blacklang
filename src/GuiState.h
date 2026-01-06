@@ -26,9 +26,31 @@ struct DragState {
     Vector2 initialClickPos;
 };
 
+struct StepClipboard {
+    bool hasData = false;
+    bool active = false;
+    
+    bool hasPitch = false;
+    int pitch = 0;
+    
+    bool hasVelocity = false;
+    float velocity = 1.0f;
+    
+    std::vector<int> fxList;
+    std::map<int, float> fxParams;
+    
+    // Modal Interaction
+    bool isCopyMode = false;
+    bool isPasteMode = false;
+    bool isEditMode = false;
+};
+
 struct PatternEditorState {
     bool isOpen = false;
     Pattern currentPattern;
+    
+    StepClipboard clipboard; // Clipboard for step data
+    
     bool stepStates[64] = {false};
     char nameBuffer[64] = {0};
     char originalName[64] = {0}; // Track original name for renaming

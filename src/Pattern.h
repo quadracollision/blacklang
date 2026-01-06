@@ -25,6 +25,8 @@ struct Pattern {
     // Parameters
     static constexpr int PAR_STUTTER_RATE = 100;
     static constexpr int PAR_STUTTER_SPEED = 101;
+    static constexpr int PAR_SLIDE_TIME = 200;
+    static constexpr int PAR_SLIDE_SQUELCH = 201;
     
     // Audio data (loaded at runtime)
     juce::AudioBuffer<float> sampleBuffer;

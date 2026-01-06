@@ -559,16 +559,16 @@ void GuiRenderer::DrawPatternEditor() {
     // Process Drag
     if (state.editor.isDraggingVelocity) {
          float delta = GetMouseDelta().y;
-         // Invert delta so dragging UP increases value (standard knob behavior often maps Up/Right to +)
-         // But usually vertical sliders: Up is -, Down is +.
-         // For a knob, typically dragging UP increases? Or Right?
-         // Let's make Drag UP -> Increase (+), Drag DOWN -> Decrease (-).
-         // Mouse Y increases downwards. So delta < 0 is UP.
-         // So substracting delta adds value if moving up.
          state.editor.currentVelocity -= delta * 0.02f; // Sensitivity
          
          if (state.editor.currentVelocity < 0.0f) state.editor.currentVelocity = 0.0f;
          if (state.editor.currentVelocity > 1.0f) state.editor.currentVelocity = 1.0f;
+         if (state.editor.selectedStep != -1) {
+             if (state.editor.stepStates[state.editor.selectedStep]) {
+                 Pattern& pat = state.editor.currentPattern;
+                 pat.stepVelocities[state.editor.selectedStep + 1] = state.editor.currentVelocity;
+             }
+         }
     }
     DrawText(TextFormat("%d%%", (int)(state.editor.currentVelocity*100)), knobX + 25, startY + 5, 10, LIGHTGRAY);
     
@@ -630,8 +630,8 @@ void GuiRenderer::DrawPatternEditor() {
             }
         }
         
-        // Highlight Selected Step for FX
-        if (state.editor.showFxControls && state.editor.selectedStep == i) {
+        // Highlight Selected Step (FX or Edit Mode)
+        if ((state.editor.showFxControls || state.editor.clipboard.isEditMode) && state.editor.selectedStep == i) {
             DrawRectangle(x-2, y-2, stepSize+4, stepSize+4, WHITE);
         }
 
@@ -655,6 +655,87 @@ void GuiRenderer::DrawPatternEditor() {
         bool inViewport = CheckCollisionPointRec(GetMousePosition(), {winRect.x, winRect.y+50, winRect.width, winRect.height-100});
         
         if (inViewport && CheckCollisionPointRec(GetMousePosition(), stepRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            
+            // Modal Copy Logic
+            if (state.editor.clipboard.isCopyMode) {
+                // Copy this step
+                int step = i + 1;
+                state.editor.clipboard.active = state.editor.stepStates[i];
+                
+                if (p.stepPitches.count(step)) {
+                     state.editor.clipboard.hasPitch = true;
+                     state.editor.clipboard.pitch = p.stepPitches[step];
+                } else state.editor.clipboard.hasPitch = false;
+                
+                if (p.stepVelocities.count(step)) {
+                     state.editor.clipboard.hasVelocity = true;
+                     state.editor.clipboard.velocity = p.stepVelocities[step];
+                } else state.editor.clipboard.hasVelocity = false;
+                
+                state.editor.clipboard.fxList.clear();
+                if (p.stepFX.count(step)) state.editor.clipboard.fxList = p.stepFX[step];
+                
+                state.editor.clipboard.fxParams.clear();
+                if (p.stepFXParams.count(step)) state.editor.clipboard.fxParams = p.stepFXParams[step];
+                
+                state.editor.clipboard.hasData = true;
+                state.editor.clipboard.isCopyMode = false; // Exit copy mode
+                
+                // USER REQUEST: Automatically enter Paste Mode
+                state.editor.clipboard.isPasteMode = true; 
+                
+                state.editor.selectedStep = i; // Highlight source
+                continue;
+            }
+
+            // Modal Paste Logic
+            if (state.editor.clipboard.isPasteMode && state.editor.clipboard.hasData) {
+                // Paste to this step
+                int step = i + 1;
+                
+                state.editor.stepStates[i] = state.editor.clipboard.active;
+                
+                if (state.editor.clipboard.hasPitch) p.stepPitches[step] = state.editor.clipboard.pitch;
+                else p.stepPitches.erase(step);
+                
+                if (state.editor.clipboard.hasVelocity) p.stepVelocities[step] = state.editor.clipboard.velocity;
+                else p.stepVelocities.erase(step);
+                
+                if (!state.editor.clipboard.fxList.empty()) p.stepFX[step] = state.editor.clipboard.fxList;
+                else p.stepFX.erase(step);
+                
+                if (!state.editor.clipboard.fxParams.empty()) p.stepFXParams[step] = state.editor.clipboard.fxParams;
+                else p.stepFXParams.erase(step);
+                
+                continue; // Don't toggle
+            }
+            
+            // Edit Mode Logic (Select Only)
+            if (state.editor.clipboard.isEditMode) {
+                 if (state.editor.stepStates[i]) {
+                     state.editor.selectedStep = i;
+                     
+                     // LOAD DATA INTO EDITOR
+                     int step = i + 1;
+                     
+                     // Velocity
+                     if (p.stepVelocities.count(step)) {
+                         state.editor.currentVelocity = p.stepVelocities[step];
+                     } else {
+                         state.editor.currentVelocity = 1.0f; // Default
+                     }
+                     
+                     // Pitch
+                     if (p.stepPitches.count(step)) {
+                         int shift = p.stepPitches[step];
+                         state.editor.selectedOctave = 4 + (shift / 12);
+                         state.editor.selectedNote = (shift % 12 + 12) % 12;
+                     } // If no pitch, keep current (or default?)
+                     
+                 }
+                 continue; // Don't toggle
+            }
+
             // FX Mode: Select active step instead of toggling/deleting
             if (state.editor.showFxControls && state.editor.stepStates[i]) {
                 if (state.editor.selectedStep != i) {
@@ -877,7 +958,7 @@ void GuiRenderer::DrawPatternEditor() {
                     }
                     
                     // Slider Area
-                    Rectangle rateSlider = {winRect.x + 200, paramPanelY + 5, 150, 10};
+                    Rectangle rateSlider = {winRect.x + 250, paramPanelY + 5, 150, 10};
                     DrawRectangleRec(rateSlider, DARKGRAY);
                     DrawRectangleLinesEx(rateSlider, 1, WHITE);
                     
@@ -917,7 +998,7 @@ void GuiRenderer::DrawPatternEditor() {
                     }
                     
                     // Slider Area
-                    Rectangle speedSlider = {winRect.x + 200, paramPanelY + 5, 150, 10};
+                    Rectangle speedSlider = {winRect.x + 250, paramPanelY + 5, 150, 10};
                     DrawRectangleRec(speedSlider, DARKGRAY);
                     DrawRectangleLinesEx(speedSlider, 1, WHITE);
                     
@@ -939,9 +1020,82 @@ void GuiRenderer::DrawPatternEditor() {
                              p.stepFXParams[state.editor.selectedStep + 1][Pattern::PAR_STUTTER_SPEED] = currentSpeed;
                         }
                     }
-                    
-                    // Speed Readout
+                                        // Speed Readout
                     DrawText(TextFormat("%.2f", currentSpeed), speedSlider.x + speedSlider.width + 10, paramPanelY, 10, WHITE);
+                } else if (state.editor.selectedAppliedFxId == Pattern::FX_SLIDE) {
+                    // --- TIME CONTROL ---
+                    DrawText("Time:", winRect.x + 140, paramPanelY, 20, WHITE);
+                    
+                    // Value & Slider
+                    float currentTime = 1.0f;
+                    if (p.stepFXParams[state.editor.selectedStep + 1].count(Pattern::PAR_SLIDE_TIME)) {
+                        currentTime = p.stepFXParams[state.editor.selectedStep + 1][Pattern::PAR_SLIDE_TIME];
+                    }
+                    
+                    // Slider Area
+                    Rectangle timeSlider = {winRect.x + 250, paramPanelY + 5, 150, 10};
+                    DrawRectangleRec(timeSlider, DARKGRAY);
+                    DrawRectangleLinesEx(timeSlider, 1, WHITE);
+                    
+                    // Handle Position
+                    float minTime = 0.1f; float maxTime = 1.0f;
+                    float timeNorm = (currentTime - minTime) / (maxTime - minTime);
+                    if (timeNorm < 0) timeNorm = 0; if (timeNorm > 1) timeNorm = 1;
+                    Rectangle timeHandle = {timeSlider.x + timeNorm * (timeSlider.width - 10), timeSlider.y - 2, 10, 14};
+                    DrawRectangleRec(timeHandle, LIGHTGRAY);
+                    
+                    // Slider Interaction
+                    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+                        Vector2 mouse = GetMousePosition();
+                        if (CheckCollisionPointRec(mouse, {timeSlider.x - 5, timeSlider.y - 5, timeSlider.width + 10, timeSlider.height + 10})) {
+                             float newVal = minTime + ((mouse.x - timeSlider.x) / timeSlider.width) * (maxTime - minTime);
+                             if (newVal < minTime) newVal = minTime;
+                             if (newVal > maxTime) newVal = maxTime;
+                             currentTime = newVal;
+                             p.stepFXParams[state.editor.selectedStep + 1][Pattern::PAR_SLIDE_TIME] = currentTime;
+                        }
+                    }
+                    
+                    // Readout
+                    DrawText(TextFormat("%.2f", currentTime), timeSlider.x + timeSlider.width + 10, paramPanelY, 10, WHITE);
+
+                    // --- SQUELCH CONTROL ---
+                    paramPanelY += 35;
+                    DrawText("Squelch:", winRect.x + 140, paramPanelY, 20, WHITE);
+                    
+                    // Value & Slider
+                    float currentSquelch = 0.0f;
+                    if (p.stepFXParams[state.editor.selectedStep + 1].count(Pattern::PAR_SLIDE_SQUELCH)) {
+                        currentSquelch = p.stepFXParams[state.editor.selectedStep + 1][Pattern::PAR_SLIDE_SQUELCH];
+                    }
+                    
+                    // Slider Area
+                    Rectangle squelchSlider = {winRect.x + 250, paramPanelY + 5, 150, 10};
+                    DrawRectangleRec(squelchSlider, DARKGRAY);
+                    DrawRectangleLinesEx(squelchSlider, 1, WHITE);
+                    
+                    // Handle Position
+                    float minSquelch = 0.0f; float maxSquelch = 1.0f;
+                    float squelchNorm = (currentSquelch - minSquelch) / (maxSquelch - minSquelch);
+                    if (squelchNorm < 0) squelchNorm = 0; if (squelchNorm > 1) squelchNorm = 1;
+                    Rectangle squelchHandle = {squelchSlider.x + squelchNorm * (squelchSlider.width - 10), squelchSlider.y - 2, 10, 14};
+                    DrawRectangleRec(squelchHandle, LIGHTGRAY);
+                    
+                    // Slider Interaction
+                    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+                        Vector2 mouse = GetMousePosition();
+                        if (CheckCollisionPointRec(mouse, {squelchSlider.x - 5, squelchSlider.y - 5, squelchSlider.width + 10, squelchSlider.height + 10})) {
+                             float newVal = minSquelch + ((mouse.x - squelchSlider.x) / squelchSlider.width) * (maxSquelch - minSquelch);
+                             if (newVal < minSquelch) newVal = minSquelch;
+                             if (newVal > maxSquelch) newVal = maxSquelch;
+                             currentSquelch = newVal;
+                             p.stepFXParams[state.editor.selectedStep + 1][Pattern::PAR_SLIDE_SQUELCH] = currentSquelch;
+                        }
+                    }
+                    
+                    // Readout
+                    DrawText(TextFormat("%.2f", currentSquelch), squelchSlider.x + squelchSlider.width + 10, paramPanelY, 10, WHITE);
+                
                 } else {
                      DrawText("No params", winRect.x + 140, paramPanelY, 20, GRAY);
                 }
@@ -984,9 +1138,56 @@ void GuiRenderer::DrawPatternEditor() {
         DrawRectangle(winRect.x + winRect.width - 10, barY, 6, barH, Color{100, 100, 100, 200});
     }
     
-    // Save Button (Fixed at Bottom Footer, outside scrubber)
-    Rectangle saveRect = {winRect.x + winRect.width - 100, winRect.y + winRect.height - 40, 80, 30};
+    // --- FOOTER CONTROLS ---
     DrawRectangle(winRect.x, winRect.y + winRect.height - 50, winRect.width, 50, Color{30, 30, 30, 255}); // Footer BG
+
+    // Copy Button (Left)
+    Rectangle copyRect = {winRect.x + 20, winRect.y + winRect.height - 40, 60, 30};
+    bool copyActive = state.editor.clipboard.isCopyMode;
+    DrawRectangleRec(copyRect, copyActive ? ORANGE : DARKGRAY); // Orange when waiting for copy
+    DrawText("Copy", copyRect.x + 10, copyRect.y + 5, 20, WHITE);
+    
+    if (CheckCollisionPointRec(GetMousePosition(), copyRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        state.editor.clipboard.isCopyMode = !state.editor.clipboard.isCopyMode;
+        state.editor.clipboard.isPasteMode = false;
+        state.editor.clipboard.isEditMode = false;
+    }
+
+    // Paste Button (Left, next to Copy)
+    Rectangle pasteRect = {winRect.x + 90, winRect.y + winRect.height - 40, 60, 30};
+    bool canPaste = state.editor.clipboard.hasData;
+    bool pasteActive = state.editor.clipboard.isPasteMode;
+    
+    // User requested "turn back to gray" if deactivated. 
+    // We will use DARKGRAY for inactive, MAGENTA for Active. 
+    // We rely on 'canPaste' only for clickability check, not color (to keep it gray).
+    Color pasteColor = pasteActive ? MAGENTA : DARKGRAY; 
+    
+    DrawRectangleRec(pasteRect, pasteColor);
+    DrawText("Paste", pasteRect.x + 5, pasteRect.y + 5, 20, WHITE);
+    
+    if (canPaste && CheckCollisionPointRec(GetMousePosition(), pasteRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        state.editor.clipboard.isPasteMode = !state.editor.clipboard.isPasteMode;
+        state.editor.clipboard.isCopyMode = false;
+        state.editor.clipboard.isEditMode = false;
+    }
+
+    // Edit Button (Use Cyan for distinction)
+    Rectangle editRect = {winRect.x + 160, winRect.y + winRect.height - 40, 60, 30};
+    bool editActive = state.editor.clipboard.isEditMode;
+    DrawRectangleRec(editRect, editActive ? SKYBLUE : DARKGRAY);
+    DrawText("Edit", editRect.x + 10, editRect.y + 5, 20, WHITE);
+    
+    if (CheckCollisionPointRec(GetMousePosition(), editRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        state.editor.clipboard.isEditMode = !state.editor.clipboard.isEditMode;
+        state.editor.clipboard.isCopyMode = false;
+        state.editor.clipboard.isPasteMode = false;
+    }
+
+    // Save Button (Fixed at Bottom Footer)
+    Rectangle saveRect = {winRect.x + winRect.width - 100, winRect.y + winRect.height - 40, 80, 30};
+    // Footer BG already drawn above
+    // DrawRectangle(winRect.x, winRect.y + winRect.height - 50, winRect.width, 50, Color{30, 30, 30, 255}); // Footer BG
     DrawRectangleRec(saveRect, BLUE);
     DrawText("Save", saveRect.x + 20, saveRect.y + 5, 20, WHITE);
     
