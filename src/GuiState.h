@@ -19,6 +19,7 @@ struct DragState {
     Vector2 startPos;
     Vector2 currentPos;
     int sourceColumnIndex = -1;
+    int sourceSlotIndex = -1; // Which slot in the column is being dragged
     
     // Hold to drag logic
     double holdStartTime = 0.0;
@@ -87,12 +88,21 @@ struct PatternEditorState {
     int selectedAppliedFxId = -1;
 };
 
+// Track-level pattern clipboard (for copy/paste in track view)
+struct TrackClipboard {
+    bool hasData = false;
+    std::string patternName;
+    bool isCopyMode = false;
+    bool isPasteMode = false;
+};
+
 struct GuiState {
     std::vector<PatternColumn> columns;
-    std::map<int, std::string> activePatterns; // Column Index -> Pattern Name
+    std::map<int, int> activePatternSlots; // Column Index -> Slot Index (which pattern in that column is selected)
     
     DragState drag;
     PatternEditorState editor;
+    TrackClipboard trackClipboard; // For copy/paste patterns in track view
     
     // Column Renaming
     int renamingColumnIndex = -1;
@@ -105,6 +115,9 @@ struct GuiState {
     
     // Transport state mirroring AudioEngine
     bool isPlaying = false;
+    bool isLiveEditMode = false; // Persistent Edit mode (stays on until Edit button is clicked off)
+    bool isShiftMode = false; // When ON, clicking patterns opens them for editing without changing selection
+    std::string shiftEditingPatternName; // The pattern currently being edited via Shift mode
     int bpm = 120;
     char globalBpmBuffer[8] = "120";
     

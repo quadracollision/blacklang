@@ -141,6 +141,31 @@ void GuiRenderer::Draw() {
 void GuiRenderer::DrawColumn(int index, PatternColumn& col) {
     DrawRectangleRec(col.bounds, Color{35, 35, 35, 255});
     
+    // Highlight column when in paste mode and hovering
+    if (state.trackClipboard.isPasteMode && state.trackClipboard.hasData) {
+        if (CheckCollisionPointRec(GetMousePosition(), col.bounds)) {
+            DrawRectangleRec(col.bounds, Color{255, 0, 255, 40}); // Magenta tint
+            DrawRectangleLinesEx(col.bounds, 3, MAGENTA);
+            
+            // Click anywhere in the column to paste to bottom - CREATE A COPY
+            if (!state.editor.isOpen && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                // Get the original pattern
+                Pattern* origPat = engine.getPattern(state.trackClipboard.patternName);
+                if (origPat) {
+                    // Create a copy with a unique name
+                    Pattern copy = *origPat;
+                    copy.name = origPat->name + "_" + std::to_string(state.patternIdCounter++);
+                    
+                    // Add to engine and column
+                    if (copy.samplePath != "") engine.loadSample(copy);
+                    engine.addPattern(copy);
+                    col.patternNames.push_back(copy.name);
+                }
+                // Keep paste mode active for multiple pastes
+            }
+        }
+    }
+    
     // Define Content Area
     // Header is ~40px high (10 offset + 25 height + 5 margin)
     // Add Button is 30px high at bottom + 5 margin
@@ -223,7 +248,7 @@ void GuiRenderer::DrawColumn(int index, PatternColumn& col) {
         y += state.PATTERN_HEIGHT + 5; // Advance Y
         
         // Selection Logic
-        bool isSelected = (state.activePatterns.count(index) && state.activePatterns[index] == col.patternNames[i]);
+        bool isSelected = (state.activePatternSlots.count(index) && state.activePatternSlots[index] == (int)i);
         
         // Skip drawing/interaction if completely covered by add button
         bool overlapsButton = CheckCollisionRecs(patRect, addBtnRect);
@@ -231,14 +256,14 @@ void GuiRenderer::DrawColumn(int index, PatternColumn& col) {
         // Skip drawing if being dragged
         if (state.drag.isDragging && 
             state.drag.sourceColumnIndex == index && 
-            state.drag.patternName == col.patternNames[i]) {
+            state.drag.sourceSlotIndex == (int)i) {
             // Draw placeholder
             DrawRectangleLinesEx(patRect, 2.0f, DARKGRAY);
         } else {
             // Check if holding this specific pattern
             bool isHoldingThis = state.drag.isHolding && 
                                  state.drag.sourceColumnIndex == index && 
-                                 state.drag.patternName == col.patternNames[i];
+                                 state.drag.sourceSlotIndex == (int)i;
             
             // Draw only if not covered
             if (!overlapsButton) {
@@ -256,15 +281,80 @@ void GuiRenderer::DrawColumn(int index, PatternColumn& col) {
                     DrawRectangle(patRect.x, patRect.y + patRect.height - 5, patRect.width * progress, 5, YELLOW);
                 }
                 
+                // Highlight Shift-editing pattern with yellow border (but not the same as playing selection)
+                if (state.isShiftMode && !state.shiftEditingPatternName.empty() && 
+                    col.patternNames[i] == state.shiftEditingPatternName && !isSelected) {
+                    DrawRectangleLinesEx(patRect, 3, YELLOW);
+                }
+                
                 // Interaction - only if not overlapping button
                 // Interaction - only if not overlapping button AND within visible content area
                 // AND Editor is NOT open
                 if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), contentArea) && CheckCollisionPointRec(GetMousePosition(), patRect)) {
                     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                        
+                        // --- TRACK COPY MODE ---
+                        if (state.trackClipboard.isCopyMode) {
+                            state.trackClipboard.patternName = col.patternNames[i];
+                            state.trackClipboard.hasData = true;
+                            state.trackClipboard.isCopyMode = false;
+                            state.trackClipboard.isPasteMode = true; // Auto-switch to Paste mode
+                            continue; // Don't process further
+                        }
+                        
+                        
+                        // --- TRACK PASTE MODE ---
+                        // (Paste to bottom is handled in DrawColumn - skip normal click processing here)
+                        if (state.trackClipboard.isPasteMode && state.trackClipboard.hasData) {
+                            continue; // Don't process further - paste is handled at column level
+                        }
+                        
+                        // --- SHIFT MODE: Open for editing without changing selection ---
+                        if (state.isShiftMode && state.isLiveEditMode) {
+                            Pattern* p = engine.getPattern(col.patternNames[i]);
+                            if (p) {
+                                state.shiftEditingPatternName = p->name; // Track which pattern is being edited
+                                state.editor.currentPattern = *p;
+                                state.editor.isOpen = true;
+                                state.editor.showFileBrowser = false;
+                                strcpy(state.editor.nameBuffer, p->name.c_str());
+                                strcpy(state.editor.originalName, p->name.c_str());
+                                strcpy(state.editor.samplePathBuffer, p->samplePath.c_str());
+                                sprintf(state.editor.bpmBuffer, "%d", p->bpm);
+                                sprintf(state.editor.stepsBuffer, "%d", p->steps);
+                                
+                                // Load step states
+                                for (int s = 0; s < 64; ++s) state.editor.stepStates[s] = false;
+                                for (int step : p->activeSteps) {
+                                    if (step >= 1 && step <= 64) state.editor.stepStates[step-1] = true;
+                                }
+                            }
+                            continue; // Don't change selection
+                        }
+                        
+                        // --- EDIT MODE (without Shift): Open for editing AND change playback to this pattern ---
+                        if (state.isLiveEditMode && !state.isShiftMode) {
+                            Pattern* p = engine.getPattern(col.patternNames[i]);
+                            if (p) {
+                                state.editor.currentPattern = *p;
+                                state.editor.isOpen = true;
+                                state.editor.showFileBrowser = false;
+                                strcpy(state.editor.nameBuffer, p->name.c_str());
+                                strcpy(state.editor.originalName, p->name.c_str());
+                                strcpy(state.editor.samplePathBuffer, p->samplePath.c_str());
+                                sprintf(state.editor.bpmBuffer, "%d", p->bpm);
+                                sprintf(state.editor.stepsBuffer, "%d", p->steps);
+                                
+                                // Load step states
+                                for (int s = 0; s < 64; ++s) state.editor.stepStates[s] = false;
+                                for (int step : p->activeSteps) {
+                                    if (step >= 1 && step <= 64) state.editor.stepStates[step-1] = true;
+                                }
+                            }
+                            // Continue to also change selection (fall through)
+                        }
+                        
                         // Logic:
-                        // 1. If Double Click -> Edit
-                        // 2. If Single Click -> Select/Queue
-                        // 3. If Hold -> Drag
                         
                         // We need to differentiate single click vs hold/drag.
                         // Standard: MouseDown starts potential hold. MouseUp confirms click if not held long.
@@ -273,18 +363,24 @@ void GuiRenderer::DrawColumn(int index, PatternColumn& col) {
                         // Let's use MouseDown for potential hold + selection
                         // Immediate Selection feeling:
                         // Toggle Selection Logic
-                        bool wasSelected = (state.activePatterns.count(index) && state.activePatterns[index] == col.patternNames[i]);
+                        bool wasSelected = (state.activePatternSlots.count(index) && state.activePatternSlots[index] == (int)i);
                         
                         if (wasSelected) {
-                            state.activePatterns.erase(index);
+                            state.activePatternSlots.erase(index);
                         } else {
-                            state.activePatterns[index] = col.patternNames[i];
+                            state.activePatternSlots[index] = (int)i;
                         }
                         
                         // Sync with Audio Engine
                         if (engine.isPlaying()) {
                             std::vector<std::string> allActive;
-                            for (auto& pair : state.activePatterns) allActive.push_back(pair.second);
+                            for (auto& pair : state.activePatternSlots) {
+                                int colIdx = pair.first;
+                                int slotIdx = pair.second;
+                                if (colIdx >= 0 && colIdx < (int)state.columns.size() && slotIdx >= 0 && slotIdx < (int)state.columns[colIdx].patternNames.size()) {
+                                    allActive.push_back(state.columns[colIdx].patternNames[slotIdx]);
+                                }
+                            }
                             engine.updateActivePatterns(allActive);
                         }
                         
@@ -298,6 +394,7 @@ void GuiRenderer::DrawColumn(int index, PatternColumn& col) {
                         state.drag.holdStartTime = GetTime();
                         state.drag.initialClickPos = GetMousePosition();
                         state.drag.sourceColumnIndex = index;
+                        state.drag.sourceSlotIndex = (int)i;
                         state.drag.patternName = col.patternNames[i];
                     }
                     
@@ -499,7 +596,19 @@ void GuiRenderer::DrawPatternEditor() {
     // Sample
     startY += 40;
     DrawText("Sample:", winRect.x + 20, startY, 20, WHITE);
-    DrawTextInput({winRect.x + 100, startY, 240, 30}, state.editor.samplePathBuffer, 255, 1, state.editor.focusedFieldId);
+    // DrawTextInput({winRect.x + 100, startY, 240, 30}, state.editor.samplePathBuffer, 255, 1, state.editor.focusedFieldId);
+    
+    // User requested only filename display
+    Rectangle sampleBox = {winRect.x + 100, startY, 240, 30};
+    DrawRectangleRec(sampleBox, DARKGRAY);
+    DrawRectangleLinesEx(sampleBox, 1, GRAY);
+    
+    std::string dispName = "";
+    if (strlen(state.editor.samplePathBuffer) > 0) {
+        dispName = fs::path(state.editor.samplePathBuffer).filename().string();
+    }
+    
+    DrawText(dispName.c_str(), sampleBox.x + 5, sampleBox.y + 8, 10, WHITE);
     
     Rectangle loadBtnRect = {winRect.x + 350, startY, 50, 30};
     DrawRectangleRec(loadBtnRect, DARKGRAY);
@@ -634,9 +743,58 @@ void GuiRenderer::DrawPatternEditor() {
         if ((state.editor.showFxControls || state.editor.clipboard.isEditMode) && state.editor.selectedStep == i) {
             DrawRectangle(x-2, y-2, stepSize+4, stepSize+4, WHITE);
         }
+        
+        // Get playback cursor for live editing
+        int playbackStep = engine.getPatternProgress(state.editor.currentPattern.name);
+        
+        // Playback Cursor Highlight (Yellow outline during playback)
+        if (engine.isPlaying() && (i + 1) == playbackStep) {
+            DrawRectangle(x-3, y-3, stepSize+6, stepSize+6, YELLOW);
+        }
 
+        // Draw background slot
+        DrawRectangleRec({x, y, stepSize, stepSize}, DARKGRAY);
+        
+        // Draw active step with Nudge visual
+        if (active) {
+            // Check for Nudge FX to modify visual
+            float offset = 0.5f; // Default center (full)
+            if (p.stepFX.count(i+1)) {
+                 for (int fx : p.stepFX.at(i+1)) {
+                     if (fx == Pattern::FX_NUDGE) {
+                         if (p.stepFXParams.count(i+1) && p.stepFXParams.at(i+1).count(Pattern::PAR_NUDGE_OFFSET)) {
+                             offset = p.stepFXParams.at(i+1).at(Pattern::PAR_NUDGE_OFFSET);
+                         }
+                     }
+                 }
+            }
+            
+            // Calculate effective shape (Bipolar)
+            // 0.5 = Full (drawX=x, drawW=stepSize)
+            // > 0.5 = Trim Start (drawX shift right, width -)
+            // < 0.5 = Trim End (drawX=x, width -)
+            float drawX = x;
+            float drawW = stepSize;
+            
+            if (offset == 0.0f) offset = 0.5f; // Handle unset/default 0 to be center
+            
+            if (offset > 0.5f) {
+                // Right Nudge: Trim Start
+                float norm = (offset - 0.5f) * 2.0f; // 0..1
+                drawX = x + (stepSize * norm);
+                drawW = stepSize * (1.0f - norm);
+            } else if (offset < 0.5f) {
+                 // Left Nudge: Trim End
+                 float norm = offset * 2.0f; // 1..0 -> This norm is Length.
+                 drawW = stepSize * norm;
+            }
+            
+            if (drawW > 0) {
+                DrawRectangleRec({drawX, y, drawW, stepSize}, c);
+            }
+        }
+        
         Rectangle stepRect = {x, y, stepSize, stepSize};
-        DrawRectangleRec(stepRect, c);
         
         // Draw Pitch Text
         if (active && state.editor.showMelodicControls && p.stepPitches.count(i+1)) {
@@ -670,7 +828,12 @@ void GuiRenderer::DrawPatternEditor() {
                 if (p.stepVelocities.count(step)) {
                      state.editor.clipboard.hasVelocity = true;
                      state.editor.clipboard.velocity = p.stepVelocities[step];
-                } else state.editor.clipboard.hasVelocity = false;
+                     // SYNC EDITOR
+                     state.editor.currentVelocity = p.stepVelocities[step];
+                } else {
+                     state.editor.clipboard.hasVelocity = false;
+                     state.editor.currentVelocity = 1.0f; // Default if none
+                }
                 
                 state.editor.clipboard.fxList.clear();
                 if (p.stepFX.count(step)) state.editor.clipboard.fxList = p.stepFX[step];
@@ -685,6 +848,14 @@ void GuiRenderer::DrawPatternEditor() {
                 state.editor.clipboard.isPasteMode = true; 
                 
                 state.editor.selectedStep = i; // Highlight source
+                
+                // SYNC PITCH IF EXISTS
+                if (state.editor.clipboard.hasPitch) {
+                     int shift = state.editor.clipboard.pitch;
+                     state.editor.selectedOctave = 4 + (shift / 12);
+                     state.editor.selectedNote = (shift % 12 + 12) % 12;
+                }
+                
                 continue;
             }
 
@@ -761,6 +932,15 @@ void GuiRenderer::DrawPatternEditor() {
                  p.stepPitches.erase(i+1);
                  p.stepVelocities.erase(i+1);
                  p.stepFX.erase(i+1);
+                 
+                 // If removing selected step, deselect?
+                 if (state.editor.selectedStep == i) state.editor.selectedStep = -1;
+            }
+            
+            // USER REQUEST: Edit the last placed note.
+            // If we just turned it ON, select it.
+            if (!wasActive) {
+                state.editor.selectedStep = i;
             }
             
             // If FX mode, select this step
@@ -853,7 +1033,8 @@ void GuiRenderer::DrawPatternEditor() {
             std::vector<FxOption> availableFX = {
                 {Pattern::FX_CUTOFF, "Cut Off"},
                 {Pattern::FX_SLIDE, "Slide"},
-                {Pattern::FX_STUTTER, "Stutter"}
+                {Pattern::FX_STUTTER, "Stutter"},
+                {Pattern::FX_NUDGE, "Nudge"}
             };
             
             auto& currentStepFX = p.stepFX[state.editor.selectedStep + 1]; // Get/Create vector
@@ -1096,6 +1277,53 @@ void GuiRenderer::DrawPatternEditor() {
                     // Readout
                     DrawText(TextFormat("%.2f", currentSquelch), squelchSlider.x + squelchSlider.width + 10, paramPanelY, 10, WHITE);
                 
+                } else if (state.editor.selectedAppliedFxId == Pattern::FX_NUDGE) { // NUDGE
+                    DrawText("Nudge (Start/End):", winRect.x + 190, paramPanelY + 5, 10, WHITE);
+                    
+                    // Value & Slider
+                    float currentOffset = 0.5f; // Center by default
+                    if (p.stepFXParams[state.editor.selectedStep + 1].count(Pattern::PAR_NUDGE_OFFSET)) {
+                        currentOffset = p.stepFXParams[state.editor.selectedStep + 1][Pattern::PAR_NUDGE_OFFSET];
+                    }
+                    
+                    // Visual Indicator bar (Center = Full)
+                    Rectangle offsetSlider = {winRect.x + 300, paramPanelY + 5, 150, 10};
+                    DrawRectangleRec(offsetSlider, DARKGRAY);
+                    DrawRectangleLinesEx(offsetSlider, 1, WHITE);
+                    
+                    // Center Tick
+                    DrawRectangle(offsetSlider.x + offsetSlider.width/2 - 1, offsetSlider.y - 2, 2, 14, GRAY);
+                    
+                    // Visual Fill
+                    if (currentOffset > 0.5f) {
+                        // Right Side fill? Or "Gap" representation?
+                        // User said: "slider bar should start in the middle and it goes left and right"
+                    }
+                    
+                    // Handle
+                    float minOff = 0.0f; float maxOff = 1.0f;
+                    float offNorm = (currentOffset - minOff) / (maxOff - minOff);
+                    if (offNorm < 0) offNorm = 0; if (offNorm > 1) offNorm = 1;
+                    Rectangle offHandle = {offsetSlider.x + offNorm * (offsetSlider.width - 2), offsetSlider.y, 2, 10};
+                    DrawRectangleRec(offHandle, ORANGE); 
+
+                    // Slider Interaction
+                    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+                        Vector2 mouse = GetMousePosition();
+                        if (CheckCollisionPointRec(mouse, {offsetSlider.x - 5, offsetSlider.y - 5, offsetSlider.width + 10, offsetSlider.height + 10})) {
+                             float newVal = minOff + ((mouse.x - offsetSlider.x) / offsetSlider.width) * (maxOff - minOff);
+                             if (newVal < minOff) newVal = minOff;
+                             if (newVal > maxOff) newVal = maxOff;
+                             currentOffset = newVal;
+                             p.stepFXParams[state.editor.selectedStep + 1][Pattern::PAR_NUDGE_OFFSET] = currentOffset;
+                        }
+                    }
+                    
+                    // Text Description based on side
+                    if (currentOffset > 0.55f) DrawText(TextFormat("Start +%.0f%%", (currentOffset-0.5f)*200), offsetSlider.x + offsetSlider.width + 10, paramPanelY, 10, WHITE);
+                    else if (currentOffset < 0.45f) DrawText(TextFormat("Len %.0f%%", currentOffset*200), offsetSlider.x + offsetSlider.width + 10, paramPanelY, 10, WHITE);
+                    else DrawText("Full", offsetSlider.x + offsetSlider.width + 10, paramPanelY, 10, WHITE);
+                
                 } else {
                      DrawText("No params", winRect.x + 140, paramPanelY, 20, GRAY);
                 }
@@ -1154,7 +1382,7 @@ void GuiRenderer::DrawPatternEditor() {
     }
 
     // Paste Button (Left, next to Copy)
-    Rectangle pasteRect = {winRect.x + 90, winRect.y + winRect.height - 40, 60, 30};
+    Rectangle pasteRect = {winRect.x + 90, winRect.y + winRect.height - 40, 80, 30};
     bool canPaste = state.editor.clipboard.hasData;
     bool pasteActive = state.editor.clipboard.isPasteMode;
     
@@ -1173,7 +1401,7 @@ void GuiRenderer::DrawPatternEditor() {
     }
 
     // Edit Button (Use Cyan for distinction)
-    Rectangle editRect = {winRect.x + 160, winRect.y + winRect.height - 40, 60, 30};
+    Rectangle editRect = {winRect.x + 180, winRect.y + winRect.height - 40, 60, 30};
     bool editActive = state.editor.clipboard.isEditMode;
     DrawRectangleRec(editRect, editActive ? SKYBLUE : DARKGRAY);
     DrawText("Edit", editRect.x + 10, editRect.y + 5, 20, WHITE);
@@ -1186,6 +1414,70 @@ void GuiRenderer::DrawPatternEditor() {
 
     // Save Button (Fixed at Bottom Footer)
     Rectangle saveRect = {winRect.x + winRect.width - 100, winRect.y + winRect.height - 40, 80, 30};
+    
+    // Play Button (only visible in Shift mode during playback)
+    if (state.isShiftMode && state.isPlaying) {
+        Rectangle playBtn = {saveRect.x - 90, saveRect.y, 80, 30};
+        DrawRectangleRec(playBtn, GREEN);
+        DrawText("Play", playBtn.x + 18, playBtn.y + 5, 20, BLACK);
+        
+        if (CheckCollisionPointRec(GetMousePosition(), playBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            // --- SAVE THE PATTERN FIRST (same as Save button) ---
+            p.name = state.editor.nameBuffer;
+            
+            std::string sPath = state.editor.samplePathBuffer;
+            if (!sPath.empty() && !fs::exists(sPath)) {
+                 std::vector<std::string> prefixes = {"../", "src/", "../src/", "samples/", "../samples/"};
+                 for (const auto& pre : prefixes) {
+                     if (fs::exists(pre + sPath)) {
+                         sPath = pre + sPath;
+                         break;
+                     }
+                 }
+            }
+            
+            p.samplePath = sPath;
+            p.bpm = state.bpm;
+            p.steps = atoi(state.editor.stepsBuffer);
+            
+            p.activeSteps.clear();
+            for (int i=0; i<64; ++i) {
+                if (state.editor.stepStates[i]) {
+                    p.activeSteps.push_back(i+1);
+                }
+            }
+            
+            if (p.samplePath != "") engine.loadSample(p);
+            engine.addPattern(p);
+            
+            // --- NOW SELECT FOR PLAYBACK ---
+            std::string patName = p.name;
+            for (int colIdx = 0; colIdx < (int)state.columns.size(); ++colIdx) {
+                for (int slotIdx = 0; slotIdx < (int)state.columns[colIdx].patternNames.size(); ++slotIdx) {
+                    if (state.columns[colIdx].patternNames[slotIdx] == patName) {
+                        state.activePatternSlots[colIdx] = slotIdx;
+                        break;
+                    }
+                }
+            }
+            
+            // Update engine with new active patterns
+            std::vector<std::string> allActive;
+            for (auto& pair : state.activePatternSlots) {
+                int c = pair.first;
+                int s = pair.second;
+                if (c >= 0 && c < (int)state.columns.size() && s >= 0 && s < (int)state.columns[c].patternNames.size()) {
+                    allActive.push_back(state.columns[c].patternNames[s]);
+                }
+            }
+            engine.updateActivePatterns(allActive);
+            
+            // Turn off Shift mode
+            state.isShiftMode = false;
+            state.shiftEditingPatternName = "";
+        }
+    }
+    
     // Footer BG already drawn above
     // DrawRectangle(winRect.x, winRect.y + winRect.height - 50, winRect.width, 50, Color{30, 30, 30, 255}); // Footer BG
     DrawRectangleRec(saveRect, BLUE);
@@ -1217,10 +1509,6 @@ void GuiRenderer::DrawPatternEditor() {
         for (int i=0; i<64; ++i) {
             if (state.editor.stepStates[i]) {
                 p.activeSteps.push_back(i+1);
-                // Pitch/Vel/FX are already updated in real-time in the editor struct's pattern copy,
-                // but we need to ensure the logic here doesn't overwrite/lose them if we were reconstructing fully.
-                // Actually 'p' IS state.editor.currentPattern, so the maps are already there.
-                // We just need to make sure activeSteps matches stepStates.
             }
         }
         
@@ -1236,14 +1524,13 @@ void GuiRenderer::DrawPatternEditor() {
             for (auto& col : state.columns) {
                 std::replace(col.patternNames.begin(), col.patternNames.end(), oldName, p.name);
             }
-            // Update selection if needed
-            for (auto& pair : state.activePatterns) {
-                if (pair.second == oldName) pair.second = p.name;
-            }
+            // Selection uses slot index now, no need to update names
         }
         
-        // Refresh renderer
-        state.editor.isOpen = false;
+        // Refresh renderer - only close if NOT playing (live edit stays open)
+        if (!engine.isPlaying()) {
+            state.editor.isOpen = false;
+        }
         state.editor.showFileBrowser = false;
         state.editor.focusedFieldId = -1;
     }
@@ -1293,7 +1580,53 @@ void GuiRenderer::DrawStepGrid(Rectangle bounds, const Pattern& pattern, int act
             if (active) c = ORANGE; // Cursor on active step
         }
         
-        DrawRectangleRec({x, y, size, size}, c);
+        DrawRectangleRec({x, y, size, size}, DARKGRAY); // Background slot always gray
+        
+        // Draw cursor for non-active steps (playback position indicator)
+        if (!active && (i + 1) == activeStep) {
+            DrawRectangleRec({x, y, size, size}, WHITE);
+        }
+        
+        if (active) {
+            // Check for Nudge FX to modify visual
+            float offset = 0.0f;
+            if (pattern.stepFX.count(i+1)) {
+                 for (int fx : pattern.stepFX.at(i+1)) {
+                     if (fx == Pattern::FX_NUDGE) {
+                         if (pattern.stepFXParams.count(i+1) && pattern.stepFXParams.at(i+1).count(Pattern::PAR_NUDGE_OFFSET)) {
+                             offset = pattern.stepFXParams.at(i+1).at(Pattern::PAR_NUDGE_OFFSET);
+                         }
+                     }
+                 }
+            }
+            
+            // Calculate effective shape (Bipolar)
+            // 0.5 = Full (drawX=x, drawW=size)
+            // > 0.5 = Trim Start (drawX shift right, width -)
+            // < 0.5 = Trim End (drawX=x, width -)
+            
+            float drawX = x;
+            float drawW = size;
+            float DEFAULT_OFFSET = 0.5f;
+            if (offset == 0.0f) offset = DEFAULT_OFFSET; // Handle unset/default 0 to be center
+            
+            if (offset > 0.5f) {
+                // Right Nudge: Trim Start
+                // 0.5 -> 1.0 (Full -> 0)
+                float norm = (offset - 0.5f) * 2.0f; // 0..1
+                drawX = x + (size * norm);
+                drawW = size * (1.0f - norm);
+            } else if (offset < 0.5f) {
+                 // Left Nudge: Trim End
+                 // 0.5 -> 0.0 (Full -> 0)
+                 float norm = offset * 2.0f; // 1..0 -> This norm is Length.
+                 drawW = size * norm;
+            }
+            
+            if (drawW > 0) {
+                DrawRectangleRec({drawX, y, drawW, size}, c);
+            }
+        }
         
         // Draw Note Pitch if active
         if (active && pattern.stepPitches.count(i+1)) {
@@ -1323,10 +1656,16 @@ void GuiRenderer::DrawTransportBar() {
     DrawRectangleRec(playRect, state.isPlaying ? GREEN : GRAY);
     DrawText(">", playRect.x + 15, playRect.y + 10, 20, BLACK);
     if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), playRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        if (!state.activePatterns.empty()) {
+        if (!state.activePatternSlots.empty()) {
             std::vector<std::string> names;
-            for (const auto& pair : state.activePatterns) names.push_back(pair.second);
-            engine.playMultiplePatterns(names);
+            for (const auto& pair : state.activePatternSlots) {
+                int colIdx = pair.first;
+                int slotIdx = pair.second;
+                if (colIdx >= 0 && colIdx < (int)state.columns.size() && slotIdx >= 0 && slotIdx < (int)state.columns[colIdx].patternNames.size()) {
+                    names.push_back(state.columns[colIdx].patternNames[slotIdx]);
+                }
+            }
+            if (!names.empty()) engine.playMultiplePatterns(names);
         }
     }
     
@@ -1346,13 +1685,65 @@ void GuiRenderer::DrawTransportBar() {
         DrawRectangleRec({centerX + 150, rect.y + 10, 60, 25}, LIGHTGRAY);
         DrawText(state.globalBpmBuffer, centerX + 155, rect.y + 15, 20, BLACK);
     }
-    
-    // Process BPM change on Enter or Focus loss (simplified: just parse every frame if valid)
-    // Or just on Enter?
-    // Let's parse continually if valid number
+
     int newBpm = atoi(state.globalBpmBuffer);
     if (newBpm > 20 && newBpm < 300 && newBpm != state.bpm) {
         state.bpm = newBpm;
         engine.setBPM(newBpm);
+    }
+    
+    // ---- TRACK COPY/PASTE BUTTONS (Left Side) ----
+    // Copy Button
+    Rectangle copyBtn = {20, rect.y + 15, 50, 30};
+    DrawRectangleRec(copyBtn, state.trackClipboard.isCopyMode ? ORANGE : DARKGRAY);
+    DrawText("Copy", copyBtn.x + 5, copyBtn.y + 8, 14, WHITE);
+    
+    if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), copyBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        state.trackClipboard.isCopyMode = !state.trackClipboard.isCopyMode;
+        state.trackClipboard.isPasteMode = false;
+    }
+    
+    // Paste Button
+    Rectangle pasteBtn = {80, rect.y + 15, 55, 30};
+    bool canPaste = state.trackClipboard.hasData;
+    DrawRectangleRec(pasteBtn, state.trackClipboard.isPasteMode ? MAGENTA : (canPaste ? GRAY : DARKGRAY));
+    DrawText("Paste", pasteBtn.x + 5, pasteBtn.y + 8, 14, WHITE);
+    
+    if (!state.editor.isOpen && canPaste && CheckCollisionPointRec(GetMousePosition(), pasteBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        state.trackClipboard.isPasteMode = !state.trackClipboard.isPasteMode;
+        state.trackClipboard.isCopyMode = false;
+    }
+    
+    // Edit Button (Only visible when playing and a pattern is selected)
+    if (state.isPlaying && !state.activePatternSlots.empty()) {
+        Rectangle editBtn = {145, rect.y + 15, 45, 30};
+        DrawRectangleRec(editBtn, state.isLiveEditMode ? SKYBLUE : DARKGRAY);
+        DrawText("Edit", editBtn.x + 5, editBtn.y + 8, 14, WHITE);
+        
+        if (CheckCollisionPointRec(GetMousePosition(), editBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            // Toggle Live Edit Mode (user must click a pattern to edit it)
+            state.isLiveEditMode = !state.isLiveEditMode;
+            
+            if (!state.isLiveEditMode) {
+                // Turn off Live Edit Mode also closes editor and resets Shift
+                state.editor.isOpen = false;
+                state.isShiftMode = false;
+                state.shiftEditingPatternName = "";
+            }
+        }
+        
+        // Shift Button (only visible when Live Edit Mode is ON)
+        if (state.isLiveEditMode) {
+            Rectangle shiftBtn = {195, rect.y + 15, 45, 30};
+            DrawRectangleRec(shiftBtn, state.isShiftMode ? ORANGE : DARKGRAY);
+            DrawText("Shift", shiftBtn.x + 3, shiftBtn.y + 8, 12, WHITE);
+            
+            if (CheckCollisionPointRec(GetMousePosition(), shiftBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                state.isShiftMode = !state.isShiftMode;
+                if (!state.isShiftMode) {
+                    state.shiftEditingPatternName = ""; // Clear when turning off
+                }
+            }
+        }
     }
 }

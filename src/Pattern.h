@@ -21,12 +21,14 @@ struct Pattern {
     static constexpr int FX_CUTOFF = 1;
     static constexpr int FX_SLIDE = 2;
     static constexpr int FX_STUTTER = 3;
+    static constexpr int FX_NUDGE = 4;
     
     // Parameters
     static constexpr int PAR_STUTTER_RATE = 100;
     static constexpr int PAR_STUTTER_SPEED = 101;
     static constexpr int PAR_SLIDE_TIME = 200;
     static constexpr int PAR_SLIDE_SQUELCH = 201;
+    static constexpr int PAR_NUDGE_OFFSET = 300;
     
     // Audio data (loaded at runtime)
     juce::AudioBuffer<float> sampleBuffer;

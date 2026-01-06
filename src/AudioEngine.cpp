@@ -503,12 +503,12 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
             
             // Check if this step triggers the sample
             if (pattern->shouldTriggerAt(currentStep)) {
-                triggerSample();
+                triggerSample(*pattern, currentStep);
             }
         }
         
         // Mix sample if playing
-        if (sampleIsPlaying && samplePlaybackPosition < pattern->sampleBuffer.getNumSamples()) {
+        if (sampleIsPlaying && samplePlaybackPosition < pattern->sampleBuffer.getNumSamples() && samplePlaybackPosition < samplePlaybackEnd) {
             for (int ch = 0; ch < numOutputChannels; ++ch) {
                 int srcCh = std::min(ch, pattern->sampleBuffer.getNumChannels() - 1);
                 outputChannelData[ch][i] += pattern->sampleBuffer.getSample(srcCh, (int)samplePlaybackPosition);
@@ -520,8 +520,42 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
     }
 }
 
-void AudioEngine::triggerSample() {
+void AudioEngine::triggerSample(Pattern& pattern, int step) {
     samplePlaybackPosition = 0;
+    
+    // Default to full sample
+    int64_t totalSamples = pattern.sampleBuffer.getNumSamples();
+    int64_t endPos = totalSamples;
+    int64_t startPos = 0;
+    
+    // Check for Nudge FX (Bipolar)
+    // 0.5 = Center (Full Length)
+    // > 0.5 = Offset Start (Cut Attack)
+    // < 0.5 = Offset End (Cut Tail / Gate)
+    
+    if (pattern.stepFX.count(step)) {
+        for (int fxId : pattern.stepFX[step]) {
+            if (fxId == Pattern::FX_NUDGE) {
+                 if (pattern.stepFXParams[step].count(Pattern::PAR_NUDGE_OFFSET)) {
+                     float val = pattern.stepFXParams[step][Pattern::PAR_NUDGE_OFFSET];
+                     
+                     if (val > 0.5f) {
+                         // Right Side: Adjust Start
+                         float norm = (val - 0.5f) * 2.0f; // 0.0 to 1.0
+                         startPos = (int64_t)(norm * totalSamples);
+                     } else if (val < 0.5f) {
+                         // Left Side: Adjust End
+                         float norm = val * 2.0f; // 0.0 to 1.0
+                         endPos = (int64_t)(norm * totalSamples);
+                     }
+                 }
+            }
+        }
+    }
+    
+    // Set Playback State
+    samplePlaybackPosition = startPos;
+    samplePlaybackEnd = endPos;
     sampleIsPlaying = true;
 }
 

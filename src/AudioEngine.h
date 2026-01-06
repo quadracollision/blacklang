@@ -74,6 +74,7 @@ private:
         int currentStep = 0;
         int64_t stepStartSample = 0;
         double samplePlaybackPosition = 0.0;
+        int64_t sampleEndPosition = 0; // For Nudge/Crop FX
         bool sampleIsPlaying = false;
         double currentSpeedRatio = 1.0;
         float currentVelocity = 1.0f;
@@ -113,6 +114,7 @@ private:
             currentStep = 0;
             stepStartSample = 0;
             samplePlaybackPosition = 0.0;
+            sampleEndPosition = 0;
             sampleIsPlaying = false;
             currentSpeedRatio = 1.0;
             currentVelocity = 1.0f;
@@ -136,8 +138,9 @@ private:
     
     // Sample playback
     int64_t samplePlaybackPosition = 0;
+    int64_t samplePlaybackEnd = 0;
     bool sampleIsPlaying = false;
     
     void advanceSequencer(int numSamples);
-    void triggerSample();
+    void triggerSample(Pattern& pattern, int step);
 };
