@@ -268,6 +268,8 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                     if (pattern.shouldTriggerAt(state.currentStep)) {
                         state.samplePlaybackPosition = 0.0;
                         state.sampleIsPlaying = true;
+                        state.isStuttering = false; // Reset start of step
+                        state.stutterIntervalSamples = 0;
                         
                         // Calculate Pitch
                         int semitones = 0;
@@ -280,6 +282,62 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                         state.currentVelocity = 1.0f;
                         if (pattern.stepVelocities.count(state.currentStep)) {
                             state.currentVelocity = pattern.stepVelocities[state.currentStep];
+                        }
+                        
+                        // Apply Stutter Speed if present
+                        if (pattern.stepFXParams.count(state.currentStep) &&
+                            pattern.stepFXParams.at(state.currentStep).count(Pattern::PAR_STUTTER_SPEED)) {
+                             float speedMult = pattern.stepFXParams.at(state.currentStep).at(Pattern::PAR_STUTTER_SPEED);
+                             if (speedMult > 0.0f) state.currentSpeedRatio *= speedMult;
+                        }
+
+                        if (pattern.stepFX.count(state.currentStep)) {
+                             const auto& fxList = pattern.stepFX[state.currentStep];
+                             for (int fx : fxList) {
+                                 if (fx == Pattern::FX_CUTOFF) {
+                                    state.samplePlaybackPosition = 0.0;
+                                    state.sampleIsPlaying = true;
+                                 }
+                                 else if (fx == Pattern::FX_SLIDE) {
+                                     // Look ahead for next active melodic step
+                                     int nextStep = -1;
+                                     for (int s = state.currentStep + 1; s <= pattern.steps; ++s) {
+                                         if (pattern.stepPitches.count(s)) {
+                                             nextStep = s;
+                                             break;
+                                         }
+                                     }
+                                     // Wrap around check? Maybe not for now, just within pattern
+                                     
+                                     if (nextStep != -1) {
+                                         state.isSliding = true;
+                                         int nextSemitones = pattern.stepPitches[nextStep];
+                                         state.slideTargetRatio = std::pow(2.0, nextSemitones / 12.0);
+                                         
+                                         // Calculate duration to next step in samples
+                                         double stepDur = pattern.getStepDurationSamples(globalBpm.load());
+                                         double samplesDist = (nextStep - state.currentStep) * stepDur;
+                                         
+                                         if (samplesDist > 0) {
+                                             state.slideStepIncrement = (state.slideTargetRatio - state.currentSpeedRatio) / samplesDist;
+                                         }
+                                          }
+                                 }
+                                 else if (fx == Pattern::FX_STUTTER) {
+                                      state.isStuttering = true;
+                                      double stepDur = pattern.getStepDurationSamples(globalBpm.load());
+                                      
+                                      float rate = 4.0f; // Default
+                                      if (pattern.stepFXParams.count(state.currentStep) && 
+                                          pattern.stepFXParams.at(state.currentStep).count(Pattern::PAR_STUTTER_RATE)) {
+                                          rate = pattern.stepFXParams.at(state.currentStep).at(Pattern::PAR_STUTTER_RATE);
+                                      }
+                                      if (rate < 1.0f) rate = 1.0f;
+
+                                      state.stutterIntervalSamples = (int)(stepDur / rate);
+                                      if (state.stutterIntervalSamples < 100) state.stutterIntervalSamples = 100;
+                                 }
+                             }
                         }
                     }
                 }
@@ -296,16 +354,35 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                         int idx = (int)pos;
                         float frac = (float)(pos - idx);
                         
-                        if (idx < pattern.sampleBuffer.getNumSamples() - 1) {
-                            float s1 = inData[idx];
-                            float s2 = inData[idx + 1];
-                            outData[i] += (s1 + frac * (s2 - s1)) * state.currentVelocity;
-                        } else if (idx < pattern.sampleBuffer.getNumSamples()) {
-                             outData[i] += inData[idx] * state.currentVelocity;
+                        // Safety check for indices
+                        if (idx >= 0 && idx < pattern.sampleBuffer.getNumSamples()) {
+                             float s1 = inData[idx];
+                             float s2 = (idx + 1 < pattern.sampleBuffer.getNumSamples()) ? inData[idx + 1] : 0.0f;
+                             outData[i] += (s1 + frac * (s2 - s1)) * state.currentVelocity;
                         }
                     }
                     
                     state.samplePlaybackPosition += state.currentSpeedRatio;
+                    
+                    // Handle Stutter Re-trigger
+                    if (state.isStuttering && state.stutterIntervalSamples > 0) {
+                        int64_t samplesInStep = state.samplePosition - state.stepStartSample;
+                        if (samplesInStep > 0 && samplesInStep % state.stutterIntervalSamples == 0) {
+                            state.samplePlaybackPosition = 0.0; // Re-trigger
+                        }
+                    }
+                    
+                    // Apply Slide
+                    if (state.isSliding) {
+                        state.currentSpeedRatio += state.slideStepIncrement;
+                        // Clamp? Or let it overshoot slightly/stop at target?
+                        // Simple approach: Check if we passed target
+                         if ((state.slideStepIncrement > 0 && state.currentSpeedRatio >= state.slideTargetRatio) ||
+                             (state.slideStepIncrement < 0 && state.currentSpeedRatio <= state.slideTargetRatio)) {
+                             state.currentSpeedRatio = state.slideTargetRatio;
+                             state.isSliding = false;
+                         }
+                    }
                     // Stop if we passed the end
                     if (state.samplePlaybackPosition >= pattern.sampleBuffer.getNumSamples()) {
                          state.sampleIsPlaying = false;

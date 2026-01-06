@@ -13,7 +13,18 @@ struct Pattern {
     std::vector<int> activeSteps;  // 1-indexed step positions
 
     std::map<int, int> stepPitches; // Step (1-indexed) -> Semitone Offset (relative to C4/Root)
-    std::map<int, float> stepVelocities; // Step (1-indexed) -> Velocity [0.0 - 1.0][0;39m
+    std::map<int, float> stepVelocities; // Step (1-indexed) -> Velocity [0.0 - 1.0]
+    std::map<int, std::vector<int>> stepFX; // Step (1-indexed) -> List of FX IDs
+    std::map<int, std::map<int, float>> stepFXParams; // Step -> FX ID -> Value
+
+    static constexpr int FX_NONE = 0;
+    static constexpr int FX_CUTOFF = 1;
+    static constexpr int FX_SLIDE = 2;
+    static constexpr int FX_STUTTER = 3;
+    
+    // Parameters
+    static constexpr int PAR_STUTTER_RATE = 100;
+    static constexpr int PAR_STUTTER_SPEED = 101;
     
     // Audio data (loaded at runtime)
     juce::AudioBuffer<float> sampleBuffer;

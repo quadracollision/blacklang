@@ -10,6 +10,7 @@ struct PatternColumn {
     std::string title;
     std::vector<std::string> patternNames;
     Rectangle bounds;
+    float scrollY = 0.0f;
 };
 
 struct DragState {
@@ -55,6 +56,13 @@ struct PatternEditorState {
     
     // Track which field is being edited
     int focusedFieldId = -1; // 0: Name, 1: Sample, 2: BPM, 3: Steps
+
+    // FX Mode State
+    bool showFxControls = false;
+    int selectedStep = -1; // 0-63
+    int currentFxType = 0; // 0=None, 1=CutOff
+    int selectedAvailableFxId = -1;
+    int selectedAppliedFxId = -1;
 };
 
 struct GuiState {

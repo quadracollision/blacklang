@@ -71,7 +71,8 @@ void GuiRenderer::Draw() {
         DrawText("+", addColX + 13, startY + 30, 30, GRAY);
         
         // Only allow click if visible/in-bounds (Scissor handles visibility, but we check collision)
-        if (CheckCollisionPointRec(GetMousePosition(), addColRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        // AND if editor is not open
+        if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), addColRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
              // Basic collision check passes, but we should ensure we are not clicking scrollbar area if checked there.
              // Rely on z-order: input handled before scrollbar?
              // Actually, ScissorMode clips *drawing*. It does NOT prevent *input*.
@@ -102,7 +103,7 @@ void GuiRenderer::Draw() {
         static bool isDraggingScroll = false;
         static float dragOffsetX = 0;
         
-        if (CheckCollisionPointRec(GetMousePosition(), thumbRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), thumbRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             isDraggingScroll = true;
             dragOffsetX = GetMousePosition().x - thumbRect.x;
         }
@@ -140,6 +141,35 @@ void GuiRenderer::Draw() {
 void GuiRenderer::DrawColumn(int index, PatternColumn& col) {
     DrawRectangleRec(col.bounds, Color{35, 35, 35, 255});
     
+    // Define Content Area
+    // Header is ~40px high (10 offset + 25 height + 5 margin)
+    // Add Button is 30px high at bottom + 5 margin
+    float topMargin = 40.0f;
+    float bottomMargin = 40.0f;
+    
+    Rectangle contentArea = {
+        col.bounds.x,
+        col.bounds.y + topMargin,
+        col.bounds.width,
+        col.bounds.height - topMargin - bottomMargin
+    };
+    
+    // Calculate Total Content Height
+    float totalContentHeight = col.patternNames.size() * (state.PATTERN_HEIGHT + 5);
+    
+    // Scroll Logic
+    if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), col.bounds)) {
+        float wheel = GetMouseWheelMove();
+        if (wheel != 0) {
+            col.scrollY -= wheel * 30.0f;
+        }
+    }
+    
+    // Clamp Scroll
+    float maxScroll = std::max(0.0f, totalContentHeight - contentArea.height);
+    if (col.scrollY < 0) col.scrollY = 0;
+    if (col.scrollY > maxScroll) col.scrollY = maxScroll;
+    
     // Header Renaming
     Rectangle headerRect = {col.bounds.x + 10, col.bounds.y + 10, col.bounds.width - 20, 25};
     
@@ -155,7 +185,7 @@ void GuiRenderer::DrawColumn(int index, PatternColumn& col) {
         DrawText(col.title.c_str(), headerRect.x, headerRect.y, 20, LIGHTGRAY);
         
         // Double Click to Rename Header
-        if (CheckCollisionPointRec(GetMousePosition(), headerRect)) {
+        if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), headerRect)) {
             static double lastHeaderClickTime = 0;
             static int lastHeaderClickIndex = -1;
             
@@ -179,7 +209,9 @@ void GuiRenderer::DrawColumn(int index, PatternColumn& col) {
     // Calculate visible area for patterns (above the button)
     // We only process patterns that are not covered by the button area
     
-    float y = col.bounds.y + 40;
+    BeginScissorMode((int)contentArea.x, (int)contentArea.y, (int)contentArea.width, (int)contentArea.height);
+    
+    float y = contentArea.y - col.scrollY;
     
     for (size_t i = 0; i < col.patternNames.size(); ++i) {
         Rectangle patRect = {
@@ -225,7 +257,9 @@ void GuiRenderer::DrawColumn(int index, PatternColumn& col) {
                 }
                 
                 // Interaction - only if not overlapping button
-                if (CheckCollisionPointRec(GetMousePosition(), patRect)) {
+                // Interaction - only if not overlapping button AND within visible content area
+                // AND Editor is NOT open
+                if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), contentArea) && CheckCollisionPointRec(GetMousePosition(), patRect)) {
                     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                         // Logic:
                         // 1. If Double Click -> Edit
@@ -294,10 +328,28 @@ void GuiRenderer::DrawColumn(int index, PatternColumn& col) {
             }
         }
     }
+    
+    EndScissorMode();
+    
+    // Draw Vertical Scrollbar if needed
+    if (totalContentHeight > contentArea.height) {
+        float barW = 6;
+        float barX = col.bounds.x + col.bounds.width - barW - 2;
+        float barY = contentArea.y;
+        float barH = contentArea.height;
+        
+        float viewRatio = contentArea.height / totalContentHeight;
+        float thumbH = std::max(20.0f, contentArea.height * viewRatio);
+        float thumbY = barY + (col.scrollY / (totalContentHeight - contentArea.height)) * (contentArea.height - thumbH);
+        
+        DrawRectangle(barX, barY, barW, barH, Color{0, 0, 0, 100});
+        DrawRectangle(barX, thumbY, barW, thumbH, Color{80, 80, 80, 200});
+    }
+
     DrawRectangleRec(addBtnRect, Color{50, 50, 50, 255});
     DrawText("+ Add", addBtnRect.x + 40, addBtnRect.y + 5, 10, WHITE);
     
-    if (CheckCollisionPointRec(GetMousePosition(), addBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), addBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         // Create new unique pattern
         Pattern p;
         p.name = "Pat" + std::to_string(state.patternIdCounter++);
@@ -415,7 +467,7 @@ void GuiRenderer::DrawPatternEditor() {
         500, 400
     };
     DrawRectangleRec(winRect, Color{30, 30, 30, 255});
-    DrawRectangleLinesEx(winRect, 2, LIGHTGRAY);
+    DrawRectangleRec(winRect, Color{30, 30, 30, 255});
     DrawText("Edit Pattern", winRect.x + 20, winRect.y + 15, 20, WHITE);
     
     // Close Button
@@ -526,9 +578,19 @@ void GuiRenderer::DrawPatternEditor() {
     DrawText("Melodic", melodyToggleRect.x + 8, melodyToggleRect.y + 5, 10, WHITE);
     if (CheckCollisionPointRec(GetMousePosition(), melodyToggleRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.editor.showMelodicControls = !state.editor.showMelodicControls;
+        if (state.editor.showMelodicControls) state.editor.showFxControls = false; // Exclusive
+    }
+
+    // FX Toggle (Below Melodic)
+    Rectangle fxToggleRect = {winRect.x + 380, startY + 35, 80, 30}; 
+    DrawRectangleRec(fxToggleRect, state.editor.showFxControls ? VIOLET : DARKGRAY);
+    DrawText("FX", fxToggleRect.x + 15, fxToggleRect.y + 5, 10, WHITE);
+    if (CheckCollisionPointRec(GetMousePosition(), fxToggleRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        state.editor.showFxControls = !state.editor.showFxControls;
+        if (state.editor.showFxControls) state.editor.showMelodicControls = false; // Exclusive
     }
     
-    startY += 50; 
+    startY += 80; // Increased spacing to accommodate two rows of buttons 
     
     // Editor Grid (Moved ABOVE Keyboard)
     Pattern& p = state.editor.currentPattern;
@@ -552,6 +614,26 @@ void GuiRenderer::DrawPatternEditor() {
         bool active = state.editor.stepStates[i];
         Color c = active ? RED : DARKGRAY;
         if (active && state.editor.showMelodicControls && p.stepPitches.count(i+1)) c = ORANGE;
+        if (active && state.editor.showFxControls && p.stepFX.count(i+1)) {
+            const auto& fxList = p.stepFX.at(i+1);
+            if (!fxList.empty()) {
+                // If multiple, maybe blend or show generic color?
+                // Priority: CutOff (Blue) > Stutter (Gold) > Slide (SkyBlue)
+                bool hasCutTime = std::find(fxList.begin(), fxList.end(), Pattern::FX_CUTOFF) != fxList.end();
+                bool hasSlide = std::find(fxList.begin(), fxList.end(), Pattern::FX_SLIDE) != fxList.end();
+                bool hasStutter = std::find(fxList.begin(), fxList.end(), Pattern::FX_STUTTER) != fxList.end();
+                
+                if (hasCutTime) c = BLUE;
+                else if (hasStutter) c = GOLD;
+                else if (hasSlide) c = SKYBLUE;
+                else c = PURPLE; // Future FX?
+            }
+        }
+        
+        // Highlight Selected Step for FX
+        if (state.editor.showFxControls && state.editor.selectedStep == i) {
+            DrawRectangle(x-2, y-2, stepSize+4, stepSize+4, WHITE);
+        }
 
         Rectangle stepRect = {x, y, stepSize, stepSize};
         DrawRectangleRec(stepRect, c);
@@ -573,6 +655,15 @@ void GuiRenderer::DrawPatternEditor() {
         bool inViewport = CheckCollisionPointRec(GetMousePosition(), {winRect.x, winRect.y+50, winRect.width, winRect.height-100});
         
         if (inViewport && CheckCollisionPointRec(GetMousePosition(), stepRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            // FX Mode: Select active step instead of toggling/deleting
+            if (state.editor.showFxControls && state.editor.stepStates[i]) {
+                if (state.editor.selectedStep != i) {
+                    state.editor.selectedStep = i;
+                    continue; // Just select, don't delete yet
+                }
+                // If already selected, proceed to delete/toggle logic below
+            }
+
             bool wasActive = state.editor.stepStates[i];
             state.editor.stepStates[i] = !wasActive;
             
@@ -588,7 +679,29 @@ void GuiRenderer::DrawPatternEditor() {
                  // Removing step
                  p.stepPitches.erase(i+1);
                  p.stepVelocities.erase(i+1);
+                 p.stepFX.erase(i+1);
             }
+            
+            // If FX mode, select this step
+            if (state.editor.showFxControls && state.editor.stepStates[i]) {
+                state.editor.selectedStep = i;
+                // No need to set single currentFxType
+            }
+        }
+        
+        // Right Click -> Delete / Clear Step
+        if (inViewport && CheckCollisionPointRec(GetMousePosition(), stepRect) && IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+             if (state.editor.stepStates[i]) {
+                 state.editor.stepStates[i] = false;
+                 p.stepPitches.erase(i+1);
+                 p.stepVelocities.erase(i+1);
+                 p.stepFX.erase(i+1);
+                 
+                 // If this was selected, unselect it? Or leave selection index but update type
+                 if (state.editor.selectedStep == i) {
+                     state.editor.selectedStep = -1;
+                 }
+             }
         }
     }
     
@@ -646,6 +759,211 @@ void GuiRenderer::DrawPatternEditor() {
         }
         startY += 90;
     }
+
+    // FX Controls
+    if (state.editor.showFxControls) {
+        DrawText(TextFormat("Step: %d", state.editor.selectedStep + 1), winRect.x + 20, startY + 10, 20, WHITE);
+        
+        if (state.editor.selectedStep != -1 && state.editor.stepStates[state.editor.selectedStep]) {
+            DrawText("FX Selection:", winRect.x + 20, startY + 25, 20, WHITE);
+            
+            // FX ListBox Logic
+            struct FxOption { int id; std::string name; };
+            std::vector<FxOption> availableFX = {
+                {Pattern::FX_CUTOFF, "Cut Off"},
+                {Pattern::FX_SLIDE, "Slide"},
+                {Pattern::FX_STUTTER, "Stutter"}
+            };
+            
+            auto& currentStepFX = p.stepFX[state.editor.selectedStep + 1]; // Get/Create vector
+            
+            // Define Boxes (Lowered further to startY + 70)
+            float boxW = 140;
+            float boxH = 100;
+            Rectangle availBox = {winRect.x + 140, startY + 70, boxW, boxH};
+            Rectangle appliedBox = {winRect.x + 300, startY + 70, boxW, boxH};
+            
+            // Draw Box Backgrounds
+            DrawRectangleRec(availBox, BLACK);
+            DrawRectangleLinesEx(availBox, 1, WHITE);
+            DrawText("Available", availBox.x, availBox.y - 12, 10, LIGHTGRAY);
+            
+            DrawRectangleRec(appliedBox, BLACK);
+            DrawRectangleLinesEx(appliedBox, 1, WHITE);
+            DrawText("Applied", appliedBox.x, appliedBox.y - 12, 10, LIGHTGRAY);
+
+            // Item Layout
+            float availY = availBox.y + 5;
+            float appliedY = appliedBox.y + 5;
+            float itemH = 20;
+            
+            for (const auto& opt : availableFX) {
+                bool isActive = std::find(currentStepFX.begin(), currentStepFX.end(), opt.id) != currentStepFX.end();
+                
+                Rectangle itemRect;
+                bool isSelected = false;
+                
+                if (isActive) {
+                    itemRect = {appliedBox.x + 5, appliedY, boxW - 10, itemH};
+                    appliedY += itemH + 2;
+                    if (state.editor.selectedAppliedFxId == opt.id) isSelected = true;
+                } else {
+                    itemRect = {availBox.x + 5, availY, boxW - 10, itemH};
+                    availY += itemH + 2;
+                    if (state.editor.selectedAvailableFxId == opt.id) isSelected = true;
+                }
+                
+                // Draw Item Highlight
+                if (isSelected) {
+                    DrawRectangleRec(itemRect, ORANGE);
+                } else if (CheckCollisionPointRec(GetMousePosition(), itemRect)) {
+                    DrawRectangleRec(itemRect, {50, 50, 50, 255}); // Hover
+                }
+                
+                DrawText(opt.name.c_str(), itemRect.x + 5, itemRect.y + 5, 10, isSelected ? BLACK : WHITE);
+                
+                // Interaction: Select on Click
+                if (CheckCollisionPointRec(GetMousePosition(), itemRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                    if (isActive) {
+                        state.editor.selectedAppliedFxId = opt.id;
+                        state.editor.selectedAvailableFxId = -1;
+                    } else {
+                        state.editor.selectedAvailableFxId = opt.id;
+                        state.editor.selectedAppliedFxId = -1;
+                    }
+                }
+            }
+            
+            // Add Button (Under Available)
+            Rectangle addBtn = {availBox.x, availBox.y + boxH + 5, boxW, 25};
+            DrawRectangleRec(addBtn, GRAY);
+            DrawText("Add", addBtn.x + boxW/2 - 10, addBtn.y + 5, 10, WHITE);
+            
+            if (CheckCollisionPointRec(GetMousePosition(), addBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                if (state.editor.selectedAvailableFxId != -1) {
+                    bool alreadyActive = std::find(currentStepFX.begin(), currentStepFX.end(), state.editor.selectedAvailableFxId) != currentStepFX.end();
+                    if (!alreadyActive) {
+                        currentStepFX.push_back(state.editor.selectedAvailableFxId);
+                        state.editor.selectedAvailableFxId = -1; // Deselect after add
+                    }
+                }
+            }
+
+            // Remove Button (Under Applied)
+            Rectangle removeBtn = {appliedBox.x, appliedBox.y + boxH + 5, boxW, 25};
+            DrawRectangleRec(removeBtn, GRAY);
+            DrawText("Remove", removeBtn.x + boxW/2 - 20, removeBtn.y + 5, 10, WHITE);
+            
+            if (CheckCollisionPointRec(GetMousePosition(), removeBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                 if (state.editor.selectedAppliedFxId != -1) {
+                     currentStepFX.erase(std::remove(currentStepFX.begin(), currentStepFX.end(), state.editor.selectedAppliedFxId), currentStepFX.end());
+                     state.editor.selectedAppliedFxId = -1; // Deselect after remove
+                 }
+            }
+            
+            // Parameter Panel
+            if (state.editor.selectedAppliedFxId != -1) {
+                float paramPanelY = removeBtn.y + removeBtn.height + 15;
+                DrawText("FX Params:", winRect.x + 20, paramPanelY, 20, WHITE);
+                
+                if (state.editor.selectedAppliedFxId == Pattern::FX_STUTTER) {
+                    // --- RATE CONTROL ---
+                    DrawText("Rate:", winRect.x + 140, paramPanelY, 20, WHITE);
+                    
+                    // Value & Slider
+                    float currentRate = 4.0f;
+                    if (p.stepFXParams[state.editor.selectedStep + 1].count(Pattern::PAR_STUTTER_RATE)) {
+                        currentRate = p.stepFXParams[state.editor.selectedStep + 1][Pattern::PAR_STUTTER_RATE];
+                    }
+                    
+                    // Slider Area
+                    Rectangle rateSlider = {winRect.x + 200, paramPanelY + 5, 150, 10};
+                    DrawRectangleRec(rateSlider, DARKGRAY);
+                    DrawRectangleLinesEx(rateSlider, 1, WHITE);
+                    
+                    // Handle Position
+                    float minRate = 1.0f; float maxRate = 16.0f;
+                    float rateNorm = (currentRate - minRate) / (maxRate - minRate);
+                    if (rateNorm < 0) rateNorm = 0; if (rateNorm > 1) rateNorm = 1;
+                    Rectangle rateHandle = {rateSlider.x + rateNorm * (rateSlider.width - 10), rateSlider.y - 2, 10, 14};
+                    DrawRectangleRec(rateHandle, LIGHTGRAY);
+                    
+                    // Slider Interaction
+                    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+                        Vector2 mouse = GetMousePosition();
+                        if (CheckCollisionPointRec(mouse, {rateSlider.x - 5, rateSlider.y - 5, rateSlider.width + 10, rateSlider.height + 10})) {
+                             float newVal = minRate + ((mouse.x - rateSlider.x) / rateSlider.width) * (maxRate - minRate);
+                             if (newVal < minRate) newVal = minRate;
+                             if (newVal > maxRate) newVal = maxRate;
+                             currentRate = newVal;
+                             p.stepFXParams[state.editor.selectedStep + 1][Pattern::PAR_STUTTER_RATE] = currentRate;
+                        }
+                    }
+                    
+                    // Rate Labels/Readout
+                    DrawText(TextFormat("%.1f", currentRate), rateSlider.x + rateSlider.width + 10, paramPanelY, 10, WHITE);
+                    
+                    // Rate Labels/Readout
+                    DrawText(TextFormat("%.1f", currentRate), rateSlider.x + rateSlider.width + 10, paramPanelY, 10, WHITE);
+
+                    // --- SPEED CONTROL ---
+                    paramPanelY += 35;
+                    DrawText("Speed:", winRect.x + 140, paramPanelY, 20, WHITE);
+                    
+                    // Value & Slider
+                    float currentSpeed = 1.0f;
+                    if (p.stepFXParams[state.editor.selectedStep + 1].count(Pattern::PAR_STUTTER_SPEED)) {
+                        currentSpeed = p.stepFXParams[state.editor.selectedStep + 1][Pattern::PAR_STUTTER_SPEED];
+                    }
+                    
+                    // Slider Area
+                    Rectangle speedSlider = {winRect.x + 200, paramPanelY + 5, 150, 10};
+                    DrawRectangleRec(speedSlider, DARKGRAY);
+                    DrawRectangleLinesEx(speedSlider, 1, WHITE);
+                    
+                    // Handle Position
+                    float minSpeed = 0.5f; float maxSpeed = 4.0f;
+                    float speedNorm = (currentSpeed - minSpeed) / (maxSpeed - minSpeed);
+                    if (speedNorm < 0) speedNorm = 0; if (speedNorm > 1) speedNorm = 1;
+                    Rectangle speedHandle = {speedSlider.x + speedNorm * (speedSlider.width - 10), speedSlider.y - 2, 10, 14};
+                    DrawRectangleRec(speedHandle, LIGHTGRAY);
+                    
+                    // Slider Interaction
+                    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+                        Vector2 mouse = GetMousePosition();
+                        if (CheckCollisionPointRec(mouse, {speedSlider.x - 5, speedSlider.y - 5, speedSlider.width + 10, speedSlider.height + 10})) {
+                             float newVal = minSpeed + ((mouse.x - speedSlider.x) / speedSlider.width) * (maxSpeed - minSpeed);
+                             if (newVal < minSpeed) newVal = minSpeed;
+                             if (newVal > maxSpeed) newVal = maxSpeed;
+                             currentSpeed = newVal;
+                             p.stepFXParams[state.editor.selectedStep + 1][Pattern::PAR_STUTTER_SPEED] = currentSpeed;
+                        }
+                    }
+                    
+                    // Speed Readout
+                    DrawText(TextFormat("%.2f", currentSpeed), speedSlider.x + speedSlider.width + 10, paramPanelY, 10, WHITE);
+                } else {
+                     DrawText("No params", winRect.x + 140, paramPanelY, 20, GRAY);
+                }
+            }
+            
+            // Cleanup empty entries map?
+            if (currentStepFX.empty()) {
+                p.stepFX.erase(state.editor.selectedStep + 1);
+            }
+            
+            startY += boxH + 110; // Adjust layout spacing (less space needed without buttons)
+            
+        } else {
+             DrawText("Select an active step to edit FX", winRect.x + 20, startY + 25, 20, GRAY);
+             startY += 40;
+        }
+        
+        // Remove extra spacing added before
+        // startY += 80; <-- Removed from previous logic
+        startY += 10;
+        startY += 50;
+    }
     
     // Update Content Height
     state.editor.contentHeight = (startY + 50) - (winRect.y + 60) + state.editor.scrollOffsetY; 
@@ -696,7 +1014,13 @@ void GuiRenderer::DrawPatternEditor() {
         
         p.activeSteps.clear();
         for (int i=0; i<64; ++i) {
-            if (state.editor.stepStates[i]) p.activeSteps.push_back(i+1);
+            if (state.editor.stepStates[i]) {
+                p.activeSteps.push_back(i+1);
+                // Pitch/Vel/FX are already updated in real-time in the editor struct's pattern copy,
+                // but we need to ensure the logic here doesn't overwrite/lose them if we were reconstructing fully.
+                // Actually 'p' IS state.editor.currentPattern, so the maps are already there.
+                // We just need to make sure activeSteps matches stepStates.
+            }
         }
         
         // Register new pattern data
@@ -722,6 +1046,9 @@ void GuiRenderer::DrawPatternEditor() {
         state.editor.showFileBrowser = false;
         state.editor.focusedFieldId = -1;
     }
+    
+    // Draw Outline Last (to cover footer overlap)
+    DrawRectangleLinesEx(winRect, 2, LIGHTGRAY);
 }
 
 void GuiRenderer::DrawPatternBox(const std::string& name, Rectangle bounds, bool selected) {
@@ -794,7 +1121,7 @@ void GuiRenderer::DrawTransportBar() {
     Rectangle playRect = {centerX - 60, rect.y + 10, 40, 40};
     DrawRectangleRec(playRect, state.isPlaying ? GREEN : GRAY);
     DrawText(">", playRect.x + 15, playRect.y + 10, 20, BLACK);
-    if (CheckCollisionPointRec(GetMousePosition(), playRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), playRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         if (!state.activePatterns.empty()) {
             std::vector<std::string> names;
             for (const auto& pair : state.activePatterns) names.push_back(pair.second);
@@ -806,13 +1133,18 @@ void GuiRenderer::DrawTransportBar() {
     Rectangle stopRect = {centerX, rect.y + 10, 40, 40};
     DrawRectangleRec(stopRect, RED);
     DrawRectangle(stopRect.x + 10, stopRect.y + 10, 20, 20, WHITE);
-    if (CheckCollisionPointRec(GetMousePosition(), stopRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), stopRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         engine.stop();
     }
     
     // BPM
     DrawText("BPM:", centerX + 100, rect.y + 10, 20, LIGHTGRAY);
-    DrawTextInput({centerX + 150, rect.y + 10, 60, 25}, state.globalBpmBuffer, 5, 999, state.focusedFieldId);
+    if (!state.editor.isOpen) {
+        DrawTextInput({centerX + 150, rect.y + 10, 60, 25}, state.globalBpmBuffer, 5, 999, state.focusedFieldId);
+    } else {
+        DrawRectangleRec({centerX + 150, rect.y + 10, 60, 25}, LIGHTGRAY);
+        DrawText(state.globalBpmBuffer, centerX + 155, rect.y + 15, 20, BLACK);
+    }
     
     // Process BPM change on Enter or Focus loss (simplified: just parse every frame if valid)
     // Or just on Enter?

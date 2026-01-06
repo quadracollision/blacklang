@@ -77,6 +77,15 @@ private:
         bool sampleIsPlaying = false;
         double currentSpeedRatio = 1.0;
         float currentVelocity = 1.0f;
+        
+        // Slide / Portamento
+        bool isSliding = false;
+        double slideTargetRatio = 1.0;
+        double slideStepIncrement = 0.0;
+        
+        // Stutter State
+        bool isStuttering = false;
+        int stutterIntervalSamples = 0;
     };
     std::map<std::string, PatternPlayState> patternStates;
     
