@@ -8,8 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(FetchContent)
 FetchContent_Declare(
     JUCE
-    GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
-    GIT_TAG 7.0.9
+    SOURCE_DIR /home/jac/src/the_programmer/build/_deps/juce-src
 )
 FetchContent_MakeAvailable(JUCE)
 
@@ -76,8 +75,7 @@ target_link_libraries(blacklang-gui
 # Raylib GUI executable
 FetchContent_Declare(
     raylib
-    GIT_REPOSITORY https://github.com/raysan5/raylib.git
-    GIT_TAG 5.0
+    SOURCE_DIR /home/jac/src/the_programmer/build/_deps/raylib-src
 )
 FetchContent_MakeAvailable(raylib)
 

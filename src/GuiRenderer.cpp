@@ -560,8 +560,8 @@ void GuiRenderer::DrawPatternEditor() {
     // Window
     Rectangle winRect = {
         (float)GetScreenWidth()/2 - 250, 
-        (float)GetScreenHeight()/2 - 200, 
-        500, 400
+        (float)GetScreenHeight()/2 - 275, 
+        500, 550
     };
     DrawRectangleRec(winRect, Color{30, 30, 30, 255});
     DrawRectangleRec(winRect, Color{30, 30, 30, 255});
@@ -711,14 +711,21 @@ void GuiRenderer::DrawPatternEditor() {
     int cols = std::min(16, stepCount);
     int rows = (stepCount + cols - 1) / cols;
     float cellW = gridRect.width / cols;
-    float cellH = gridRect.height / rows;
-    float stepSize = std::min(cellW, cellH) * 0.9f;
+    
+    // Make steps tighter and stacked vertically with slight padding
+    float stepSize = cellW * 0.95f; // 5% horizontal gap
+    float verticalGap = 4.0f;
+    float gridHeight = rows * stepSize + (rows > 0 ? (rows - 1) * verticalGap : 0); 
+    
+    // Update gridRect height to match content
+    gridRect.height = gridHeight;
+    float cellH = stepSize; 
     
     for (int i = 0; i < stepCount; ++i) {
         int col = i % cols;
         int row = i / cols;
         float x = gridRect.x + col * cellW + (cellW - stepSize)/2;
-        float y = gridRect.y + row * cellH + (cellH - stepSize)/2;
+        float y = gridRect.y + row * (stepSize + verticalGap); // Stacked with gap
         
         bool active = state.editor.stepStates[i];
         Color c = active ? RED : DARKGRAY;
@@ -966,7 +973,7 @@ void GuiRenderer::DrawPatternEditor() {
         }
     }
     
-    startY += 160; 
+    startY += gridHeight + 20; // Dynamic spacing based on grid height 
     
     // Melodic Controls (NOW BELOW GRID)
     if (state.editor.showMelodicControls) {
