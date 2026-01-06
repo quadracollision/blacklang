@@ -429,7 +429,24 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                              state.filter.reset();
                         }
                         
-                        currentSample = sample * state.currentVelocity;
+                        // --- ANTI-CLICK ENVELOPE (1-2ms fade-in/out) ---
+                        // ~88 samples at 44.1kHz is ~2ms
+                        const int fadeInSamples = 88;
+                        const int fadeOutSamples = 88;
+                        int totalSamples = pattern.sampleBuffer.getNumSamples();
+                        float envelope = 1.0f;
+                        
+                        // Fade-in at start
+                        if (sampleIdx < fadeInSamples) {
+                            envelope = (float)sampleIdx / (float)fadeInSamples;
+                        }
+                        // Fade-out at end
+                        else if (sampleIdx >= totalSamples - fadeOutSamples) {
+                            int samplesRemaining = totalSamples - sampleIdx;
+                            envelope = (float)samplesRemaining / (float)fadeOutSamples;
+                        }
+                        
+                        currentSample = sample * state.currentVelocity * envelope;
                      }
 
                      for (int ch = 0; ch < numOutputChannels; ++ch) {
@@ -509,9 +526,24 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
         
         // Mix sample if playing
         if (sampleIsPlaying && samplePlaybackPosition < pattern->sampleBuffer.getNumSamples() && samplePlaybackPosition < samplePlaybackEnd) {
+            // --- ANTI-CLICK ENVELOPE (1-2ms fade-in/out) ---
+            const int fadeInSamples = 88;
+            const int fadeOutSamples = 88;
+            int totalSamples = pattern->sampleBuffer.getNumSamples();
+            int sampleIdx = (int)samplePlaybackPosition;
+            float envelope = 1.0f;
+            
+            if (sampleIdx < fadeInSamples) {
+                envelope = (float)sampleIdx / (float)fadeInSamples;
+            }
+            else if (sampleIdx >= totalSamples - fadeOutSamples) {
+                int samplesRemaining = totalSamples - sampleIdx;
+                envelope = (float)samplesRemaining / (float)fadeOutSamples;
+            }
+            
             for (int ch = 0; ch < numOutputChannels; ++ch) {
                 int srcCh = std::min(ch, pattern->sampleBuffer.getNumChannels() - 1);
-                outputChannelData[ch][i] += pattern->sampleBuffer.getSample(srcCh, (int)samplePlaybackPosition);
+                outputChannelData[ch][i] += pattern->sampleBuffer.getSample(srcCh, sampleIdx) * envelope;
             }
             samplePlaybackPosition++;
         }
