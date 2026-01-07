@@ -12,6 +12,10 @@ struct Pattern {
     int steps = 16;
     std::vector<int> activeSteps;  // 1-indexed step positions
     std::vector<int> sliceMarkers; // Sample indices for slice points
+    
+    // Mixer Properties
+    float volume = 1.0f;
+    float pan = 0.5f; // 0.0=Left, 0.5=Center, 1.0=Right
 
     std::map<int, int> stepPitches; // Step (1-indexed) -> Semitone Offset (relative to C4/Root)
     std::map<int, float> stepVelocities; // Step (1-indexed) -> Velocity [0.0 - 1.0]

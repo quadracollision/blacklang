@@ -25,7 +25,7 @@ private:
     GuiState& state;
     AudioEngine& engine;
     
-    void HandlePatternClick(int colIndex, int slotIndex, const std::string& patternName);
+    void HandlePatternClick(int colIndex, int slotIndex, const std::string& patternName, Rectangle cellRect);
     void HandleAddPattern(int colIndex, PatternColumn& col);
 };
 

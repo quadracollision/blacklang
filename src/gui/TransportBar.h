@@ -25,6 +25,7 @@ private:
     void DrawEditShift();
     void DrawSettingsButton();
     void DrawSettingsPopup();
+    void DrawRecording();
 };
 
 } // namespace gui

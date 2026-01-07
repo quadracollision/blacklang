@@ -4,6 +4,7 @@
 #include "PatternChain.h"
 #include "SharedAudioStructs.h"
 #include "fx/FXProcessor.h"
+#include "AudioRecorder.h"
 #include <juce_audio_devices/juce_audio_devices.h>
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <map>
@@ -47,6 +48,11 @@ public:
     std::vector<std::string> getAvailableOutputDevices();
     std::string getCurrentOutputDevice();
     bool setOutputDevice(const std::string& deviceName);
+
+    // Recording
+    void startRecording(const std::string& filename, bool stems);
+    void stopRecording();
+    bool isRecording();
     
     // AudioIODeviceCallback
     void audioDeviceIOCallbackWithContext(
@@ -97,6 +103,9 @@ private:
     // FX
     fx::FXProcessor fxProcessor;
     
+    // Recorder
+    AudioRecorder mainRecorder;
+
     // Internal method to process a sample block
     // ...
 };

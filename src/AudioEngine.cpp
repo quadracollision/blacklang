@@ -471,6 +471,21 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
         } // Close for i
     
     // If we processed multi-patterns, we are done.
+    // Process FX for the entire block (limiter/bus compression?)
+    // For now just clip protection
+    for (int ch = 0; ch < numOutputChannels; ++ch) {
+        for (int i = 0; i < numSamples; ++i) {
+            float val = outputChannelData[ch][i] * 0.8f; // Headroom
+            if (val > 1.0f) val = 1.0f;
+            if (val < -1.0f) val = -1.0f;
+            outputChannelData[ch][i] = val;
+        }
+    }
+    
+    // Send to Recorder
+    if (mainRecorder.isRecording()) {
+        mainRecorder.writeBlock(outputChannelData, numSamples, numOutputChannels);
+    }
     return;
 }
     
@@ -533,9 +548,32 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                 envelope = (float)samplesRemaining / (float)fadeOutSamples;
             }
             
+            // Calculate Gain based on Volume and Pan
+            float vol = pattern->volume;
+            float pan = pattern->pan;
+            
+            // Stereo Panning (Simple Linear)
+            float leftGain = vol * (1.0f - pan) * 2.0f; // *2 to maintain power at center roughly
+            float rightGain = vol * pan * 2.0f;
+            
+            // Allow over 1.0 slightly if needed, but clamp pan
+            if (pan < 0.0f) pan = 0.0f;
+            if (pan > 1.0f) pan = 1.0f;
+            
             for (int ch = 0; ch < numOutputChannels; ++ch) {
+                // Determine gain for this channel
+                float gain = 1.0f;
+                if (numOutputChannels >= 2) {
+                    if (ch == 0) gain = leftGain;
+                    else if (ch == 1) gain = rightGain;
+                    else gain = vol; // Aux channels get mono mix
+                } else {
+                    gain = vol; // Mixing down
+                }
+                
+                // Mix
                 int srcCh = std::min(ch, pattern->sampleBuffer.getNumChannels() - 1);
-                outputChannelData[ch][i] += pattern->sampleBuffer.getSample(srcCh, sampleIdx) * envelope;
+                outputChannelData[ch][i] += pattern->sampleBuffer.getSample(srcCh, sampleIdx) * envelope * gain;
             }
             samplePlaybackPosition++;
         }
@@ -612,4 +650,20 @@ void AudioEngine::triggerSample(Pattern& pattern, int step) {
     } else {
         sampleIsPlaying = false; // Fallback to silence if invalid
     }
+}
+
+void AudioEngine::startRecording(const std::string& filename, bool stems) {
+    std::string path = "recordings/" + filename + ".wav";
+    if (stems) {
+         path = "recordings/" + filename + "_mix.wav";
+    }
+    mainRecorder.start(path, sampleRate, 2);
+}
+
+void AudioEngine::stopRecording() {
+    mainRecorder.stop();
+}
+
+bool AudioEngine::isRecording() {
+    return mainRecorder.isRecording();
 }

@@ -25,7 +25,9 @@ FetchContent_MakeAvailable(raylib)
 add_executable(blacklang-raylib
     src/main_raylib.cpp
     src/GuiRenderer.cpp
+
     src/AudioEngine.cpp
+    src/AudioRecorder.cpp
     src/ProjectFile.cpp
     src/tinyfiledialogs.c
     src/gui/Widgets.cpp
@@ -35,6 +37,7 @@ add_executable(blacklang-raylib
     src/gui/TrackView.cpp
     src/gui/PatternEditor.cpp
     src/gui/FXControls.cpp
+    src/gui/TrackFX.cpp
     src/fx/FXProcessor.cpp
 )
 

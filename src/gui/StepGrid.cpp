@@ -10,7 +10,12 @@ void DrawPatternBox(const std::string& name, Rectangle bounds, bool selected, in
     DrawRectangleRec(bounds, bgColor);
     DrawRectangleLinesEx(bounds, 1.0f, selected ? WHITE : GRAY);
     
-    DrawText(name.c_str(), bounds.x + 5, bounds.y + 5, 10, WHITE);
+    // Title Bar for Pattern
+    Rectangle titleBar = {bounds.x, bounds.y, bounds.width, 22};
+    DrawRectangleRec(titleBar, Color{20, 20, 20, 255}); // Solid Black Header
+    // DrawRectangleLinesEx(titleBar, 1, Color{200, 200, 200, 255}); // No Border requested
+    
+    DrawText(name.c_str(), bounds.x + 5, bounds.y + 2, 20, WHITE); // Size 20!
 }
 
 void DrawStepGrid(Rectangle bounds, const Pattern& pattern, int activeStep, GuiState& state) {

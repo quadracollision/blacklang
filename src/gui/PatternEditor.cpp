@@ -158,7 +158,10 @@ void PatternEditor::Draw() {
     DrawText("Melodic", melodyToggleRect.x + 8, melodyToggleRect.y + 5, 10, WHITE);
     if (CheckCollisionPointRec(GetMousePosition(), melodyToggleRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.editor.showMelodicControls = !state.editor.showMelodicControls;
-        if (state.editor.showMelodicControls) state.editor.showFxControls = false; // Exclusive
+        if (state.editor.showMelodicControls) {
+            state.editor.showFxControls = false; // Exclusive
+            state.editor.showSlicerControls = false;
+        }
     }
 
     // FX Toggle (Below Melodic)

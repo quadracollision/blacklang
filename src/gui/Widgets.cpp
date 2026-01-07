@@ -13,6 +13,12 @@ void DrawTextInput(Rectangle rect, char* buffer, size_t maxLen, int fieldId, int
     DrawText(buffer, rect.x + 5, rect.y + 5, 20, BLACK);
     
     if (isFocused) {
+        // Blinking Cursor
+        if ((int)(GetTime() * 2) % 2 == 0) {
+            int textW = MeasureText(buffer, 20);
+            DrawLine(rect.x + 5 + textW + 2, rect.y + 5, rect.x + 5 + textW + 2, rect.y + 25, BLACK);
+        }
+
         int key = GetCharPressed();
         while (key > 0) {
             if ((key >= 32) && (key <= 125) && (strlen(buffer) < maxLen)) {

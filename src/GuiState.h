@@ -11,6 +11,11 @@ struct PatternColumn {
     std::vector<std::string> patternNames;
     Rectangle bounds;
     float scrollY = 0.0f;
+    
+    // Mixer Mode State
+    bool mixerMode = false;
+    float volume = 1.0f;
+    float pan = 0.5f;
 };
 
 struct DragState {
@@ -103,8 +108,18 @@ struct TrackClipboard {
     bool isPasteMode = false;
 };
 
+enum class PopupType { None, Main, Audio, Project };
+
+struct RecordingState {
+    bool showControls = false;
+    bool isRecording = false;
+    bool recordStems = false; // false = Whole, true = Stems
+    char filenameBuffer[64] = "recording";
+};
+
 struct SettingsState {
-    bool showSettingsMenu = false;
+    PopupType activePopup = PopupType::None;
+    bool showSettingsMenu = false; // Legacy/Global toggle used by main loop if any
     std::vector<std::string> availableOutputDevices;
     std::string currentDevice;
     int selectedDeviceIndex = 0;
@@ -118,6 +133,7 @@ struct GuiState {
     PatternEditorState editor;
     TrackClipboard trackClipboard; // For copy/paste patterns in track view
     SettingsState settings; // Audio device settings
+    RecordingState recorder;
     
     // Column Renaming
     int renamingColumnIndex = -1;
@@ -138,16 +154,16 @@ struct GuiState {
     PatternChain activeChain; // Current Chain or Song Sequence
     
     // UI Layout
-    const int COLUMN_WIDTH = 160;
+    const int COLUMN_WIDTH = 220; // Increased from 160
     const int PATTERN_HEIGHT = 90;
     const int HEADER_HEIGHT = 60;
     const int FOOTER_HEIGHT = 60;
     
     void initDemo() {
         // Add some default columns
-        columns.push_back({"Drums", {}, {0, 0, 0, 0}});
-        columns.push_back({"Bass", {}, {0, 0, 0, 0}});
-        columns.push_back({"Leads", {}, {0, 0, 0, 0}});
+        columns.push_back({"Drums", std::vector<std::string>(16, ""), {0, 0, 0, 0}});
+        columns.push_back({"Bass", std::vector<std::string>(16, ""), {0, 0, 0, 0}});
+        columns.push_back({"Leads", std::vector<std::string>(16, ""), {0, 0, 0, 0}});
     }
     
     int patternIdCounter = 1;
