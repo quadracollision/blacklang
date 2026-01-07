@@ -27,6 +27,60 @@ void AudioEngine::shutdown() {
     deviceManager.closeAudioDevice();
 }
 
+std::vector<std::string> AudioEngine::getAvailableOutputDevices() {
+    std::vector<std::string> devices;
+    
+    auto* currentDevice = deviceManager.getCurrentAudioDevice();
+    if (currentDevice) {
+        auto deviceNames = currentDevice->getOutputChannelNames();
+        // Get actual device names from device type
+        auto* deviceType = deviceManager.getCurrentDeviceTypeObject();
+        if (deviceType) {
+            auto deviceNameArray = deviceType->getDeviceNames(false); // false = output devices
+            for (const auto& name : deviceNameArray) {
+                devices.push_back(name.toStdString());
+            }
+        }
+    }
+    
+    // Fallback: try to get from available device types
+    if (devices.empty()) {
+        for (auto* deviceType : deviceManager.getAvailableDeviceTypes()) {
+            auto deviceNameArray = deviceType->getDeviceNames(false);
+            for (const auto& name : deviceNameArray) {
+                devices.push_back(name.toStdString());
+            }
+        }
+    }
+    
+    return devices;
+}
+
+std::string AudioEngine::getCurrentOutputDevice() {
+    auto* device = deviceManager.getCurrentAudioDevice();
+    if (device) {
+        return device->getName().toStdString();
+    }
+    return "";
+}
+
+bool AudioEngine::setOutputDevice(const std::string& deviceName) {
+    // Save callback state
+    deviceManager.removeAudioCallback(this);
+    
+    // Get current audio device setup
+    auto setup = deviceManager.getAudioDeviceSetup();
+    setup.outputDeviceName = juce::String(deviceName);
+    
+    // Apply new setup
+    auto result = deviceManager.setAudioDeviceSetup(setup, true);
+    
+    // Re-add callback
+    deviceManager.addAudioCallback(this);
+    
+    return result.isEmpty();
+}
+
 bool AudioEngine::loadSample(Pattern& pattern) {
     juce::File file(pattern.samplePath);
     if (!file.existsAsFile()) {
@@ -68,11 +122,19 @@ void AudioEngine::playPattern(const std::string& name) {
     }
     
     currentPatternName = name;
+    activePatternNames.clear(); // CRITICAL FIX: Ensure we exit multi-pattern mode
     currentChain.clear();
     chainIndex = 0;
     currentStep = 0;
+    
+    // FIX: Initialize to negative duration so first step triggers immediately
+    double dur = 0.0;
+    if (patterns.find(name) != patterns.end()) {
+        dur = patterns[name].getStepDurationSamples(globalBpm.load());
+    }
+    stepStartSample = -(int64_t)dur;
     samplePosition = 0;
-    stepStartSample = 0;
+
     samplePlaybackPosition = 0;
     sampleIsPlaying = false;
     playing.store(true);
@@ -89,8 +151,15 @@ void AudioEngine::playChain(const PatternChain& chain) {
     chainIndex = 0;
     currentPatternName = chain.getPatterns()[0];
     currentStep = 0;
+    
+    // FIX: Initialize to negative duration so first step triggers immediately
+    double dur = 0.0;
+    if (patterns.find(currentPatternName) != patterns.end()) {
+        dur = patterns[currentPatternName].getStepDurationSamples(globalBpm.load());
+    }
+    stepStartSample = -(int64_t)dur;
     samplePosition = 0;
-    stepStartSample = 0;
+
     samplePlaybackPosition = 0;
     sampleIsPlaying = false;
     activePatternNames.clear();
@@ -112,6 +181,11 @@ void AudioEngine::playMultiplePatterns(const std::vector<std::string>& names) {
     for (const auto& name : names) {
         if (patterns.find(name) != patterns.end()) {
             PatternPlayState state;
+            // FIX: Initialize to ensure Step 1 triggers immediately
+            state.currentStep = 0; 
+            double dur = patterns[name].getStepDurationSamples(globalBpm.load());
+            state.stepStartSample = -(int64_t)dur;
+            state.samplePosition = 0;
             patternStates[name] = state;
         }
     }
@@ -209,6 +283,12 @@ int AudioEngine::getPatternProgress(const std::string& name) {
     if (patternStates.count(name)) {
         return patternStates[name].currentStep;
     }
+    
+    // FIX: Fallback for Single Pattern / Chain Mode
+    if (activePatternNames.empty() && name == currentPatternName) {
+        return currentStep;
+    }
+
     return -1;
 }
 
@@ -351,6 +431,26 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                                       state.stutterIntervalSamples = (int)(stepDur / rate);
                                       if (state.stutterIntervalSamples < 100) state.stutterIntervalSamples = 100;
                                  }
+                                 else if (fx == Pattern::FX_SLICE) {
+                                      // SLICE FX: Set playback start position to slice marker
+                                      if (pattern.stepFXParams.count(state.currentStep) &&
+                                          pattern.stepFXParams.at(state.currentStep).count(Pattern::PAR_SLICE_INDEX)) {
+                                          int sliceIdx = (int)pattern.stepFXParams.at(state.currentStep).at(Pattern::PAR_SLICE_INDEX);
+                                          
+                                          if (sliceIdx >= 0 && sliceIdx < (int)pattern.sliceMarkers.size()) {
+                                              state.samplePlaybackPosition = (double)pattern.sliceMarkers[sliceIdx];
+                                              
+                                              // Set end position for cutoff mode
+                                              if (pattern.stepFXParams.at(state.currentStep).count(Pattern::PAR_SLICE_CUTOFF)) {
+                                                  float cutoff = pattern.stepFXParams.at(state.currentStep).at(Pattern::PAR_SLICE_CUTOFF);
+                                                  if (cutoff > 0.5f && sliceIdx + 1 < (int)pattern.sliceMarkers.size()) {
+                                                      state.sliceEndPosition = pattern.sliceMarkers[sliceIdx + 1];
+                                                      state.stopAtSliceEnd = true;
+                                                  }
+                                              }
+                                          }
+                                      }
+                                 }
                              }
                         }
                     }
@@ -460,27 +560,7 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
     
     // If we processed multi-patterns, we are done.
     return;
-} // Close if activePatternNames not empty (Wait, if I return, I don't need else. But I need to close the IF)
-
-// Actually, I want to return from FUNCTION if multi-pattern was handled?
-// If I close 'if', then execution continues to legacy.
-// So:
-// } // Close Loop
-// return;
-// } // Close partial logic?
-
-// Let's look at the START again.
-// if (!activePatternNames.empty()) {
-//    for (...) ...
-//    return;
-// }
-
-// So I need:
-// } (Close 360 if)
-// } (Close 249 for patName)
-// } (Close 248 for i)
-// return;
-// } (Close 247 if)
+}
     
     // Single pattern / chain mode (legacy)
     Pattern* pattern = nullptr;
@@ -565,6 +645,7 @@ void AudioEngine::triggerSample(Pattern& pattern, int step) {
     // > 0.5 = Offset Start (Cut Attack)
     // < 0.5 = Offset End (Cut Tail / Gate)
     
+
     if (pattern.stepFX.count(step)) {
         for (int fxId : pattern.stepFX[step]) {
             if (fxId == Pattern::FX_NUDGE) {
@@ -582,12 +663,41 @@ void AudioEngine::triggerSample(Pattern& pattern, int step) {
                      }
                  }
             }
+            else if (fxId == Pattern::FX_SLICE) {
+                 if (pattern.stepFXParams[step].count(Pattern::PAR_SLICE_INDEX)) {
+                     int sliceIdx = (int)pattern.stepFXParams[step][Pattern::PAR_SLICE_INDEX];
+                     
+                     // Safety Bounds Check
+                     if (sliceIdx >= 0 && sliceIdx < (int)pattern.sliceMarkers.size()) {
+                         startPos = pattern.sliceMarkers[sliceIdx];
+                         
+                         // Determine end pos (next marker or end)
+                         if (sliceIdx + 1 < (int)pattern.sliceMarkers.size()) {
+                             endPos = pattern.sliceMarkers[sliceIdx + 1];
+                         } else {
+                             endPos = totalSamples;
+                         }
+                         
+                         // Handle cutoff
+                         bool cutoff = false;
+                         if (pattern.stepFXParams[step].count(Pattern::PAR_SLICE_CUTOFF)) {
+                             cutoff = (pattern.stepFXParams[step][Pattern::PAR_SLICE_CUTOFF] > 0.5f);
+                         }
+                         if (!cutoff) {
+                             endPos = totalSamples;
+                         }
+                     }
+                 }
+            }
         }
     }
     
-    // Set Playback State
-    samplePlaybackPosition = startPos;
-    samplePlaybackEnd = endPos;
-    sampleIsPlaying = true;
+    // Set Playback State - Add robust checks
+    if (startPos >= 0 && startPos < totalSamples && endPos > startPos && endPos <= totalSamples) {
+        samplePlaybackPosition = startPos;
+        samplePlaybackEnd = endPos;
+        sampleIsPlaying = true;
+    } else {
+        sampleIsPlaying = false; // Fallback to silence if invalid
+    }
 }
-

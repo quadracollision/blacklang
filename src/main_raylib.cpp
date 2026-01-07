@@ -4,13 +4,6 @@
 #include <iostream>
 
 int main() {
-    // Init Audio first
-    AudioEngine audio;
-    if (!audio.initialize()) {
-        std::cerr << "Failed to init audio" << std::endl;
-        return 1;
-    }
-    
     // Init Raylib
     const int screenWidth = 1000;
     const int screenHeight = 700;
@@ -18,6 +11,13 @@ int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(screenWidth, screenHeight, "Quadracollision BlackLang");
     SetTargetFPS(60);
+
+    // Init Audio AFTER Raylib to avoid device conflict
+    AudioEngine audio;
+    if (!audio.initialize()) {
+        std::cerr << "Failed to init audio" << std::endl;
+        return 1;
+    }
     
     // Init State
     GuiState state;

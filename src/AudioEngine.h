@@ -41,6 +41,11 @@ public:
     void setBPM(int newBpm) { globalBpm.store(newBpm); }
     int getBPM() const { return globalBpm.load(); }
     
+    // Audio Device Management
+    std::vector<std::string> getAvailableOutputDevices();
+    std::string getCurrentOutputDevice();
+    bool setOutputDevice(const std::string& deviceName);
+    
     // AudioIODeviceCallback
     void audioDeviceIOCallbackWithContext(
         const float* const* inputChannelData,
@@ -63,6 +68,7 @@ private:
     // Playback state
     std::atomic<bool> playing{false};
     std::atomic<bool> paused{false};
+    std::atomic<uint64_t> audioFrameCount{0}; // Heartbeat counter
     std::string currentPatternName;
     PatternChain currentChain;
     int chainIndex = 0;
@@ -75,6 +81,9 @@ private:
         int64_t stepStartSample = 0;
         double samplePlaybackPosition = 0.0;
         int64_t sampleEndPosition = 0; // For Nudge/Crop FX
+        int64_t sliceEndPosition = -1; // -1 if not slicing or play through
+        bool stopAtSliceEnd = false; 
+        int64_t fadeInSamplesRemaining = 0; // For 2ms fade-in (88 samples at 44100Hz)
         bool sampleIsPlaying = false;
         double currentSpeedRatio = 1.0;
         float currentVelocity = 1.0f;
@@ -115,6 +124,8 @@ private:
             stepStartSample = 0;
             samplePlaybackPosition = 0.0;
             sampleEndPosition = 0;
+            sliceEndPosition = -1;
+            stopAtSliceEnd = false;
             sampleIsPlaying = false;
             currentSpeedRatio = 1.0;
             currentVelocity = 1.0f;

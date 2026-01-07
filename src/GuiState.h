@@ -84,8 +84,15 @@ struct PatternEditorState {
     bool showFxControls = false;
     int selectedStep = -1; // 0-63
     int currentFxType = 0; // 0=None, 1=CutOff
-    int selectedAvailableFxId = -1;
     int selectedAppliedFxId = -1;
+    int selectedAvailableFxId = -1;
+    
+    // Slicer Mode State
+    bool showSlicerControls = false;
+    int selectedSliceIndex = 0;
+    bool slicerCutoffEnabled = false;
+    float waveformZoom = 1.0f;    // 1.0 = fit to view, >1 = zoomed in
+    float waveformScrollX = 0.0f; // 0.0-1.0 scroll position (normalized)
 };
 
 // Track-level pattern clipboard (for copy/paste in track view)
@@ -96,6 +103,13 @@ struct TrackClipboard {
     bool isPasteMode = false;
 };
 
+struct SettingsState {
+    bool showSettingsMenu = false;
+    std::vector<std::string> availableOutputDevices;
+    std::string currentDevice;
+    int selectedDeviceIndex = 0;
+};
+
 struct GuiState {
     std::vector<PatternColumn> columns;
     std::map<int, int> activePatternSlots; // Column Index -> Slot Index (which pattern in that column is selected)
@@ -103,6 +117,7 @@ struct GuiState {
     DragState drag;
     PatternEditorState editor;
     TrackClipboard trackClipboard; // For copy/paste patterns in track view
+    SettingsState settings; // Audio device settings
     
     // Column Renaming
     int renamingColumnIndex = -1;

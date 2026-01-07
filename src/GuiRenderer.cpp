@@ -627,6 +627,10 @@ void GuiRenderer::DrawPatternEditor() {
 
          if (filePath) {
              strcpy(state.editor.samplePathBuffer, filePath);
+             // Load sample immediately into editor's pattern for waveform display
+             state.editor.currentPattern.samplePath = filePath;
+             state.editor.currentPattern.sliceMarkers.clear(); // Clear old slices on new load
+             engine.loadSample(state.editor.currentPattern);
          }
     }
     
@@ -676,6 +680,7 @@ void GuiRenderer::DrawPatternEditor() {
              if (state.editor.stepStates[state.editor.selectedStep]) {
                  Pattern& pat = state.editor.currentPattern;
                  pat.stepVelocities[state.editor.selectedStep + 1] = state.editor.currentVelocity;
+                 engine.addPattern(pat); // SYNC
              }
          }
     }
@@ -696,10 +701,25 @@ void GuiRenderer::DrawPatternEditor() {
     DrawText("FX", fxToggleRect.x + 15, fxToggleRect.y + 5, 10, WHITE);
     if (CheckCollisionPointRec(GetMousePosition(), fxToggleRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.editor.showFxControls = !state.editor.showFxControls;
-        if (state.editor.showFxControls) state.editor.showMelodicControls = false; // Exclusive
+        if (state.editor.showFxControls) {
+            state.editor.showMelodicControls = false;
+            state.editor.showSlicerControls = false;
+        }
     }
     
-    startY += 80; // Increased spacing to accommodate two rows of buttons 
+    // Slicer Toggle (Below FX)
+    Rectangle slicerToggleRect = {winRect.x + 380, startY + 70, 80, 30};
+    DrawRectangleRec(slicerToggleRect, state.editor.showSlicerControls ? GREEN : DARKGRAY);
+    DrawText("Slicer", slicerToggleRect.x + 15, slicerToggleRect.y + 5, 10, WHITE);
+    if (CheckCollisionPointRec(GetMousePosition(), slicerToggleRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        state.editor.showSlicerControls = !state.editor.showSlicerControls;
+        if (state.editor.showSlicerControls) {
+            state.editor.showMelodicControls = false;
+            state.editor.showFxControls = false;
+        }
+    }
+    
+    startY += 110; // Increased spacing to accommodate toggle buttons and prevent overlap 
     
     // Editor Grid (Moved ABOVE Keyboard)
     Pattern& p = state.editor.currentPattern;
@@ -743,6 +763,17 @@ void GuiRenderer::DrawPatternEditor() {
                 else if (hasStutter) c = GOLD;
                 else if (hasSlide) c = SKYBLUE;
                 else c = PURPLE; // Future FX?
+            }
+
+        }
+        
+        // Slicer Color Override
+        if (active && state.editor.showSlicerControls) {
+            if (p.stepFX.count(i+1)) {
+                 const auto& fxList = p.stepFX.at(i+1);
+                 if (std::find(fxList.begin(), fxList.end(), Pattern::FX_SLICE) != fxList.end()) {
+                     c = GREEN;
+                 }
             }
         }
         
@@ -817,6 +848,22 @@ void GuiRenderer::DrawPatternEditor() {
             DrawText(pText, x + stepSize/2 - MeasureText(pText, fontSize)/2, y + stepSize/2 - fontSize/2, fontSize, BLACK);
         }
         
+        // Draw Slice Index on step (if FX_SLICE is present)
+        if (active && p.stepFX.count(i+1)) {
+            const auto& fxList = p.stepFX.at(i+1);
+            if (std::find(fxList.begin(), fxList.end(), Pattern::FX_SLICE) != fxList.end()) {
+                if (p.stepFXParams.count(i+1) && p.stepFXParams.at(i+1).count(Pattern::PAR_SLICE_INDEX)) {
+                    int sliceIdx = (int)p.stepFXParams.at(i+1).at(Pattern::PAR_SLICE_INDEX);
+                    char sText[8];
+                    snprintf(sText, 8, "S%d", sliceIdx);
+                    int fontSize = (int)(stepSize * 0.35f);
+                    if (fontSize < 8) fontSize = 8;
+                    // Draw at bottom-right corner
+                    DrawText(sText, x + stepSize - MeasureText(sText, fontSize) - 2, y + stepSize - fontSize - 2, fontSize, YELLOW);
+                }
+            }
+        }
+        
         bool inViewport = CheckCollisionPointRec(GetMousePosition(), {winRect.x, winRect.y+50, winRect.width, winRect.height-100});
         
         if (inViewport && CheckCollisionPointRec(GetMousePosition(), stepRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -885,6 +932,8 @@ void GuiRenderer::DrawPatternEditor() {
                 if (!state.editor.clipboard.fxParams.empty()) p.stepFXParams[step] = state.editor.clipboard.fxParams;
                 else p.stepFXParams.erase(step);
                 
+                engine.addPattern(p); // SYNC
+                
                 continue; // Don't toggle
             }
             
@@ -931,9 +980,38 @@ void GuiRenderer::DrawPatternEditor() {
                  if (state.editor.showMelodicControls) {
                     int shift = (state.editor.selectedOctave - 4) * 12 + state.editor.selectedNote;
                     p.stepPitches[i+1] = shift;
+                    
+                    // In Melodic mode with slices, apply slice FX for melodic slice control
+                    if (!p.sliceMarkers.empty() && state.editor.selectedSliceIndex >= 0 && 
+                        state.editor.selectedSliceIndex < (int)p.sliceMarkers.size()) {
+                        if (!p.stepFX.count(i+1)) p.stepFX[i+1] = std::vector<int>();
+                        auto& fx = p.stepFX[i+1];
+                        if (std::find(fx.begin(), fx.end(), Pattern::FX_SLICE) == fx.end()) {
+                            fx.push_back(Pattern::FX_SLICE);
+                        }
+                        p.stepFXParams[i+1][Pattern::PAR_SLICE_INDEX] = (float)state.editor.selectedSliceIndex;
+                        p.stepFXParams[i+1][Pattern::PAR_SLICE_CUTOFF] = state.editor.slicerCutoffEnabled ? 1.0f : 0.0f;
+                    }
                  }
                  // Always apply velocity
-                 p.stepVelocities[i+1] = state.editor.currentVelocity;
+                  p.stepVelocities[i+1] = state.editor.currentVelocity;
+                  
+                  // Apply Slicer (Slicer mode - non-melodic slice assignment)
+                  if (state.editor.showSlicerControls) {
+                      if (!p.stepFX.count(i+1)) p.stepFX[i+1] = std::vector<int>();
+                      auto& fx = p.stepFX[i+1];
+                      if (std::find(fx.begin(), fx.end(), Pattern::FX_SLICE) == fx.end()) {
+                          fx.push_back(Pattern::FX_SLICE);
+                      }
+                      p.stepFXParams[i+1][Pattern::PAR_SLICE_INDEX] = (float)state.editor.selectedSliceIndex;
+                      if (state.editor.slicerCutoffEnabled) {
+                          p.stepFXParams[i+1][Pattern::PAR_SLICE_CUTOFF] = 1.0f;
+                      } else {
+                          p.stepFXParams[i+1][Pattern::PAR_SLICE_CUTOFF] = 0.0f;
+                      }
+                  }
+                  
+                  engine.addPattern(p); // SYNC
             } else {
                  // Removing step
                  p.stepPitches.erase(i+1);
@@ -942,6 +1020,8 @@ void GuiRenderer::DrawPatternEditor() {
                  
                  // If removing selected step, deselect?
                  if (state.editor.selectedStep == i) state.editor.selectedStep = -1;
+                 
+                 engine.addPattern(p); // SYNC
             }
             
             // USER REQUEST: Edit the last placed note.
@@ -969,11 +1049,49 @@ void GuiRenderer::DrawPatternEditor() {
                  if (state.editor.selectedStep == i) {
                      state.editor.selectedStep = -1;
                  }
+                 engine.addPattern(p); // SYNC
              }
         }
     }
     
     startY += gridHeight + 20; // Dynamic spacing based on grid height 
+    
+    // Slice Selector Buttons (below grid, visible in any mode if slices exist)
+    int sliceCount = (int)p.sliceMarkers.size();
+    if (sliceCount > 0) {
+        int buttonsPerRow = 8;
+        float btnW = 35; float btnH = 25;
+        
+        DrawText("Slice:", winRect.x + 20, startY, 16, WHITE);
+        
+        float btnStartX = winRect.x + 80;
+        for (int s = 0; s < sliceCount; ++s) {
+            int row = s / buttonsPerRow;
+            int col = s % buttonsPerRow;
+            Rectangle sBtn = {btnStartX + col * (btnW + 3), startY + row * (btnH + 3), btnW, btnH};
+            
+            bool isSelected = (state.editor.selectedSliceIndex == s);
+            DrawRectangleRec(sBtn, isSelected ? GREEN : DARKGRAY);
+            DrawText(TextFormat("%d", s), sBtn.x + 12, sBtn.y + 5, 10, WHITE);
+            
+            if (CheckCollisionPointRec(GetMousePosition(), sBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                state.editor.selectedSliceIndex = s;
+                
+                // UX FIX: If a step is selected, update its slice index immediately
+                if (state.editor.selectedStep != -1 && state.editor.stepStates[state.editor.selectedStep]) {
+                    int step = state.editor.selectedStep + 1;
+                    if (!p.stepFX.count(step)) p.stepFX[step] = std::vector<int>();
+                    auto& fx = p.stepFX[step];
+                    if (std::find(fx.begin(), fx.end(), Pattern::FX_SLICE) == fx.end()) {
+                        fx.push_back(Pattern::FX_SLICE);
+                    }
+                    p.stepFXParams[step][Pattern::PAR_SLICE_INDEX] = (float)s;
+                    engine.addPattern(p); // SYNC
+                }
+            }
+        }
+        startY += ((sliceCount - 1) / buttonsPerRow + 1) * (btnH + 3) + 10;
+    }
     
     // Melodic Controls (NOW BELOW GRID)
     if (state.editor.showMelodicControls) {
@@ -1114,6 +1232,7 @@ void GuiRenderer::DrawPatternEditor() {
                     if (!alreadyActive) {
                         currentStepFX.push_back(state.editor.selectedAvailableFxId);
                         state.editor.selectedAvailableFxId = -1; // Deselect after add
+                        engine.addPattern(p); // SYNC
                     }
                 }
             }
@@ -1127,6 +1246,7 @@ void GuiRenderer::DrawPatternEditor() {
                  if (state.editor.selectedAppliedFxId != -1) {
                      currentStepFX.erase(std::remove(currentStepFX.begin(), currentStepFX.end(), state.editor.selectedAppliedFxId), currentStepFX.end());
                      state.editor.selectedAppliedFxId = -1; // Deselect after remove
+                     engine.addPattern(p); // SYNC
                  }
             }
             
@@ -1168,9 +1288,9 @@ void GuiRenderer::DrawPatternEditor() {
                              p.stepFXParams[state.editor.selectedStep + 1][Pattern::PAR_STUTTER_RATE] = currentRate;
                         }
                     }
-                    
-                    // Rate Labels/Readout
-                    DrawText(TextFormat("%.1f", currentRate), rateSlider.x + rateSlider.width + 10, paramPanelY, 10, WHITE);
+                    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+                        engine.addPattern(p); // SYNC on release
+                    }
                     
                     // Rate Labels/Readout
                     DrawText(TextFormat("%.1f", currentRate), rateSlider.x + rateSlider.width + 10, paramPanelY, 10, WHITE);
@@ -1208,6 +1328,9 @@ void GuiRenderer::DrawPatternEditor() {
                              p.stepFXParams[state.editor.selectedStep + 1][Pattern::PAR_STUTTER_SPEED] = currentSpeed;
                         }
                     }
+                    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+                        engine.addPattern(p); // SYNC on release
+                    }
                                         // Speed Readout
                     DrawText(TextFormat("%.2f", currentSpeed), speedSlider.x + speedSlider.width + 10, paramPanelY, 10, WHITE);
                 } else if (state.editor.selectedAppliedFxId == Pattern::FX_SLIDE) {
@@ -1242,6 +1365,9 @@ void GuiRenderer::DrawPatternEditor() {
                              currentTime = newVal;
                              p.stepFXParams[state.editor.selectedStep + 1][Pattern::PAR_SLIDE_TIME] = currentTime;
                         }
+                    }
+                    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+                        engine.addPattern(p); // SYNC on release
                     }
                     
                     // Readout
@@ -1279,6 +1405,9 @@ void GuiRenderer::DrawPatternEditor() {
                              currentSquelch = newVal;
                              p.stepFXParams[state.editor.selectedStep + 1][Pattern::PAR_SLIDE_SQUELCH] = currentSquelch;
                         }
+                    }
+                    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+                        engine.addPattern(p); // SYNC on release
                     }
                     
                     // Readout
@@ -1325,6 +1454,9 @@ void GuiRenderer::DrawPatternEditor() {
                              p.stepFXParams[state.editor.selectedStep + 1][Pattern::PAR_NUDGE_OFFSET] = currentOffset;
                         }
                     }
+                    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+                        engine.addPattern(p); // SYNC on release
+                    }
                     
                     // Text Description based on side
                     if (currentOffset > 0.55f) DrawText(TextFormat("Start +%.0f%%", (currentOffset-0.5f)*200), offsetSlider.x + offsetSlider.width + 10, paramPanelY, 10, WHITE);
@@ -1339,6 +1471,7 @@ void GuiRenderer::DrawPatternEditor() {
             // Cleanup empty entries map?
             if (currentStepFX.empty()) {
                 p.stepFX.erase(state.editor.selectedStep + 1);
+                engine.addPattern(p); // SYNC
             }
             
             startY += boxH + 110; // Adjust layout spacing (less space needed without buttons)
@@ -1352,6 +1485,170 @@ void GuiRenderer::DrawPatternEditor() {
         // startY += 80; <-- Removed from previous logic
         startY += 10;
         startY += 50;
+    }
+
+    // Slicer Controls
+    if (state.editor.showSlicerControls) {
+        DrawText("Sample Slicer", winRect.x + 20, startY + 10, 20, WHITE);
+        startY += 40;
+
+        // Waveform Viewer
+        Rectangle waveRect = {winRect.x + 20, startY, winRect.width - 40, 100};
+        DrawRectangleRec(waveRect, BLACK);
+        DrawRectangleLinesEx(waveRect, 1, GRAY);
+        
+        // Use editor's pattern buffer (loaded when Load button is clicked)
+        if (p.sampleBuffer.getNumSamples() > 0) {
+            int numSamples = p.sampleBuffer.getNumSamples();
+            const float* data = p.sampleBuffer.getReadPointer(0);
+            
+            // Calculate visible sample range based on zoom and scroll
+            float zoom = state.editor.waveformZoom;
+            float viewWidth = 1.0f / zoom; // Fraction of total visible
+            float scrollMax = 1.0f - viewWidth;
+            if (scrollMax < 0) scrollMax = 0;
+            state.editor.waveformScrollX = std::min(std::max(state.editor.waveformScrollX, 0.0f), scrollMax);
+            
+            int startSample = (int)(state.editor.waveformScrollX * numSamples);
+            int endSample = (int)((state.editor.waveformScrollX + viewWidth) * numSamples);
+            if (endSample > numSamples) endSample = numSamples;
+            int visibleSamples = endSample - startSample;
+            
+            float midY = waveRect.y + waveRect.height / 2;
+            float halfH = waveRect.height / 2.0f;
+            
+            // Draw Waveform (visible portion only)
+            for (int x = 0; x < (int)waveRect.width; ++x) {
+                float minVal = 0.0f;
+                float maxVal = 0.0f;
+                
+                int sIdx = startSample + (int)((float)x / waveRect.width * visibleSamples);
+                int eIdx = startSample + (int)((float)(x+1) / waveRect.width * visibleSamples);
+                if (eIdx > endSample) eIdx = endSample;
+                
+                int step = std::max(1, (eIdx - sIdx) / 4);
+                for (int s = sIdx; s < eIdx; s += step) {
+                    if (s >= 0 && s < numSamples) {
+                        float val = data[s];
+                        if (val < minVal) minVal = val;
+                        if (val > maxVal) maxVal = val;
+                    }
+                }
+                
+                DrawLine(waveRect.x + x, midY + minVal * halfH, waveRect.x + x, midY + maxVal * halfH, DARKGREEN);
+            }
+            
+            // Draw Markers (only visible ones)
+            for (int mFn = 0; mFn < (int)p.sliceMarkers.size(); ++mFn) {
+                int sampleIdx = p.sliceMarkers[mFn];
+                if (sampleIdx >= startSample && sampleIdx <= endSample) {
+                    float xPos = (float)(sampleIdx - startSample) / visibleSamples * waveRect.width;
+                    DrawLine(waveRect.x + xPos, waveRect.y, waveRect.x + xPos, waveRect.y + waveRect.height, RED);
+                    DrawText(TextFormat("%d", mFn), waveRect.x + xPos + 2, waveRect.y + 2, 10, YELLOW);
+                    
+                    // Handle Delete (Right Click near marker)
+                    if (CheckCollisionPointRec(GetMousePosition(), {waveRect.x + xPos - 5, waveRect.y, 10, waveRect.height}) && IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+                        p.sliceMarkers.erase(p.sliceMarkers.begin() + mFn);
+                        mFn--; 
+                        engine.addPattern(p); // SYNC 
+                    }
+                }
+            }
+            
+            // Interaction: Left Click to Add Marker
+            if (CheckCollisionPointRec(GetMousePosition(), waveRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                float localX = GetMousePosition().x - waveRect.x;
+                int sampleIdx = startSample + (int)(localX / waveRect.width * visibleSamples);
+                
+                // Add and Sort
+                p.sliceMarkers.push_back(sampleIdx);
+                std::sort(p.sliceMarkers.begin(), p.sliceMarkers.end());
+                engine.addPattern(p); // SYNC
+            }
+            
+            // Horizontal Scrollbar (only if zoomed)
+            if (zoom > 1.0f) {
+                Rectangle scrollBarBg = {waveRect.x, waveRect.y + waveRect.height + 2, waveRect.width, 12};
+                DrawRectangleRec(scrollBarBg, DARKGRAY);
+                
+                float thumbWidth = scrollBarBg.width / zoom;
+                float thumbX = scrollBarBg.x + state.editor.waveformScrollX / (1.0f - viewWidth + 0.001f) * (scrollBarBg.width - thumbWidth);
+                Rectangle scrollThumb = {thumbX, scrollBarBg.y + 2, thumbWidth, 8};
+                DrawRectangleRec(scrollThumb, LIGHTGRAY);
+                
+                // Drag scrollbar
+                static bool isDraggingScroll = false;
+                static float dragStartX = 0;
+                static float dragStartScroll = 0;
+                
+                if (CheckCollisionPointRec(GetMousePosition(), scrollBarBg) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                    isDraggingScroll = true;
+                    dragStartX = GetMousePosition().x;
+                    dragStartScroll = state.editor.waveformScrollX;
+                }
+                if (isDraggingScroll && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+                    float deltaX = GetMousePosition().x - dragStartX;
+                    float deltaScroll = deltaX / (scrollBarBg.width - thumbWidth) * scrollMax;
+                    state.editor.waveformScrollX = std::min(std::max(dragStartScroll + deltaScroll, 0.0f), scrollMax);
+                }
+                if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+                    isDraggingScroll = false;
+                }
+            }
+            
+        } else {
+            DrawText("No Sample Loaded", waveRect.x + 10, waveRect.y + 40, 20, DARKGRAY);
+        }
+        
+        startY += (state.editor.waveformZoom > 1.0f) ? 125 : 110;
+        
+        // Controls: Clear Markers
+        Rectangle clearBtn = {winRect.x + 20, startY, 100, 30};
+        DrawRectangleRec(clearBtn, DARKGRAY);
+        DrawText("Clear Slices", clearBtn.x + 10, clearBtn.y + 5, 10, WHITE);
+        if (CheckCollisionPointRec(GetMousePosition(), clearBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            p.sliceMarkers.clear();
+            engine.addPattern(p); // SYNC
+        }
+        
+        // Cutoff Toggle
+        Rectangle cutBtn = {winRect.x + 140, startY, 20, 20};
+        DrawRectangleRec(cutBtn, state.editor.slicerCutoffEnabled ? GREEN : DARKGRAY);
+        DrawText("Cut", cutBtn.x + 25, cutBtn.y + 2, 16, WHITE);
+        if (CheckCollisionPointRec(GetMousePosition(), cutBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            state.editor.slicerCutoffEnabled = !state.editor.slicerCutoffEnabled;
+        }
+        
+        // Zoom buttons (to the right of Cut)
+        Rectangle zoomOutBtn = {winRect.x + 220, startY, 25, 25};
+        Rectangle zoomInBtn = {winRect.x + 250, startY, 25, 25};
+        DrawRectangleRec(zoomOutBtn, DARKGRAY);
+        DrawRectangleRec(zoomInBtn, DARKGRAY);
+        DrawText("-", zoomOutBtn.x + 9, zoomOutBtn.y + 4, 16, WHITE);
+        DrawText("+", zoomInBtn.x + 8, zoomInBtn.y + 4, 16, WHITE);
+        
+        if (CheckCollisionPointRec(GetMousePosition(), zoomInBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            state.editor.waveformZoom = std::min(state.editor.waveformZoom * 1.5f, 20.0f);
+        }
+        if (CheckCollisionPointRec(GetMousePosition(), zoomOutBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            state.editor.waveformZoom = std::max(state.editor.waveformZoom / 1.5f, 1.0f);
+            if (state.editor.waveformZoom <= 1.0f) state.editor.waveformScrollX = 0.0f;
+        }
+        
+        startY += 40;
+        
+        // Add "Add Start Marker" button if 0 missing
+        if (p.sliceMarkers.empty() || p.sliceMarkers[0] != 0) {
+             Rectangle startMarkerBtn = {winRect.x + 20, startY, 120, 25};
+             DrawRectangleRec(startMarkerBtn, GRAY);
+             DrawText("Add Start Marker", startMarkerBtn.x + 5, startMarkerBtn.y + 5, 10, WHITE);
+             if (CheckCollisionPointRec(GetMousePosition(), startMarkerBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                 p.sliceMarkers.insert(p.sliceMarkers.begin(), 0);
+             }
+             startY += 35;
+        }
+
+        startY += 10;
     }
     
     // Update Content Height
@@ -1543,7 +1840,7 @@ void GuiRenderer::DrawPatternEditor() {
     }
     
     // Draw Outline Last (to cover footer overlap)
-    DrawRectangleLinesEx(winRect, 2, LIGHTGRAY);
+    DrawRectangleLinesEx(winRect, 2, Color{200, 200, 200, 255});
 }
 
 void GuiRenderer::DrawPatternBox(const std::string& name, Rectangle bounds, bool selected) {
@@ -1663,17 +1960,37 @@ void GuiRenderer::DrawTransportBar() {
     DrawRectangleRec(playRect, state.isPlaying ? GREEN : GRAY);
     DrawText(">", playRect.x + 15, playRect.y + 10, 20, BLACK);
     if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), playRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        std::vector<std::string> names;
+        
         if (!state.activePatternSlots.empty()) {
-            std::vector<std::string> names;
             for (const auto& pair : state.activePatternSlots) {
                 int colIdx = pair.first;
                 int slotIdx = pair.second;
                 if (colIdx >= 0 && colIdx < (int)state.columns.size() && slotIdx >= 0 && slotIdx < (int)state.columns[colIdx].patternNames.size()) {
-                    names.push_back(state.columns[colIdx].patternNames[slotIdx]);
+                    std::string pName = state.columns[colIdx].patternNames[slotIdx];
+                    names.push_back(pName);
                 }
             }
-            if (!names.empty()) engine.playMultiplePatterns(names);
+        } else {
+            // Fallback: Play ALL patterns (Song Mode)
+            for (const auto& col : state.columns) {
+                for (const auto& pName : col.patternNames) {
+                    names.push_back(pName);
+                }
+            }
         }
+
+        // Ensure patterns exist in engine
+        for (const auto& pName : names) {
+            if (engine.getPattern(pName) == nullptr) {
+                Pattern p;
+                p.name = pName;
+                p.bpm = state.bpm;
+                engine.addPattern(p);
+            }
+        }
+        
+        if (!names.empty()) engine.playMultiplePatterns(names);
     }
     
     // Stop
@@ -1751,6 +2068,72 @@ void GuiRenderer::DrawTransportBar() {
                     state.shiftEditingPatternName = ""; // Clear when turning off
                 }
             }
+        }
+    }
+    
+    // ---- SETTINGS GEAR BUTTON (Right Side) ----
+    float gearX = GetScreenWidth() - 50;
+    Rectangle gearBtn = {gearX, rect.y + 15, 30, 30};
+    DrawRectangleRec(gearBtn, state.settings.showSettingsMenu ? ORANGE : DARKGRAY);
+    // Draw simple gear icon (asterisk-like)
+    DrawText("*", gearBtn.x + 8, gearBtn.y + 3, 24, WHITE);
+    
+    if (CheckCollisionPointRec(GetMousePosition(), gearBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        state.settings.showSettingsMenu = !state.settings.showSettingsMenu;
+        if (state.settings.showSettingsMenu) {
+            // Refresh device list when opening
+            state.settings.availableOutputDevices = engine.getAvailableOutputDevices();
+            state.settings.currentDevice = engine.getCurrentOutputDevice();
+        }
+    }
+    
+    // Settings Popup Overlay
+    if (state.settings.showSettingsMenu) {
+        float popW = 350;
+        float popH = 200;
+        float popX = GetScreenWidth() - popW - 20;
+        float popY = rect.y - popH - 10;
+        
+        // Background
+        DrawRectangle(popX, popY, popW, popH, Color{40, 40, 40, 245});
+        DrawRectangleLinesEx({popX, popY, popW, popH}, 2, WHITE);
+        
+        // Title
+        DrawText("Audio Settings", popX + 10, popY + 10, 18, WHITE);
+        
+        // Close button
+        Rectangle closeBtn = {popX + popW - 30, popY + 5, 25, 25};
+        DrawRectangleRec(closeBtn, RED);
+        DrawText("X", closeBtn.x + 7, closeBtn.y + 3, 18, WHITE);
+        if (CheckCollisionPointRec(GetMousePosition(), closeBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            state.settings.showSettingsMenu = false;
+        }
+        
+        // Current Device Label
+        DrawText("Output Device:", popX + 10, popY + 40, 14, LIGHTGRAY);
+        DrawText(state.settings.currentDevice.c_str(), popX + 120, popY + 40, 14, GREEN);
+        
+        // Device List
+        float listY = popY + 65;
+        for (size_t i = 0; i < state.settings.availableOutputDevices.size() && i < 5; ++i) {
+            const auto& devName = state.settings.availableOutputDevices[i];
+            Rectangle devBtn = {popX + 10, listY, popW - 20, 22};
+            
+            bool isCurrent = (devName == state.settings.currentDevice);
+            DrawRectangleRec(devBtn, isCurrent ? Color{60, 120, 60, 255} : Color{60, 60, 60, 255});
+            DrawText(devName.c_str(), devBtn.x + 5, devBtn.y + 4, 12, WHITE);
+            
+            if (!isCurrent && CheckCollisionPointRec(GetMousePosition(), devBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                if (engine.setOutputDevice(devName)) {
+                    state.settings.currentDevice = devName;
+                }
+            }
+            
+            listY += 25;
+        }
+        
+        if (state.settings.availableOutputDevices.empty()) {
+            DrawText("No devices found", popX + 10, listY, 14, GRAY);
         }
     }
 }

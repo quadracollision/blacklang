@@ -11,6 +11,7 @@ struct Pattern {
     int bpm = 120;
     int steps = 16;
     std::vector<int> activeSteps;  // 1-indexed step positions
+    std::vector<int> sliceMarkers; // Sample indices for slice points
 
     std::map<int, int> stepPitches; // Step (1-indexed) -> Semitone Offset (relative to C4/Root)
     std::map<int, float> stepVelocities; // Step (1-indexed) -> Velocity [0.0 - 1.0]
@@ -22,6 +23,7 @@ struct Pattern {
     static constexpr int FX_SLIDE = 2;
     static constexpr int FX_STUTTER = 3;
     static constexpr int FX_NUDGE = 4;
+    static constexpr int FX_SLICE = 5;
     
     // Parameters
     static constexpr int PAR_STUTTER_RATE = 100;
@@ -29,6 +31,8 @@ struct Pattern {
     static constexpr int PAR_SLIDE_TIME = 200;
     static constexpr int PAR_SLIDE_SQUELCH = 201;
     static constexpr int PAR_NUDGE_OFFSET = 300;
+    static constexpr int PAR_SLICE_INDEX = 400; // 0-indexed slice index
+    static constexpr int PAR_SLICE_CUTOFF = 401; // 1.0 = Cut at next slice, 0.0 = Play through
     
     // Audio data (loaded at runtime)
     juce::AudioBuffer<float> sampleBuffer;
