@@ -3,6 +3,7 @@
 #include "Pattern.h"
 #include "PatternChain.h"
 #include "SharedAudioStructs.h"
+#include "BusManager.h"
 #include "fx/FXProcessor.h"
 #include "AudioRecorder.h"
 #include <juce_audio_devices/juce_audio_devices.h>
@@ -44,10 +45,17 @@ public:
     void setBPM(int newBpm) { globalBpm.store(newBpm); }
     int getBPM() const { return globalBpm.load(); }
     
+    // Bus/Track Management
+    void assignPatternToTrack(const std::string& patternName, const std::string& trackName);
+    std::string getTrackForPattern(const std::string& patternName) const;
+    AudioBus* getTrackBus(const std::string& trackName);
+    
     // Audio Device Management
     std::vector<std::string> getAvailableOutputDevices();
     std::string getCurrentOutputDevice();
     bool setOutputDevice(const std::string& deviceName);
+    void setOutputDeviceAsync(const std::string& deviceName, std::function<void(bool)> callback);
+    bool isDeviceSwitching() const { return deviceSwitching.load(); }
 
     // Recording
     void startRecording(const std::string& filename, bool stems);
@@ -103,8 +111,17 @@ private:
     // FX
     fx::FXProcessor fxProcessor;
     
+    // Bus Manager
+    BusManager busManager;
+    std::map<std::string, std::string> patternToTrack;  // Pattern name -> Track name mapping
+    
     // Recorder
-    AudioRecorder mainRecorder;
+    AudioRecorder mainRecorder;  // Records master bus (whole mix)
+    std::map<std::string, AudioRecorder> stemRecorders;  // Records individual track buses
+    bool recordingStems = false;
+    
+    // Device switching
+    std::atomic<bool> deviceSwitching{false};
 
     // Internal method to process a sample block
     // ...

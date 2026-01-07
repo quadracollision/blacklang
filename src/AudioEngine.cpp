@@ -66,6 +66,12 @@ std::string AudioEngine::getCurrentOutputDevice() {
 }
 
 bool AudioEngine::setOutputDevice(const std::string& deviceName) {
+    // Stop playback first
+    bool wasPlaying = playing.load();
+    if (wasPlaying) {
+        stop();
+    }
+    
     // Save callback state
     deviceManager.removeAudioCallback(this);
     
@@ -76,11 +82,29 @@ bool AudioEngine::setOutputDevice(const std::string& deviceName) {
     // Apply new setup
     auto result = deviceManager.setAudioDeviceSetup(setup, true);
     
-    // Re-add callback
+    // Re-add callback (this will trigger audioDeviceAboutToStart which reinitializes bus manager)
     deviceManager.addAudioCallback(this);
     
     return result.isEmpty();
 }
+
+void AudioEngine::setOutputDeviceAsync(const std::string& deviceName, std::function<void(bool)> callback) {
+    // Prevent multiple simultaneous switches
+    if (deviceSwitching.load()) {
+        if (callback) callback(false);
+        return;
+    }
+    
+    deviceSwitching.store(true);
+    
+    // Launch in a separate thread
+    std::thread([this, deviceName, callback]() {
+        bool success = setOutputDevice(deviceName);
+        deviceSwitching.store(false);
+        if (callback) callback(success);
+    }).detach();
+}
+
 
 bool AudioEngine::loadSample(Pattern& pattern) {
     juce::File file(pattern.samplePath);
@@ -301,6 +325,8 @@ void AudioEngine::resume() {
 
 void AudioEngine::audioDeviceAboutToStart(juce::AudioIODevice* device) {
     sampleRate = device->getCurrentSampleRate();
+    int numChannels = device->getActiveOutputChannels().countNumberOfSetBits();
+    busManager.initialize(sampleRate, numChannels);
 }
 
 void AudioEngine::audioDeviceStopped() {
@@ -326,6 +352,11 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
     
     // Multi-pattern playback mode
     if (!activePatternNames.empty()) {
+        // Prepare bus buffers
+        busManager.prepareBuffers(numSamples);
+        busManager.clearAllBuffers();
+        
+        // Process each sample
         for (int i = 0; i < numSamples; ++i) {
             for (const auto& patName : activePatternNames) {
                 auto patIt = patterns.find(patName);
@@ -333,6 +364,11 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                 
                 Pattern& pattern = patIt->second;
                 auto& state = patternStates[patName];
+                
+                // Get the track bus this pattern belongs to
+                std::string trackName = getTrackForPattern(patName);
+                AudioBus* trackBus = busManager.getOrCreateTrack(trackName);
+                if (!trackBus) continue;
                 
                 // Check if we need to advance to next step
                 double stepDuration = pattern.getStepDurationSamples(globalBpm.load());
@@ -378,26 +414,8 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                     }
                 }
                 
-                // Mix sample if playing and exists
+                // Process and mix sample if playing
                 if (pattern.sampleBuffer.getNumSamples() > 0 && state.sampleIsPlaying) {
-                    for (int ch = 0; ch < numOutputChannels; ++ch) {
-                        int srcCh = std::min(ch, pattern.sampleBuffer.getNumChannels() - 1);
-                        const float* inData = pattern.sampleBuffer.getReadPointer(srcCh);
-                        float* outData = outputChannelData[ch];
-                        
-                        // Linear Interpolation
-                        double pos = state.samplePlaybackPosition;
-                        int idx = (int)pos;
-                        float frac = (float)(pos - idx);
-                        
-                        // Safety check for indices
-                        if (idx >= 0 && idx < pattern.sampleBuffer.getNumSamples()) {
-                             float s1 = inData[idx];
-                             float s2 = (idx + 1 < pattern.sampleBuffer.getNumSamples()) ? inData[idx + 1] : 0.0f;
-                             outData[i] += (s1 + frac * (s2 - s1)) * state.currentVelocity;
-                        }
-                    }
-                    
                     state.samplePlaybackPosition += state.currentSpeedRatio;
                     
                     // Handle Stutter Re-trigger
@@ -412,14 +430,13 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                     // Apply Slide
                     if (state.isSliding) {
                         state.currentSpeedRatio += state.slideStepIncrement;
-                        // Clamp? Or let it overshoot slightly/stop at target?
-                        // Simple approach: Check if we passed target
                          if ((state.slideStepIncrement > 0 && state.currentSpeedRatio >= state.slideTargetRatio) ||
                              (state.slideStepIncrement < 0 && state.currentSpeedRatio <= state.slideTargetRatio)) {
                              state.currentSpeedRatio = state.slideTargetRatio;
                              state.isSliding = false;
                          }
                     }
+                    
                     // Stop if we passed the end
                      if (state.samplePlaybackPosition >= pattern.sampleBuffer.getNumSamples() || 
                         (state.sampleEndPosition > 0 && state.samplePlaybackPosition >= state.sampleEndPosition)) {
@@ -436,7 +453,6 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                         sample = fxProcessor.processSampleFX(state, sample, sampleRate, state.currentStep, pattern);
                         
                         // --- ANTI-CLICK ENVELOPE (1-2ms fade-in/out) ---
-                        // ~88 samples at 44.1kHz is ~2ms
                         const int fadeLen = 88;
                         float envelope = 1.0f;
                         
@@ -461,8 +477,9 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                         currentSample = sample * state.currentVelocity * envelope;
                      }
 
-                     for (int ch = 0; ch < numOutputChannels; ++ch) {
-                         outputChannelData[ch][i] += currentSample;
+                     // Write to track bus instead of output
+                     for (int ch = 0; ch < std::min(numOutputChannels, trackBus->buffer.getNumChannels()); ++ch) {
+                         trackBus->buffer.addSample(ch, i, currentSample);
                      }
                 } // Close if sampleIsPlaying
                 
@@ -470,22 +487,46 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
             } // Close for patName
         } // Close for i
     
-    // If we processed multi-patterns, we are done.
-    // Process FX for the entire block (limiter/bus compression?)
-    // For now just clip protection
+    // Mix all tracks to master and apply master processing
+    busManager.mixTracksToMaster();
+    busManager.applyMasterProcessing();
+    
+    // Copy master bus to output
+    AudioBus* masterBus = busManager.getMasterBus();
     for (int ch = 0; ch < numOutputChannels; ++ch) {
-        for (int i = 0; i < numSamples; ++i) {
-            float val = outputChannelData[ch][i] * 0.8f; // Headroom
-            if (val > 1.0f) val = 1.0f;
-            if (val < -1.0f) val = -1.0f;
-            outputChannelData[ch][i] = val;
+        if (ch < masterBus->buffer.getNumChannels()) {
+            for (int i = 0; i < numSamples; ++i) {
+                outputChannelData[ch][i] = masterBus->buffer.getSample(ch, i);
+            }
         }
     }
     
-    // Send to Recorder
+    // Send to Recorder - now recording from buses!
     if (mainRecorder.isRecording()) {
-        mainRecorder.writeBlock(outputChannelData, numSamples, numOutputChannels);
+        // Record master bus
+        const float* masterChannels[2] = {
+            masterBus->buffer.getReadPointer(0),
+            masterBus->buffer.getNumChannels() > 1 ? masterBus->buffer.getReadPointer(1) : masterBus->buffer.getReadPointer(0)
+        };
+        mainRecorder.writeBlock(masterChannels, numSamples, 2);
     }
+    
+    // Record stems if enabled
+    if (recordingStems) {
+        for (auto& pair : stemRecorders) {
+            const std::string& trackName = pair.first;
+            AudioBus* trackBus = busManager.getTrack(trackName);
+            
+            if (trackBus && trackBus->buffer.getNumSamples() > 0) {
+                const float* trackChannels[2] = {
+                    trackBus->buffer.getReadPointer(0),
+                    trackBus->buffer.getNumChannels() > 1 ? trackBus->buffer.getReadPointer(1) : trackBus->buffer.getReadPointer(0)
+                };
+                pair.second.writeBlock(trackChannels, numSamples, 2);
+            }
+        }
+    }
+    
     return;
 }
     
@@ -653,17 +694,80 @@ void AudioEngine::triggerSample(Pattern& pattern, int step) {
 }
 
 void AudioEngine::startRecording(const std::string& filename, bool stems) {
-    std::string path = "recordings/" + filename + ".wav";
+    recordingStems = stems;
+    
     if (stems) {
-         path = "recordings/" + filename + "_mix.wav";
+        // Record individual track buses as stems
+        // Get all active track buses
+        std::vector<std::string> trackNames;
+        
+        // Collect all track names from the bus manager
+        // We'll record all non-empty tracks
+        for (const auto& pair : patternToTrack) {
+            const std::string& trackName = pair.second;
+            // Check if this track name is already in our list
+            bool found = false;
+            for (const auto& name : trackNames) {
+                if (name == trackName) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                trackNames.push_back(trackName);
+            }
+        }
+        
+        // Start a recorder for each track
+        for (const auto& trackName : trackNames) {
+            std::string stemPath = "recordings/" + filename + "_" + trackName + ".wav";
+            stemRecorders[trackName].start(stemPath, sampleRate, 2);
+        }
+        
+        // Also record master mix
+        std::string masterPath = "recordings/" + filename + "_master.wav";
+        mainRecorder.start(masterPath, sampleRate, 2);
+        
+    } else {
+        // Record only master bus (whole mix)
+        std::string path = "recordings/" + filename + ".wav";
+        mainRecorder.start(path, sampleRate, 2);
     }
-    mainRecorder.start(path, sampleRate, 2);
 }
 
 void AudioEngine::stopRecording() {
     mainRecorder.stop();
+    
+    // Stop all stem recorders
+    for (auto& pair : stemRecorders) {
+        pair.second.stop();
+    }
+    stemRecorders.clear();
+    recordingStems = false;
 }
 
 bool AudioEngine::isRecording() {
     return mainRecorder.isRecording();
 }
+
+// ============================================================================
+// Bus/Track Management
+// ============================================================================
+
+void AudioEngine::assignPatternToTrack(const std::string& patternName, const std::string& trackName) {
+    patternToTrack[patternName] = trackName;
+}
+
+std::string AudioEngine::getTrackForPattern(const std::string& patternName) const {
+    auto it = patternToTrack.find(patternName);
+    if (it != patternToTrack.end()) {
+        return it->second;
+    }
+    // Default fallback: use Track_0
+    return "Track_0";
+}
+
+AudioBus* AudioEngine::getTrackBus(const std::string& trackName) {
+    return busManager.getOrCreateTrack(trackName);
+}
+

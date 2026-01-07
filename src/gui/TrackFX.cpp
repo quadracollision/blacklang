@@ -5,19 +5,12 @@
 
 namespace gui {
 
-void SyncColumnParams(PatternColumn& col, AudioEngine& engine) {
-    for (const auto& name : col.patternNames) {
-        if (name.empty()) continue;
-        Pattern* p = engine.getPattern(name);
-        if (p) {
-            p->volume = col.volume;
-            p->pan = col.pan;
-        }
-    }
-}
-
 void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state, AudioEngine& engine) {
     bool canInteract = !state.editor.isOpen;
+    
+    // Get the track bus for this column
+    AudioBus* trackBus = engine.getTrackBus(col.trackName);
+    if (!trackBus) return;  // No bus assigned yet
 
     // 1. Background
     DrawRectangleRec(bounds, Color{20, 20, 25, 255});
@@ -43,17 +36,20 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
     
     // Pan Slider Logic
     DrawRectangleRec(panRect, Color{10, 10, 10, 255}); // Track
-    float panHandleX = panRect.x + (col.pan * panRect.width);
+    float panHandleX = panRect.x + (trackBus->pan * panRect.width);
     DrawRectangle(panHandleX - 5, panRect.y, 10, panRect.height, ORANGE); // Handle
     
     // Pan Interaction
     if (canInteract && CheckCollisionPointRec(GetMousePosition(), panRect)) {
         if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
              float mouseX = GetMousePosition().x;
-             col.pan = (mouseX - panRect.x) / panRect.width;
-             if (col.pan < 0.0f) col.pan = 0.0f;
-             if (col.pan > 1.0f) col.pan = 1.0f;
-             SyncColumnParams(col, engine);
+             float newPan = (mouseX - panRect.x) / panRect.width;
+             if (newPan < 0.0f) newPan = 0.0f;
+             if (newPan > 1.0f) newPan = 1.0f;
+             
+             // Update both column state and bus
+             col.pan = newPan;
+             trackBus->pan = newPan;
         }
     }
     
@@ -63,7 +59,7 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
          double now = GetTime();
          if (now - lastPanClick < 0.3) {
              col.pan = 0.5f;
-             SyncColumnParams(col, engine);
+             trackBus->pan = 0.5f;
          }
          lastPanClick = now;
     }
@@ -85,7 +81,7 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
     DrawRectangleRec(volRect, Color{10, 10, 10, 255});
     
     // Fader Fill logic
-    float fillHeight = col.volume * volRect.height;
+    float fillHeight = trackBus->volume * volRect.height;
     Rectangle fillRect = {
         volRect.x,
         volRect.y + volRect.height - fillHeight,
@@ -95,8 +91,8 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
     
     // Gradient Color
     Color volColor = GREEN;
-    if (col.volume > 0.8f) volColor = ORANGE;
-    if (col.volume > 0.95f) volColor = RED;
+    if (trackBus->volume > 0.8f) volColor = ORANGE;
+    if (trackBus->volume > 0.95f) volColor = RED;
     
     DrawRectangleRec(fillRect, volColor);
     DrawRectangleLinesEx(volRect, 1, DARKGRAY);
@@ -115,14 +111,15 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
             if (rawVal < 0.0f) rawVal = 0.0f;
             if (rawVal > 1.0f) rawVal = 1.0f;
             
+            // Update both column state and bus
             col.volume = rawVal;
-            SyncColumnParams(col, engine);
+            trackBus->volume = rawVal;
         }
     }
     
     // Display Values
     char buf[32];
-    sprintf(buf, "%d%%", (int)(col.volume * 100));
+    sprintf(buf, "%d%%", (int)(trackBus->volume * 100));
     DrawText(buf, volRect.x + 10, volRect.y + volRect.height + 5, 20, Color{255,255,255,100});
     
     // 5. FX Slots (Placeholders for future)

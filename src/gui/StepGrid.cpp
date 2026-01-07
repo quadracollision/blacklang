@@ -36,8 +36,8 @@ void DrawStepGrid(Rectangle bounds, const Pattern& pattern, int activeStep, GuiS
         bool active = pattern.shouldTriggerAt(i + 1);
         Color c = active ? RED : DARKGRAY;
         
-        // Highlight active step
-        if (i == activeStep && activeStep >= 0) {
+        // Highlight active step (activeStep is 1-indexed, i is 0-indexed)
+        if (i == (activeStep - 1) && activeStep > 0) {
             c = active ? ORANGE : YELLOW;
         }
         

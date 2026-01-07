@@ -28,6 +28,7 @@ add_executable(blacklang-raylib
 
     src/AudioEngine.cpp
     src/AudioRecorder.cpp
+    src/BusManager.cpp
     src/ProjectFile.cpp
     src/tinyfiledialogs.c
     src/gui/Widgets.cpp

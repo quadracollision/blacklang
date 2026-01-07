@@ -156,12 +156,20 @@ void TransportBar::DrawPlayStop() {
                 if (colIdx >= 0 && colIdx < (int)state.columns.size() && slotIdx >= 0 && slotIdx < (int)state.columns[colIdx].patternNames.size()) {
                     std::string pName = state.columns[colIdx].patternNames[slotIdx];
                     names.push_back(pName);
+                    // Assign pattern to track
+                    engine.assignPatternToTrack(pName, state.columns[colIdx].trackName);
                 }
             }
         } else {
-            for (const auto& col : state.columns) {
+            // All patterns mode - assign each pattern to its column's track
+            for (size_t colIdx = 0; colIdx < state.columns.size(); ++colIdx) {
+                const auto& col = state.columns[colIdx];
                 for (const auto& pName : col.patternNames) {
-                    names.push_back(pName);
+                    if (!pName.empty()) {
+                        names.push_back(pName);
+                        // Assign pattern to track
+                        engine.assignPatternToTrack(pName, col.trackName);
+                    }
                 }
             }
         }
@@ -411,7 +419,13 @@ void TransportBar::DrawSettingsPopup() {
     else if (state.settings.activePopup == PopupType::Audio) {
         // --- Audio Menu ---
         DrawText("Output Device:", popX + 20, currentY, 14, LIGHTGRAY);
-        DrawText(state.settings.currentDevice.c_str(), popX + 130, currentY, 14, GREEN);
+        
+        // Show switching indicator
+        if (state.settings.isSwitchingDevice) {
+            DrawText("Switching...", popX + 130, currentY, 14, ORANGE);
+        } else {
+            DrawText(state.settings.currentDevice.c_str(), popX + 130, currentY, 14, GREEN);
+        }
         
         float listY = currentY + 30;
         for (size_t i = 0; i < state.settings.availableOutputDevices.size() && i < 5; ++i) {
@@ -419,13 +433,28 @@ void TransportBar::DrawSettingsPopup() {
             Rectangle devBtn = {popX + 20, listY, popW - 40, 22};
             
             bool isCurrent = (devName == state.settings.currentDevice);
-            DrawRectangleRec(devBtn, isCurrent ? Color{60, 120, 60, 255} : Color{60, 60, 60, 255});
-            DrawText(devName.c_str(), devBtn.x + 5, devBtn.y + 4, 12, WHITE);
+            bool isSwitching = state.settings.isSwitchingDevice;
             
-            if (!isCurrent && CheckCollisionPointRec(GetMousePosition(), devBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                if (engine.setOutputDevice(devName)) {
-                    state.settings.currentDevice = devName;
-                }
+            // Gray out if switching
+            Color bgColor = isCurrent ? Color{60, 120, 60, 255} : 
+                           isSwitching ? Color{40, 40, 40, 255} : Color{60, 60, 60, 255};
+            Color textColor = isSwitching ? GRAY : WHITE;
+            
+            DrawRectangleRec(devBtn, bgColor);
+            DrawText(devName.c_str(), devBtn.x + 5, devBtn.y + 4, 12, textColor);
+            
+            // Only allow clicking if not currently switching and not the current device
+            if (!isCurrent && !isSwitching && CheckCollisionPointRec(GetMousePosition(), devBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                state.settings.isSwitchingDevice = true;
+                
+                // Use async switching - capture state pointer
+                GuiState* statePtr = &state;
+                engine.setOutputDeviceAsync(devName, [statePtr, devName](bool success) {
+                    if (success) {
+                        statePtr->settings.currentDevice = devName;
+                    }
+                    statePtr->settings.isSwitchingDevice = false;
+                });
             }
             listY += 25;
         }

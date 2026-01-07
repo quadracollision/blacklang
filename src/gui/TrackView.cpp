@@ -284,13 +284,13 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
                 if (isHoldingThis) {
                     float progress = (float)(GetTime() - state.drag.holdStartTime) / 0.3f;
                     if (progress > 1.0f) progress = 1.0f;
-                    DrawRectangleLinesEx(cellRect, 2, YELLOW);
+                    DrawRectangleLinesEx(cellRect, 1, YELLOW);
                     DrawRectangle(cellRect.x, cellRect.y + cellRect.height - 5, cellRect.width * progress, 5, YELLOW);
                 }
                 
                 if (state.isShiftMode && !state.shiftEditingPatternName.empty() && 
                     col.patternNames[i] == state.shiftEditingPatternName && !isSelected) {
-                    DrawRectangleLinesEx(cellRect, 3, YELLOW);
+                    DrawRectangleLinesEx(cellRect, 1, YELLOW);
                 }
                 
                 HandlePatternClick(index, (int)i, col.patternNames[i], cellRect);
@@ -299,7 +299,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
         
         // Draw selection for EMPTY cells too if selected
         if (state.activePatternSlots.count(index) && state.activePatternSlots[index] == (int)i) {
-             DrawRectangleLinesEx(cellRect, 4.0f, YELLOW); 
+             DrawRectangleLinesEx(cellRect, 1.0f, YELLOW); 
         }
 
         // Drag Destination Logic - VISUAL OVERLAY (Draw LAST to be visible over content)
@@ -331,8 +331,25 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
     DrawRectangleRec(addBtnRect, Color{50, 50, 50, 255});
     DrawText("+", addBtnRect.x + 13, addBtnRect.y + 2, 24, WHITE);
     
+    // Delete Button (Next to Add)
+    Rectangle delBtnRect = {addBtnRect.x + addBtnRect.width + 5, btnY, 40, 30};
+    DrawRectangleRec(delBtnRect, Color{80, 20, 20, 255});  // Dark red
+    DrawText("-", delBtnRect.x + 15, delBtnRect.y + 2, 24, WHITE);
+    
+    // Delete button action
+    if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), delBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        // Delete the selected pattern in this column
+        if (state.activePatternSlots.count(index)) {
+            int selectedSlot = state.activePatternSlots[index];
+            if (selectedSlot >= 0 && selectedSlot < (int)col.patternNames.size()) {
+                col.patternNames[(size_t)selectedSlot] = "";  // Clear the slot
+                state.activePatternSlots.erase(index);  // Clear selection
+            }
+        }
+    }
+    
     // Mixer Button (Rest)
-    Rectangle mixBtnRect = {col.bounds.x + 50, btnY, col.bounds.width - 55, 30};
+    Rectangle mixBtnRect = {col.bounds.x + 95, btnY, col.bounds.width - 100, 30};
     DrawRectangleRec(mixBtnRect, Color{30, 30, 40, 255});
     DrawText("MIXER", mixBtnRect.x + mixBtnRect.width/2 - 25, mixBtnRect.y + 8, 14, GRAY);
     
@@ -413,15 +430,23 @@ void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::strin
                 return;
             }
             
-            // Selection Logic
+            // Selection Logic - Allow one pattern per column by default
             bool isMulti = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT) || IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL);
             
+            // Check if this pattern is already selected in this column
+            bool wasSelected = (state.activePatternSlots.count(colIndex) && state.activePatternSlots[colIndex] == slotIndex);
+            
             if (!isMulti) {
-                state.activePatternSlots.clear();
-                state.activePatternSlots[colIndex] = slotIndex;
+                // Normal click: toggle selection in this column
+                if (wasSelected) {
+                    // Deselect if clicking the same pattern again
+                    state.activePatternSlots.erase(colIndex);
+                } else {
+                    // Select this pattern (keeps selections in other columns)
+                    state.activePatternSlots[colIndex] = slotIndex;
+                }
             } else {
-                // Toggle behavior for multi-select
-                bool wasSelected = (state.activePatternSlots.count(colIndex) && state.activePatternSlots[colIndex] == slotIndex);
+                // Shift/Ctrl: Toggle behavior for multi-select within same column
                 if (wasSelected) {
                     state.activePatternSlots.erase(colIndex);
                 } else {
@@ -466,48 +491,27 @@ void TrackView::HandleAddPattern(int colIndex, PatternColumn& col) {
     Rectangle addBtnRect = {col.bounds.x + 5, col.bounds.y + col.bounds.height - 35, 40, 30};
     
     if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), addBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        Pattern p;
-        p.name = "Pat" + std::to_string(state.patternIdCounter++);
-        p.bpm = state.bpm;
-        engine.addPattern(p); 
-        
-        // Find slot
+        // Only create pattern if we have a selected EMPTY slot
         int targetSlot = -1;
         
-        // Priority 1: Use Selected Slot if in this column
         if (state.activePatternSlots.count(colIndex)) {
             int selectedSlot = state.activePatternSlots[colIndex];
             if (selectedSlot >= 0 && selectedSlot < (int)col.patternNames.size()) {
-                targetSlot = selectedSlot;
-                col.patternNames[(size_t)targetSlot] = p.name;
-            }
-        }
-
-        // Priority 2: Find first empty if no selection
-        if (targetSlot == -1) {
-            for (size_t i = 0; i < col.patternNames.size(); ++i) {
-                if (col.patternNames[i].empty()) {
-                    targetSlot = (int)i;
-                    col.patternNames[i] = p.name;
-                    break;
+                if (col.patternNames[(size_t)selectedSlot].empty()) {
+                    targetSlot = selectedSlot;
                 }
             }
         }
         
-        // Priority 3: Append
-        if (targetSlot == -1) {
-            targetSlot = (int)col.patternNames.size();
-            col.patternNames.push_back(p.name);
+        // Only create pattern if we found an empty slot
+        if (targetSlot != -1) {
+            Pattern p;
+            p.name = "Pat" + std::to_string(state.patternIdCounter++);
+            p.bpm = state.bpm;
+            engine.addPattern(p);
+            col.patternNames[(size_t)targetSlot] = p.name;
         }
-        
-        // Open Editor immediately
-        state.editor.currentPattern = p;
-        state.editor.isOpen = true;
-        strcpy(state.editor.nameBuffer, p.name.c_str());
-        strcpy(state.editor.originalName, p.name.c_str());
-        sprintf(state.editor.bpmBuffer, "%d", p.bpm);
-        sprintf(state.editor.stepsBuffer, "%d", p.steps);
-        for (int s = 0; s < 64; ++s) state.editor.stepStates[s] = false;
+        // Otherwise, do nothing (user tried to add on occupied slot)
     }
 }
 } // namespace gui

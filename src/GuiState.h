@@ -14,6 +14,11 @@ struct PatternColumn {
     
     // Mixer Mode State
     bool mixerMode = false;
+    
+    // Track/Bus Mapping
+    std::string trackName;  // Name of the audio bus this column controls
+    
+    // These control the bus, not individual patterns
     float volume = 1.0f;
     float pan = 0.5f;
 };
@@ -123,6 +128,7 @@ struct SettingsState {
     std::vector<std::string> availableOutputDevices;
     std::string currentDevice;
     int selectedDeviceIndex = 0;
+    bool isSwitchingDevice = false;  // Indicates device switch in progress
 };
 
 struct GuiState {
@@ -160,10 +166,10 @@ struct GuiState {
     const int FOOTER_HEIGHT = 60;
     
     void initDemo() {
-        // Add some default columns
-        columns.push_back({"Drums", std::vector<std::string>(16, ""), {0, 0, 0, 0}});
-        columns.push_back({"Bass", std::vector<std::string>(16, ""), {0, 0, 0, 0}});
-        columns.push_back({"Leads", std::vector<std::string>(16, ""), {0, 0, 0, 0}});
+     // Add some default columns with track names
+        columns.push_back({"Drums", std::vector<std::string>(16, ""), {0, 0, 0, 0}, 0.0f, false, "Track_0", 1.0f, 0.5f});
+        columns.push_back({"Bass", std::vector<std::string>(16, ""), {0, 0, 0, 0}, 0.0f, false, "Track_1", 1.0f, 0.5f});
+        columns.push_back({"Leads", std::vector<std::string>(16, ""), {0, 0, 0, 0}, 0.0f, false, "Track_2", 1.0f, 0.5f});
     }
     
     int patternIdCounter = 1;
