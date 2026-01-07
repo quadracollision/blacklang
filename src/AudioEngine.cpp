@@ -1,4 +1,5 @@
 #include "AudioEngine.h"
+#include "fx/FXProcessor.h"
 #include <iostream>
 #include <cmath>
 
@@ -348,6 +349,7 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                     if (pattern.shouldTriggerAt(state.currentStep)) {
                         state.samplePlaybackPosition = 0.0;
                         state.sampleIsPlaying = true;
+                        state.fadeInSamplesRemaining = 88; // 2ms fade-in
                         state.isStuttering = false; // Reset start of step
                         state.stutterIntervalSamples = 0;
                         
@@ -371,88 +373,8 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                              if (speedMult > 0.0f) state.currentSpeedRatio *= speedMult;
                         }
 
-                        if (pattern.stepFX.count(state.currentStep)) {
-                             const auto& fxList = pattern.stepFX[state.currentStep];
-                             for (int fx : fxList) {
-                                 if (fx == Pattern::FX_CUTOFF) {
-                                    state.samplePlaybackPosition = 0.0;
-                                    state.sampleIsPlaying = true;
-                                 }
-                                 else if (fx == Pattern::FX_SLIDE) {
-                                     // Look ahead for next active melodic step
-                                     int nextStep = -1;
-                                     for (int s = state.currentStep + 1; s <= pattern.steps; ++s) {
-                                         if (pattern.stepPitches.count(s)) {
-                                             nextStep = s;
-                                             break;
-                                         }
-                                     }
-                                     // Wrap around check? Maybe not for now, just within pattern
-                                     
-                                     if (nextStep != -1) {
-                                         state.isSliding = true;
-                                         int nextSemitones = pattern.stepPitches[nextStep];
-                                         state.slideTargetRatio = std::pow(2.0, nextSemitones / 12.0);
-                                         
-                                         // Calculate duration to next step in samples
-                                         double stepDur = pattern.getStepDurationSamples(globalBpm.load());
-                                         double samplesDist = (nextStep - state.currentStep) * stepDur;
-                                         
-                                         // Apply Slide Time Parameter
-                                         float timeParam = 1.0f;
-                                         if (pattern.stepFXParams.count(state.currentStep) && 
-                                             pattern.stepFXParams.at(state.currentStep).count(Pattern::PAR_SLIDE_TIME)) {
-                                             timeParam = pattern.stepFXParams.at(state.currentStep).at(Pattern::PAR_SLIDE_TIME);
-                                         }
-                                         if (timeParam < 0.01f) timeParam = 0.01f;
-                                         
-                                         // Shorten distance based on time param (faster slide = less distance to cover target)
-                                         // Actually "Time" usually means duration. 
-                                         // If Time = 1.0 -> Full gap duration.
-                                         // If Time = 0.5 -> Half gap duration (faster slide).
-                                         samplesDist *= (double)timeParam;
-
-                                         if (samplesDist > 0) {
-                                             state.slideStepIncrement = (state.slideTargetRatio - state.currentSpeedRatio) / samplesDist;
-                                         }
-                                     }
-                                 }
-                                 else if (fx == Pattern::FX_STUTTER) {
-                                      state.isStuttering = true;
-                                      double stepDur = pattern.getStepDurationSamples(globalBpm.load());
-                                      
-                                      float rate = 4.0f; // Default
-                                      if (pattern.stepFXParams.count(state.currentStep) && 
-                                          pattern.stepFXParams.at(state.currentStep).count(Pattern::PAR_STUTTER_RATE)) {
-                                          rate = pattern.stepFXParams.at(state.currentStep).at(Pattern::PAR_STUTTER_RATE);
-                                      }
-                                      if (rate < 1.0f) rate = 1.0f;
-
-                                      state.stutterIntervalSamples = (int)(stepDur / rate);
-                                      if (state.stutterIntervalSamples < 100) state.stutterIntervalSamples = 100;
-                                 }
-                                 else if (fx == Pattern::FX_SLICE) {
-                                      // SLICE FX: Set playback start position to slice marker
-                                      if (pattern.stepFXParams.count(state.currentStep) &&
-                                          pattern.stepFXParams.at(state.currentStep).count(Pattern::PAR_SLICE_INDEX)) {
-                                          int sliceIdx = (int)pattern.stepFXParams.at(state.currentStep).at(Pattern::PAR_SLICE_INDEX);
-                                          
-                                          if (sliceIdx >= 0 && sliceIdx < (int)pattern.sliceMarkers.size()) {
-                                              state.samplePlaybackPosition = (double)pattern.sliceMarkers[sliceIdx];
-                                              
-                                              // Set end position for cutoff mode
-                                              if (pattern.stepFXParams.at(state.currentStep).count(Pattern::PAR_SLICE_CUTOFF)) {
-                                                  float cutoff = pattern.stepFXParams.at(state.currentStep).at(Pattern::PAR_SLICE_CUTOFF);
-                                                  if (cutoff > 0.5f && sliceIdx + 1 < (int)pattern.sliceMarkers.size()) {
-                                                      state.sliceEndPosition = pattern.sliceMarkers[sliceIdx + 1];
-                                                      state.stopAtSliceEnd = true;
-                                                  }
-                                              }
-                                          }
-                                      }
-                                 }
-                             }
-                        }
+                        // FX Processing (Modular)
+                        fxProcessor.processStepFX(state, pattern, state.currentStep, globalBpm.load());
                     }
                 }
                 
@@ -483,6 +405,7 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                         int64_t samplesInStep = state.samplePosition - state.stepStartSample;
                         if (samplesInStep > 0 && samplesInStep % state.stutterIntervalSamples == 0) {
                             state.samplePlaybackPosition = 0.0; // Re-trigger
+                            state.fadeInSamplesRemaining = 88; // Fade-in on stutter
                         }
                     }
                     
@@ -498,7 +421,8 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                          }
                     }
                     // Stop if we passed the end
-                     if (state.samplePlaybackPosition >= pattern.sampleBuffer.getNumSamples()) {
+                     if (state.samplePlaybackPosition >= pattern.sampleBuffer.getNumSamples() || 
+                        (state.sampleEndPosition > 0 && state.samplePlaybackPosition >= state.sampleEndPosition)) {
                          state.sampleIsPlaying = false;
                      }
 
@@ -508,42 +432,30 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                      if (state.sampleIsPlaying && sampleIdx >= 0 && sampleIdx < pattern.sampleBuffer.getNumSamples()) {
                         float sample = pattern.sampleBuffer.getSample(0, sampleIdx);
                         
-                        // Apply Filter if Squelch is active (Slide FX mainly)
-                        if (pattern.stepFXParams.count(state.currentStep) && 
-                            pattern.stepFXParams.at(state.currentStep).count(Pattern::PAR_SLIDE_SQUELCH)) {
-                            
-                            float squelch = pattern.stepFXParams.at(state.currentStep).at(Pattern::PAR_SLIDE_SQUELCH);
-                            if (squelch > 0.01f) {
-                                float baseFreq = 440.0f; 
-                                float currentFreq = baseFreq * (float)state.currentSpeedRatio;
-                                float cutoffNorm = currentFreq / (float)sampleRate * 2.0f * 3.14159f;
-                                cutoffNorm *= 2.0f; 
-                                if (cutoffNorm > 0.8f) cutoffNorm = 0.8f;
-
-                                float res = 1.0f + (squelch * 4.0f); // 1.0 .. 5.0
-                                sample = state.filter.process(sample, cutoffNorm, 1.0f / res);
-                            } else {
-                                state.filter.reset();
-                            }
-                        } else {
-                             state.filter.reset();
-                        }
+                        // Per-Sample FX (Filter, etc.)
+                        sample = fxProcessor.processSampleFX(state, sample, sampleRate, state.currentStep, pattern);
                         
                         // --- ANTI-CLICK ENVELOPE (1-2ms fade-in/out) ---
                         // ~88 samples at 44.1kHz is ~2ms
-                        const int fadeInSamples = 88;
-                        const int fadeOutSamples = 88;
-                        int totalSamples = pattern.sampleBuffer.getNumSamples();
+                        const int fadeLen = 88;
                         float envelope = 1.0f;
                         
-                        // Fade-in at start
-                        if (sampleIdx < fadeInSamples) {
-                            envelope = (float)sampleIdx / (float)fadeInSamples;
+                        // Dynamic Fade-In
+                        if (state.fadeInSamplesRemaining > 0) {
+                            envelope *= (1.0f - (float)state.fadeInSamplesRemaining / (float)fadeLen);
+                            state.fadeInSamplesRemaining--;
                         }
-                        // Fade-out at end
-                        else if (sampleIdx >= totalSamples - fadeOutSamples) {
-                            int samplesRemaining = totalSamples - sampleIdx;
-                            envelope = (float)samplesRemaining / (float)fadeOutSamples;
+                        
+                        // Fade-out at end (either Buffer End or Custom End)
+                        int64_t effectiveEnd = pattern.sampleBuffer.getNumSamples();
+                        if (state.sampleEndPosition > 0 && state.sampleEndPosition < effectiveEnd) {
+                            effectiveEnd = state.sampleEndPosition;
+                        }
+                        
+                        if (sampleIdx >= effectiveEnd - fadeLen) {
+                            int samplesRemaining = effectiveEnd - sampleIdx;
+                            if (samplesRemaining < 0) samplesRemaining = 0;
+                            envelope *= ((float)samplesRemaining / (float)fadeLen);
                         }
                         
                         currentSample = sample * state.currentVelocity * envelope;

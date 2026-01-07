@@ -135,6 +135,7 @@ struct GuiState {
     std::string shiftEditingPatternName; // The pattern currently being edited via Shift mode
     int bpm = 120;
     char globalBpmBuffer[8] = "120";
+    PatternChain activeChain; // Current Chain or Song Sequence
     
     // UI Layout
     const int COLUMN_WIDTH = 160;

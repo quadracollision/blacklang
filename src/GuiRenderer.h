@@ -2,6 +2,10 @@
 
 #include "GuiState.h"
 #include "AudioEngine.h"
+#include "gui/TransportBar.h"
+#include "gui/TrackView.h"
+#include "gui/DragDrop.h"
+#include "gui/PatternEditor.h"
 
 class GuiRenderer {
 public:
@@ -13,6 +17,11 @@ public:
 private:
     GuiState& state;
     AudioEngine& engine;
+    
+    // Modular GUI components
+    gui::TransportBar transportBar;
+    gui::TrackView trackView;
+    gui::PatternEditor patternEditor;
     
     Font font;
     Texture2D patternIcon;
