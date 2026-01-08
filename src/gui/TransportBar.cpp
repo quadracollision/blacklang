@@ -219,25 +219,40 @@ void TransportBar::DrawBPM() {
 void TransportBar::DrawCopyPaste() {
     Rectangle rect = {0, (float)GetScreenHeight() - state.FOOTER_HEIGHT, (float)GetScreenWidth(), (float)state.FOOTER_HEIGHT};
     
-    // Copy Button
-    Rectangle copyBtn = {20, rect.y + 15, 50, 30};
-    DrawRectangleRec(copyBtn, state.trackClipboard.isCopyMode ? ORANGE : DARKGRAY);
-    DrawText("Copy", copyBtn.x + 5, copyBtn.y + 8, 14, WHITE);
+    // Copy Button (Starts the workflow)
+    Rectangle copyBtn = {20, rect.y + 15, 60, 30};
+    bool isActive = state.trackClipboard.isSelectingSource;
+    
+    // If we are already pasting, maybe the Copy button acts as a cancel or just stays active? 
+    // Let's keep it simple: "Copy" toggles Source Selection.
+    if (state.trackClipboard.isPasting) isActive = true; // Stay active to show we are in "Copy Mode"
+    
+    DrawRectangleRec(copyBtn, isActive ? ORANGE : DARKGRAY);
+    DrawText("Copy", copyBtn.x + 10, copyBtn.y + 8, 14, WHITE);
     
     if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), copyBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        state.trackClipboard.isCopyMode = !state.trackClipboard.isCopyMode;
-        state.trackClipboard.isPasteMode = false;
+        // Toggle selection mode
+        if (state.trackClipboard.isPasting) {
+             // If we were pasting, clicking Copy resets everything? Or maybe starts a NEW copy?
+             // Let's say it starts a NEW copy.
+             state.trackClipboard.isPasting = false;
+             state.trackClipboard.isSelectingSource = true;
+        } else {
+             state.trackClipboard.isSelectingSource = !state.trackClipboard.isSelectingSource;
+        }
     }
     
-    // Paste Button
-    Rectangle pasteBtn = {80, rect.y + 15, 55, 30};
-    bool canPaste = state.trackClipboard.hasData;
-    DrawRectangleRec(pasteBtn, state.trackClipboard.isPasteMode ? MAGENTA : (canPaste ? GRAY : DARKGRAY));
-    DrawText("Paste", pasteBtn.x + 5, pasteBtn.y + 8, 14, WHITE);
-    
-    if (!state.editor.isOpen && canPaste && CheckCollisionPointRec(GetMousePosition(), pasteBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        state.trackClipboard.isPasteMode = !state.trackClipboard.isPasteMode;
-        state.trackClipboard.isCopyMode = false;
+    // Paste Button - Only visible if we are in the workflow
+    // It acts as "Done" or "Stop Pasting"
+    if (state.trackClipboard.isSelectingSource || state.trackClipboard.isPasting) {
+        Rectangle pasteBtn = {90, rect.y + 15, 80, 30}; // Widened for longer text
+        DrawRectangleRec(pasteBtn, RED); // Red for "Exit/Stop" feel
+        DrawText(state.trackClipboard.isPasting ? "Pasting..." : "Cancel", pasteBtn.x + 8, pasteBtn.y + 8, 14, WHITE);
+        
+        if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), pasteBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            state.trackClipboard.isSelectingSource = false;
+            state.trackClipboard.isPasting = false;
+        }
     }
 }
 

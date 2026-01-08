@@ -109,8 +109,10 @@ struct PatternEditorState {
 struct TrackClipboard {
     bool hasData = false;
     std::string patternName;
-    bool isCopyMode = false;
-    bool isPasteMode = false;
+    
+    // New Workflow State
+    bool isSelectingSource = false; // Step 1: User clicked Copy, waiting for source click
+    bool isPasting = false;         // Step 2: User selected source, allowing multi-paste
 };
 
 enum class PopupType { None, Main, Audio, Project };

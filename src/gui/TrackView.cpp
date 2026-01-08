@@ -20,8 +20,8 @@ void TrackView::Draw() {
         float dist = Vector2Distance(GetMousePosition(), state.drag.initialClickPos);
         double holdDuration = GetTime() - state.drag.holdStartTime;
         
-        // Promote if moved > 5px OR held > 0.3s
-        if (dist > 5.0f || holdDuration > 0.3) {
+        // Promote if moved > 5px OR held > 0.225s (75% of previous 0.3s)
+        if (dist > 5.0f || holdDuration > 0.225) {
             state.drag.isDragging = true;
             state.drag.isHolding = false;
         } else if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
@@ -145,24 +145,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
         return;
     }
     
-    // Highlight column when in paste mode and hovering
-    if (state.trackClipboard.isPasteMode && state.trackClipboard.hasData) {
-        if (CheckCollisionPointRec(GetMousePosition(), col.bounds)) {
-            DrawRectangleRec(col.bounds, Color{255, 0, 255, 40});
-            DrawRectangleLinesEx(col.bounds, 3, MAGENTA);
-            
-            if (!state.editor.isOpen && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                Pattern* origPat = engine.getPattern(state.trackClipboard.patternName);
-                if (origPat) {
-                    Pattern copy = *origPat;
-                    copy.name = origPat->name + "_" + std::to_string(state.patternIdCounter++);
-                    if (copy.samplePath != "") engine.loadSample(copy);
-                    engine.addPattern(copy);
-                    col.patternNames.push_back(copy.name);
-                }
-            }
-        }
-    }
+    // Old column highlighting removed. Cell highlighting handled in cell loop below.
     
     // Content area
     float topMargin = 40.0f;
@@ -281,12 +264,15 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
                     DrawStepGrid(gridRect, *pat, currentStep, state);
                 }
 
+                // Drag hold animation removed per request
+                /*
                 if (isHoldingThis) {
-                    float progress = (float)(GetTime() - state.drag.holdStartTime) / 0.3f;
+                    float progress = (float)(GetTime() - state.drag.holdStartTime) / 0.225f;
                     if (progress > 1.0f) progress = 1.0f;
                     DrawRectangleLinesEx(cellRect, 1, YELLOW);
                     DrawRectangle(cellRect.x, cellRect.y + cellRect.height - 5, cellRect.width * progress, 5, YELLOW);
                 }
+                */
                 
                 if (state.isShiftMode && !state.shiftEditingPatternName.empty() && 
                     col.patternNames[i] == state.shiftEditingPatternName && !isSelected) {
@@ -295,6 +281,33 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
                 
                 HandlePatternClick(index, (int)i, col.patternNames[i], cellRect);
             }
+        }
+        
+        // NEW WORKFLOW HIGHLIGHTING: Source Selection
+        if (state.trackClipboard.isSelectingSource && !overlapsButton) {
+             // Highlight pattern to be copied (must be occupied)
+             if (!col.patternNames[i].empty() && CheckCollisionPointRec(GetMousePosition(), cellRect)) {
+                 DrawRectangleLinesEx(cellRect, 2, ORANGE);
+                 DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{255, 161, 0, 50}); // translucent orange
+             }
+        }
+
+        // PASTE MODE HIGHLIGHTING & INTERACTION
+        if (state.trackClipboard.isPasting && !overlapsButton) {
+            // Check if slot is empty
+            bool isEmpty = col.patternNames[i].empty();
+            
+            // Highlight specific cell only if empty
+           if (isEmpty && CheckCollisionPointRec(GetMousePosition(), cellRect)) {
+                DrawRectangleLinesEx(cellRect, 2, MAGENTA);
+                DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{255, 0, 255, 50});
+                
+                // Handle Paste Click directly here or via HandlePatternClick?
+                // HandlePatternClick handles mechanics, let's delegate or do it here.
+                // Doing it here is cleaner for "empty" slots since HandlePatternClick is called for both.
+                // Actually HandlePatternClick IS called for empty slots too (line 266).
+                // So let's rely on HandlePatternClick to trigger the paste action to avoid double-handling.
+           }
         }
         
         // Draw selection for EMPTY cells too if selected
@@ -378,41 +391,60 @@ void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::strin
         static std::string lastPatternClickName = "";
 
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            // Check Double Click FIRST
-            double now = GetTime();
-            bool isDoubleClick = (now - lastPatternClickTime < 0.3 && lastPatternClickName == patternName);
-            lastPatternClickTime = now;
-            lastPatternClickName = patternName;
-            
-            if (isDoubleClick) {
-                 Pattern* p = engine.getPattern(patternName);
-                 if (p) {
-                     state.editor.currentPattern = *p;
-                     state.editor.isOpen = true;
-                     state.editor.showFileBrowser = false;
-                     strcpy(state.editor.nameBuffer, p->name.c_str());
-                     strcpy(state.editor.originalName, p->name.c_str());
-                     strcpy(state.editor.samplePathBuffer, p->samplePath.c_str());
-                     sprintf(state.editor.bpmBuffer, "%d", p->bpm);
-                     sprintf(state.editor.stepsBuffer, "%d", p->steps);
-                     for (int s = 0; s < 64; ++s) state.editor.stepStates[s] = p->shouldTriggerAt(s+1);
-                 }
-                 return; // Stop further processing (don't toggle selection/drag)
-            }
-
-            // Copy mode
-            if (state.trackClipboard.isCopyMode) {
+            // NEW WORKFLOW: Source Selection (Priority over everything else)
+            if (state.trackClipboard.isSelectingSource) {
                 state.trackClipboard.patternName = patternName;
                 state.trackClipboard.hasData = true;
-                state.trackClipboard.isCopyMode = false;
-                state.trackClipboard.isPasteMode = true;
+                state.trackClipboard.isSelectingSource = false;
+                state.trackClipboard.isPasting = true; // Enter paste mode immediately
                 return;
             }
             
-            if (state.trackClipboard.isPasteMode && state.trackClipboard.hasData) {
+            // NEW WORKFLOW: Pasting (Priority over selection/edit)
+            if (state.trackClipboard.isPasting && state.trackClipboard.hasData) {
+                // Check if target slot is empty
+                if (state.columns[(size_t)colIndex].patternNames[(size_t)slotIndex].empty()) {
+                    // Perform Paste
+                     Pattern* origPat = engine.getPattern(state.trackClipboard.patternName);
+                     if (origPat) {
+                        Pattern copy = *origPat;
+                        copy.name = origPat->name + "_" + std::to_string(state.patternIdCounter++);
+                        if (copy.samplePath != "") engine.loadSample(copy);
+                        engine.addPattern(copy);
+                        
+                        // Assign to slot
+                        state.columns[(size_t)colIndex].patternNames[(size_t)slotIndex] = copy.name;
+                     }
+                }
                 return;
             }
             
+            // Header Click Logic (Single Click to Edit)
+            // Replaces double-click logic. Only applies to occupied patterns.
+            if (!patternName.empty()) {
+                Rectangle headerRect = {cellRect.x, cellRect.y, cellRect.width, 22};
+                if (CheckCollisionPointRec(GetMousePosition(), headerRect)) {
+                     Pattern* p = engine.getPattern(patternName);
+                     if (p) {
+                         state.editor.currentPattern = *p;
+                         state.editor.isOpen = true;
+                         state.editor.showFileBrowser = false;
+                         strcpy(state.editor.nameBuffer, p->name.c_str());
+                         strcpy(state.editor.originalName, p->name.c_str());
+                         strcpy(state.editor.samplePathBuffer, p->samplePath.c_str());
+                         sprintf(state.editor.bpmBuffer, "%d", p->bpm);
+                         sprintf(state.editor.stepsBuffer, "%d", p->steps);
+                         for (int s = 0; s < 64; ++s) state.editor.stepStates[s] = p->shouldTriggerAt(s+1);
+                     }
+                     return; // Create separation: Header = Edit, Body = Select
+                }
+            }
+            
+            // Double Click check removed (superseded by header click)
+            double now = GetTime();
+            lastPatternClickTime = now;
+            lastPatternClickName = patternName;
+
             // Shift mode - edit without changing selection
             if (state.isShiftMode && state.isLiveEditMode) {
                 Pattern* p = engine.getPattern(patternName);
