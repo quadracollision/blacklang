@@ -35,6 +35,15 @@ struct DragState {
     double holdStartTime = 0.0;
     bool isHolding = false;
     Vector2 initialClickPos;
+    
+    // Touch Scroll
+    bool isScrolling = false;
+    int scrollColumnIndex = -1;
+    Vector2 lastMousePos = {0,0};
+    
+    // Scrollbar Interaction
+    int scrollbarDraggingColumn = -1;
+    float scrollbarClickOffsetY = 0.0f;
 };
 
 struct StepClipboard {
@@ -163,7 +172,7 @@ struct GuiState {
     PatternChain activeChain; // Current Chain or Song Sequence
     
     // UI Layout
-    const int COLUMN_WIDTH = 220; // Increased from 160
+    const int COLUMN_WIDTH = 250; // Increased to 250
     const int PATTERN_HEIGHT = 90;
     const int HEADER_HEIGHT = 60;
     const int FOOTER_HEIGHT = 60;

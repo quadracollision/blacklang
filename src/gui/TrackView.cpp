@@ -30,6 +30,23 @@ void TrackView::Draw() {
         }
     }
 
+    // 1.5 Touch Scroll Logic
+    if (state.drag.isScrolling) {
+        if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+            Vector2 mouse = GetMousePosition();
+            Vector2 delta = Vector2Subtract(mouse, state.drag.lastMousePos);
+            
+            if (state.drag.scrollColumnIndex >= 0 && state.drag.scrollColumnIndex < (int)state.columns.size()) {
+                // Drag UP (negative Y) should increase scrollY (move content UP, show lower content)
+                state.columns[(size_t)state.drag.scrollColumnIndex].scrollY -= delta.y;
+            }
+            state.drag.lastMousePos = mouse;
+        } else {
+             state.drag.isScrolling = false;
+             state.drag.scrollColumnIndex = -1;
+        }
+    }
+
     // 2. Draw Columns
     float startX = 20.0f;
     float colX = startX - state.mainScrollX;
@@ -225,7 +242,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
         Rectangle cellRect = {
             col.bounds.x + 5,
             y,
-            col.bounds.width - 20, // Reduced width to clear scrollbar
+            col.bounds.width - 25, // Reduced width to clear scrollbar
             (float)state.PATTERN_HEIGHT
         };
         y += state.PATTERN_HEIGHT + 5;
@@ -327,17 +344,83 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
     
     // Scrollbar
     if (totalContentHeight > contentArea.height) {
-        float barW = 6;
+        float barW = 14; 
         float barX = col.bounds.x + col.bounds.width - barW - 2;
         float barY = contentArea.y;
         float barH = contentArea.height;
         
         float viewRatio = contentArea.height / totalContentHeight;
         float thumbH = std::max(20.0f, contentArea.height * viewRatio);
-        float thumbY = barY + (col.scrollY / (totalContentHeight - contentArea.height)) * (contentArea.height - thumbH);
         
-        DrawRectangle(barX, barY, barW, barH, Color{0, 0, 0, 100});
-        DrawRectangle(barX, thumbY, barW, thumbH, Color{80, 80, 80, 200});
+        float scrollableH = totalContentHeight - contentArea.height;
+        float trackH = contentArea.height - thumbH;
+        
+        float thumbY = barY + (col.scrollY / scrollableH) * trackH;
+        
+        Rectangle barRect = {barX, barY, barW, barH};
+        Rectangle thumbRect = {barX, thumbY, barW, thumbH};
+        
+        // Interaction
+        if (state.drag.scrollbarDraggingColumn == index) {
+            // DRAGGING
+            if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+                float mouseY = GetMousePosition().y;
+                float newThumbY = mouseY - state.drag.scrollbarClickOffsetY;
+                
+                // Clamp thumb
+                if (newThumbY < barY) newThumbY = barY;
+                if (newThumbY > barY + trackH) newThumbY = barY + trackH;
+                
+                // Calculate and apply scrollY
+                float ratio = (trackH > 0) ? (newThumbY - barY) / trackH : 0.0f;
+                // Clamp ratio 0..1 to be safe
+                if (ratio < 0.0f) ratio = 0.0f;
+                if (ratio > 1.0f) ratio = 1.0f;
+                
+                col.scrollY = ratio * scrollableH;
+            } else {
+                state.drag.scrollbarDraggingColumn = -1;
+            }
+        } else {
+            // IDLE / CLICK
+            if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), barRect)) {
+                 DrawRectangleRec(barRect, Color{40, 40, 40, 150}); // Hover
+                 
+                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                     state.drag.scrollbarDraggingColumn = index;
+                     float mouseY = GetMousePosition().y;
+                     
+                     if (CheckCollisionPointRec(GetMousePosition(), thumbRect)) {
+                         // Clicked Thumb
+                         state.drag.scrollbarClickOffsetY = mouseY - thumbY;
+                     } else {
+                         // Clicked Track - Jump center to mouse
+                         float desiredThumbY = mouseY - thumbH/2;
+                         // Clamp
+                         if (desiredThumbY < barY) desiredThumbY = barY;
+                         if (desiredThumbY > barY + trackH) desiredThumbY = barY + trackH;
+                         
+                         // Apply early
+                         float ratio = (trackH > 0) ? (desiredThumbY - barY) / trackH : 0.0f;
+                         if (ratio < 0.0f) ratio = 0.0f;
+                         if (ratio > 1.0f) ratio = 1.0f;
+                         
+                         col.scrollY = ratio * scrollableH;
+                         
+                         // Set offset to center so dragging continues naturally
+                         state.drag.scrollbarClickOffsetY = thumbH/2;
+                     }
+                 }
+            } else {
+                DrawRectangleRec(barRect, Color{0, 0, 0, 100});
+            }
+        }
+        
+        // Re-calc thumbY if scroll changed
+        thumbY = barY + (col.scrollY / scrollableH) * trackH;
+        thumbRect.y = thumbY;
+
+        DrawRectangleRec(thumbRect, state.drag.scrollbarDraggingColumn == index ? LIGHTGRAY : Color{80, 80, 80, 200});
     }
 
     // Add Button (Small, Left) - Drawn using pre-calculated rect
@@ -507,14 +590,24 @@ void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::strin
                 engine.updateActivePatterns(allActive);
             }
             
-            // Start hold for drag
-            state.drag.isDragging = false; // Reset drag?
-            state.drag.isHolding = true;
-            state.drag.holdStartTime = GetTime();
-            state.drag.initialClickPos = GetMousePosition();
-            state.drag.sourceColumnIndex = colIndex;
-            state.drag.sourceSlotIndex = slotIndex;
-            state.drag.patternName = patternName;
+            // Start hold for drag OR scroll
+            if (!patternName.empty()) {
+                state.drag.isDragging = false; // Reset drag?
+                state.drag.isHolding = true;
+                state.drag.holdStartTime = GetTime();
+                state.drag.initialClickPos = GetMousePosition();
+                state.drag.sourceColumnIndex = colIndex;
+                state.drag.sourceSlotIndex = slotIndex;
+                state.drag.patternName = patternName;
+                state.drag.isScrolling = false; // Priority to drag
+            } else {
+                // Empty cell -> Start Scroll
+                state.drag.isScrolling = true;
+                state.drag.scrollColumnIndex = colIndex;
+                state.drag.lastMousePos = GetMousePosition();
+                state.drag.isHolding = false;
+                state.drag.isDragging = false;
+            }
         }
     }
 }

@@ -593,7 +593,15 @@ void PatternEditor::Draw() {
                 bool isSelected = (state.editor.selectedNote == i);
                 DrawRectangleRec(keyRect, isSelected ? YELLOW : WHITE);
                 DrawRectangleLinesEx(keyRect, 1, BLACK);
-                if (CheckCollisionPointRec(GetMousePosition(), keyRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) state.editor.selectedNote = i;
+                if (CheckCollisionPointRec(GetMousePosition(), keyRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                    state.editor.selectedNote = i;
+                    // Update selected step's pitch if in edit mode
+                    if (state.editor.selectedStep != -1 && state.editor.stepStates[state.editor.selectedStep]) {
+                        int shift = (state.editor.selectedOctave - 4) * 12 + i;
+                        p.stepPitches[state.editor.selectedStep + 1] = shift;
+                        engine.addPattern(p);
+                    }
+                }
                 DrawText(notes[i], keyRect.x + 5, keyRect.y + keyHeight - 20, 10, BLACK);
                 keyX += whiteKeyWidth;
             }
@@ -612,7 +620,15 @@ void PatternEditor::Draw() {
                  bool isSelected = (state.editor.selectedNote == i);
                  DrawRectangleRec(keyRect, isSelected ? YELLOW : BLACK);
                  DrawRectangleLinesEx(keyRect, 1, DARKGRAY);
-                 if (CheckCollisionPointRec(GetMousePosition(), keyRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) state.editor.selectedNote = i;
+                 if (CheckCollisionPointRec(GetMousePosition(), keyRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                     state.editor.selectedNote = i;
+                     // Update selected step's pitch if in edit mode
+                     if (state.editor.selectedStep != -1 && state.editor.stepStates[state.editor.selectedStep]) {
+                         int shift = (state.editor.selectedOctave - 4) * 12 + i;
+                         p.stepPitches[state.editor.selectedStep + 1] = shift;
+                         engine.addPattern(p);
+                     }
+                 }
             }
         }
         startY += 90;

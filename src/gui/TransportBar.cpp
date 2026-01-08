@@ -70,13 +70,17 @@ void TransportBar::DrawRecording() {
         Rectangle nameBox = {panelX + 60, panelY + 8, 100, 24};
         DrawRectangleRec(nameBox, BLACK);
         DrawRectangleLinesEx(nameBox, 1, WHITE);
+        
+        // Clip text to box
+        BeginScissorMode((int)nameBox.x + 2, (int)nameBox.y, (int)nameBox.width - 4, (int)nameBox.height);
         DrawText(state.recorder.filenameBuffer, nameBox.x + 5, nameBox.y + 4, 14, WHITE);
         
-        // Simple cursor simulation (blink?) or just static for now
+        // Simple cursor simulation (blink?)
         if ((int)(GetTime() * 2) % 2 == 0) {
             int len = MeasureText(state.recorder.filenameBuffer, 14);
             DrawText("|", nameBox.x + 5 + len, nameBox.y + 4, 14, WHITE);
         }
+        EndScissorMode();
         
         // Handle Input (only if pattern editor is NOT open)
         if (!state.editor.isOpen) {
