@@ -212,7 +212,6 @@ void PatternEditor::Draw() {
     
     // Update gridRect height to match content
     gridRect.height = gridHeight;
-    float cellH = stepSize; 
     
     for (int i = 0; i < stepCount; ++i) {
         int col = i % cols;

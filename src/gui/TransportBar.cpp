@@ -78,21 +78,23 @@ void TransportBar::DrawRecording() {
             DrawText("|", nameBox.x + 5 + len, nameBox.y + 4, 14, WHITE);
         }
         
-        // Handle Input (basic)
-        int key = GetCharPressed();
-        while (key > 0) {
-            if ((key >= 32) && (key <= 125)) {
-                int len = strlen(state.recorder.filenameBuffer);
-                if (len < 63) {
-                    state.recorder.filenameBuffer[len] = (char)key;
-                    state.recorder.filenameBuffer[len+1] = '\0';
+        // Handle Input (only if pattern editor is NOT open)
+        if (!state.editor.isOpen) {
+            int key = GetCharPressed();
+            while (key > 0) {
+                if ((key >= 32) && (key <= 125)) {
+                    int len = strlen(state.recorder.filenameBuffer);
+                    if (len < 63) {
+                        state.recorder.filenameBuffer[len] = (char)key;
+                        state.recorder.filenameBuffer[len+1] = '\0';
+                    }
                 }
+                key = GetCharPressed();
             }
-            key = GetCharPressed();
-        }
-        if (IsKeyPressed(KEY_BACKSPACE)) {
-             int len = strlen(state.recorder.filenameBuffer);
-             if (len > 0) state.recorder.filenameBuffer[len-1] = '\0';
+            if (IsKeyPressed(KEY_BACKSPACE)) {
+                 int len = strlen(state.recorder.filenameBuffer);
+                 if (len > 0) state.recorder.filenameBuffer[len-1] = '\0';
+            }
         }
 
         // Switch: "Stems" or "Whole"
