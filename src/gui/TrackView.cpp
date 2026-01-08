@@ -434,6 +434,7 @@ void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::strin
                          strcpy(state.editor.samplePathBuffer, p->samplePath.c_str());
                          sprintf(state.editor.bpmBuffer, "%d", p->bpm);
                          sprintf(state.editor.stepsBuffer, "%d", p->steps);
+                         sprintf(state.editor.syncBaseBuffer, "%d", p->syncBase);
                          for (int s = 0; s < 64; ++s) state.editor.stepStates[s] = p->shouldTriggerAt(s+1);
                      }
                      return; // Create separation: Header = Edit, Body = Select
@@ -457,6 +458,7 @@ void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::strin
                     strcpy(state.editor.samplePathBuffer, p->samplePath.c_str());
                     sprintf(state.editor.bpmBuffer, "%d", p->bpm);
                     sprintf(state.editor.stepsBuffer, "%d", p->steps);
+                    sprintf(state.editor.syncBaseBuffer, "%d", p->syncBase);
                     for (int s = 0; s < 64; ++s) state.editor.stepStates[s] = p->shouldTriggerAt(s+1);
                 }
                 return;

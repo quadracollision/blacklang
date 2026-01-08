@@ -68,6 +68,7 @@ struct PatternEditorState {
     char samplePathBuffer[256] = {0};
     char bpmBuffer[8] = {0};
     char stepsBuffer[4] = {0};
+    char syncBaseBuffer[4] = {0};  // Sync base for polyrhythm timing
     
     // File Browser
     bool showFileBrowser = false;

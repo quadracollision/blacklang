@@ -10,6 +10,7 @@ struct Pattern {
     std::string samplePath;
     int bpm = 120;
     int steps = 16;
+    int syncBase = 0;  // 0 = fit to 1 bar, >0 = that many steps per bar (enables polyrhythms)
     std::vector<int> activeSteps;  // 1-indexed step positions
     std::vector<int> sliceMarkers; // Sample indices for slice points
     
@@ -61,7 +62,8 @@ struct Pattern {
         // If steps=16 -> beatsPerStep = 0.25.
         // duration = (60/bpm) * 0.25. Correct for 16th notes.
         
-        double beatsPerStep = 4.0 / steps;  
+        int baseSteps = (syncBase > 0) ? syncBase : steps;
+        double beatsPerStep = 4.0 / baseSteps;
         double secondsPerBeat = 60.0 / currentBpm;
         return secondsPerBeat * beatsPerStep * sampleRate;
     }

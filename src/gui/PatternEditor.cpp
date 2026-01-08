@@ -104,9 +104,13 @@ void PatternEditor::Draw() {
     
     startY += 40;
     startY += 40;
-    // Steps (BPM Removed)
     DrawText("Steps:", winRect.x + 20, startY, 20, WHITE);
     DrawTextInput({winRect.x + 100, startY, 60, 30}, state.editor.stepsBuffer, 4, 3, state.editor.focusedFieldId);
+    
+    // Sync Base (for polyrhythm timing) - on its own line
+    startY += 40;
+    DrawText("Sync:", winRect.x + 20, startY, 20, WHITE);
+    DrawTextInput({winRect.x + 100, startY, 60, 30}, state.editor.syncBaseBuffer, 4, 4, state.editor.focusedFieldId);
     
     // Velocity Knob
     float knobX = winRect.x + 280;
@@ -878,6 +882,7 @@ void PatternEditor::Draw() {
             p.samplePath = sPath;
             p.bpm = state.bpm;
             p.steps = atoi(state.editor.stepsBuffer);
+            p.syncBase = atoi(state.editor.syncBaseBuffer);
             
             p.activeSteps.clear();
             for (int i=0; i<64; ++i) {
@@ -943,6 +948,7 @@ void PatternEditor::Draw() {
         p.samplePath = sPath;
         p.bpm = state.bpm; // Inherit global BPM
         p.steps = atoi(state.editor.stepsBuffer);
+        p.syncBase = atoi(state.editor.syncBaseBuffer);
         
         p.activeSteps.clear();
         for (int i=0; i<64; ++i) {

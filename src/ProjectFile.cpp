@@ -32,6 +32,7 @@ bool ProjectFile::save(const std::string& filename,
         p->setProperty("sample", juce::String(pattern.samplePath));
         p->setProperty("bpm", pattern.bpm);
         p->setProperty("steps", pattern.steps);
+        p->setProperty("syncBase", pattern.syncBase);
         
         juce::Array<juce::var> stepsArray;
         for (int step : pattern.activeSteps) {
@@ -136,6 +137,7 @@ bool ProjectFile::load(const std::string& filename,
             pattern.samplePath = p["sample"].toString().toStdString();
             pattern.bpm = (int)p["bpm"];
             pattern.steps = (int)p["steps"];
+            pattern.syncBase = (int)p["syncBase"];
             
             juce::var stepsVar = p["activeSteps"];
             if (stepsVar.isArray()) {
