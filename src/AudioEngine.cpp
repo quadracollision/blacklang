@@ -832,6 +832,7 @@ void AudioEngine::triggerSample(Pattern& pattern, int step) {
 }
 
 void AudioEngine::startRecording(const std::string& filename, bool stems) {
+    std::lock_guard<std::mutex> lock(recordingMutex);
     recordingStems = stems;
     
     if (stems) {
