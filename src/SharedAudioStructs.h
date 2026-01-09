@@ -62,5 +62,8 @@ struct PatternPlayState {
         stutterIntervalSamples = 0;
         stutterCounter = 0;
         filter.reset();
+        isReverse = false;
     }
+    
+    bool isReverse = false;
 };

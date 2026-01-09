@@ -346,7 +346,43 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
         std::fill(outputChannelData[ch], outputChannelData[ch] + numSamples, 0.0f);
     }
     
-    if (!playing.load() || paused.load()) return;
+    // Helper Lambda for Preview Mixing
+    auto mixPreview = [&](float* const* targetBuffer, int numTargetChannels) {
+        if (previewState.active && previewState.sourcePattern && previewState.sourcePattern->sampleBuffer.getNumSamples() > 0) {
+            int totalSamples = previewState.sourcePattern->sampleBuffer.getNumSamples();
+            int64_t end = previewState.endPosition > 0 ? previewState.endPosition : totalSamples;
+            
+            for (int i = 0; i < numSamples; ++i) {
+                if (previewState.active && previewState.position < end && previewState.position < totalSamples) {
+                     float vol = 1.0f; 
+                     for (int ch = 0; ch < numTargetChannels; ++ch) {
+                         int srcCh = std::min(ch, previewState.sourcePattern->sampleBuffer.getNumChannels() - 1);
+                         targetBuffer[ch][i] += previewState.sourcePattern->sampleBuffer.getSample(srcCh, (int)previewState.position) * vol;
+                     }
+                     previewState.position++;
+                     if (previewState.position >= end || previewState.position >= totalSamples) {
+                        previewState.active = false;
+                     }
+                }
+            }
+        }
+    };
+    
+    if (!playing.load() || paused.load()) {
+         mixPreview(outputChannelData, numOutputChannels); // Allow preview even if paused/stopped!
+         
+         // Fix: Ensure we record even if the sequencer is stopped
+         {
+             std::unique_lock<std::mutex> lock(recordingMutex, std::try_to_lock);
+             if (lock.owns_lock()) {
+                 if (mainRecorder.isRecording()) {
+                     mainRecorder.writeBlock(outputChannelData, numSamples, numOutputChannels);
+                 }
+             }
+         }
+         
+         return;
+    }
     
     std::lock_guard<std::mutex> lock(patternMutex);
     
@@ -416,13 +452,30 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                 
                 // Process and mix sample if playing
                 if (pattern.sampleBuffer.getNumSamples() > 0 && state.sampleIsPlaying) {
-                    state.samplePlaybackPosition += state.currentSpeedRatio;
+                    if (state.isReverse) {
+                        state.samplePlaybackPosition -= state.currentSpeedRatio;
+                    } else {
+                        state.samplePlaybackPosition += state.currentSpeedRatio;
+                    }
                     
                     // Handle Stutter Re-trigger
                     if (state.isStuttering && state.stutterIntervalSamples > 0) {
                         int64_t samplesInStep = state.samplePosition - state.stepStartSample;
                         if (samplesInStep > 0 && samplesInStep % state.stutterIntervalSamples == 0) {
-                            state.samplePlaybackPosition = 0.0; // Re-trigger
+                            // Re-trigger
+                            if (state.isReverse) {
+                                // For reverse, re-trigger from 'start' (which is the high end) ??
+                                // Or simpler: just reset to initial position for this step
+                                // Implementation complexity: we need to store initial trigger pos.
+                                // Fallback: just standard retrigger logic might look weird in reverse.
+                                // Let's just reset to whatever 'start' means.
+                                // Current implementation of stutter overrides playback pos.
+                                state.samplePlaybackPosition = (double)pattern.sampleBuffer.getNumSamples(); // Default
+                                // If specific slice/reverse logic was processed, this might break it.
+                                // Ideally we re-run processStepFX? OR just ignore stutter on reverse for now to be safe.
+                            } else {
+                                state.samplePlaybackPosition = 0.0; 
+                            }
                             state.fadeInSamplesRemaining = 88; // Fade-in on stutter
                         }
                     }
@@ -437,10 +490,18 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                          }
                     }
                     
-                    // Stop if we passed the end
-                     if (state.samplePlaybackPosition >= pattern.sampleBuffer.getNumSamples() || 
-                        (state.sampleEndPosition > 0 && state.samplePlaybackPosition >= state.sampleEndPosition)) {
-                         state.sampleIsPlaying = false;
+                    // Stop conditions
+                     if (!state.isReverse) {
+                         if (state.samplePlaybackPosition >= pattern.sampleBuffer.getNumSamples() || 
+                            (state.sampleEndPosition > 0 && state.samplePlaybackPosition >= state.sampleEndPosition)) {
+                             state.sampleIsPlaying = false;
+                         }
+                     } else {
+                         // Reverse stop
+                         if (state.samplePlaybackPosition < 0 || 
+                            (state.sampleEndPosition > 0 && state.samplePlaybackPosition <= state.sampleEndPosition)) {
+                             state.sampleIsPlaying = false;
+                         }
                      }
 
                      float currentSample = 0.0f;
@@ -489,6 +550,15 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
     
     // Mix all tracks to master and apply master processing
     busManager.mixTracksToMaster();
+    
+    // Inject Preview into Master Bus (so it gets recorded)
+    AudioBus* masterBusForPreview = busManager.getMasterBus();
+    float* masterWritePointers[2] = {
+        masterBusForPreview->buffer.getWritePointer(0),
+        masterBusForPreview->buffer.getNumChannels() > 1 ? masterBusForPreview->buffer.getWritePointer(1) : masterBusForPreview->buffer.getWritePointer(0)
+    };
+    mixPreview(masterWritePointers, masterBusForPreview->buffer.getNumChannels());
+
     busManager.applyMasterProcessing();
     
     // Copy master bus to output
@@ -502,27 +572,32 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
     }
     
     // Send to Recorder - now recording from buses!
-    if (mainRecorder.isRecording()) {
-        // Record master bus
-        const float* masterChannels[2] = {
-            masterBus->buffer.getReadPointer(0),
-            masterBus->buffer.getNumChannels() > 1 ? masterBus->buffer.getReadPointer(1) : masterBus->buffer.getReadPointer(0)
-        };
-        mainRecorder.writeBlock(masterChannels, numSamples, 2);
-    }
-    
-    // Record stems if enabled
-    if (recordingStems) {
-        for (auto& pair : stemRecorders) {
-            const std::string& trackName = pair.first;
-            AudioBus* trackBus = busManager.getTrack(trackName);
-            
-            if (trackBus && trackBus->buffer.getNumSamples() > 0) {
-                const float* trackChannels[2] = {
-                    trackBus->buffer.getReadPointer(0),
-                    trackBus->buffer.getNumChannels() > 1 ? trackBus->buffer.getReadPointer(1) : trackBus->buffer.getReadPointer(0)
+    {
+        std::unique_lock<std::mutex> lock(recordingMutex, std::try_to_lock);
+        if (lock.owns_lock()) {
+            if (mainRecorder.isRecording()) {
+                // Record master bus
+                const float* masterChannels[2] = {
+                    masterBus->buffer.getReadPointer(0),
+                    masterBus->buffer.getNumChannels() > 1 ? masterBus->buffer.getReadPointer(1) : masterBus->buffer.getReadPointer(0)
                 };
-                pair.second.writeBlock(trackChannels, numSamples, 2);
+                mainRecorder.writeBlock(masterChannels, numSamples, 2);
+            }
+            
+            // Record stems if enabled
+            if (recordingStems) {
+                for (auto& pair : stemRecorders) {
+                    const std::string& trackName = pair.first;
+                    AudioBus* trackBus = busManager.getTrack(trackName);
+                    
+                    if (trackBus && trackBus->buffer.getNumSamples() > 0) {
+                        const float* trackChannels[2] = {
+                            trackBus->buffer.getReadPointer(0),
+                            trackBus->buffer.getNumChannels() > 1 ? trackBus->buffer.getReadPointer(1) : trackBus->buffer.getReadPointer(0)
+                        };
+                        pair.second.writeBlock(trackChannels, numSamples, 2);
+                    }
+                }
             }
         }
     }
@@ -616,10 +691,57 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                 int srcCh = std::min(ch, pattern->sampleBuffer.getNumChannels() - 1);
                 outputChannelData[ch][i] += pattern->sampleBuffer.getSample(srcCh, sampleIdx) * envelope * gain;
             }
-            samplePlaybackPosition++;
+            
+            if (sampleIsReverse) {
+                samplePlaybackPosition--;
+                if (samplePlaybackPosition < 0 || (samplePlaybackEnd > 0 && samplePlaybackPosition <= samplePlaybackEnd)) {
+                    sampleIsPlaying = false; // Stop
+                }
+            } else {
+                samplePlaybackPosition++;
+                // Check stop
+                if (samplePlaybackPosition >= pattern->sampleBuffer.getNumSamples() || samplePlaybackPosition >= samplePlaybackEnd) {
+                    sampleIsPlaying = false;
+                }
+            }
         }
         
         samplePosition++;
+    }
+    
+
+
+}
+
+void AudioEngine::previewSlice(Pattern& pattern, int sliceIndex, bool playToEnd) {
+    // Thread Safety: Ensure we use the pattern instance managed by AudioEngine
+    // Note: 'pattern' passed here is likely the GUI copy. We should check if we have it in our map.
+    // However, if the user just edited markers, the GUI copy has the latest markers, but AudioEngine copy might not if 'addPattern' wasn't called.
+    // But 'addPattern' IS called on every marker edit (SYNC comment in PatternEditor.cpp).
+    // So looking up by name is safest.
+    
+    std::lock_guard<std::mutex> lock(patternMutex);
+    auto it = patterns.find(pattern.name);
+    if (it != patterns.end()) {
+        Pattern& enginePattern = it->second;
+        if (enginePattern.sampleBuffer.getNumSamples() == 0) return;
+        
+        if (sliceIndex >= 0 && sliceIndex < (int)enginePattern.sliceMarkers.size()) {
+            int64_t start = enginePattern.sliceMarkers[sliceIndex];
+            int64_t end = enginePattern.sampleBuffer.getNumSamples();
+            
+            // If NOT playing to end (default cutoff behavior), stop at next marker
+            if (!playToEnd) {
+                if (sliceIndex + 1 < (int)enginePattern.sliceMarkers.size()) {
+                    end = enginePattern.sliceMarkers[sliceIndex + 1];
+                }
+            }
+            
+            previewState.sourcePattern = &enginePattern;
+            previewState.position = start;
+            previewState.endPosition = end;
+            previewState.active = true;
+        }
     }
 }
 
@@ -654,28 +776,44 @@ void AudioEngine::triggerSample(Pattern& pattern, int step) {
                      }
                  }
             }
+
+            else if (fxId == Pattern::FX_REVERSE) {
+                sampleIsReverse = true;
+                // Start from end (default)
+                startPos = totalSamples;
+                endPos = 0; // Play backwards to 0 
+                
+                // Note: Slice logic will override this below if both are present
+            }
             else if (fxId == Pattern::FX_SLICE) {
                  if (pattern.stepFXParams[step].count(Pattern::PAR_SLICE_INDEX)) {
                      int sliceIdx = (int)pattern.stepFXParams[step][Pattern::PAR_SLICE_INDEX];
                      
                      // Safety Bounds Check
                      if (sliceIdx >= 0 && sliceIdx < (int)pattern.sliceMarkers.size()) {
-                         startPos = pattern.sliceMarkers[sliceIdx];
-                         
-                         // Determine end pos (next marker or end)
+                         // Normal Slice
+                         int64_t sStart = pattern.sliceMarkers[sliceIdx];
+                         int64_t sEnd = totalSamples;
                          if (sliceIdx + 1 < (int)pattern.sliceMarkers.size()) {
-                             endPos = pattern.sliceMarkers[sliceIdx + 1];
-                         } else {
-                             endPos = totalSamples;
+                             sEnd = pattern.sliceMarkers[sliceIdx + 1];
                          }
                          
+                         // Determine end pos (next marker or end)
                          // Handle cutoff
                          bool cutoff = false;
                          if (pattern.stepFXParams[step].count(Pattern::PAR_SLICE_CUTOFF)) {
                              cutoff = (pattern.stepFXParams[step][Pattern::PAR_SLICE_CUTOFF] > 0.5f);
                          }
                          if (!cutoff) {
-                             endPos = totalSamples;
+                             sEnd = totalSamples; // Only if not reverse?
+                         }
+                         
+                         if (sampleIsReverse) {
+                             startPos = sEnd;
+                             endPos = sStart;
+                         } else {
+                             startPos = sStart;
+                             endPos = sEnd;
                          }
                      }
                  }
@@ -736,6 +874,7 @@ void AudioEngine::startRecording(const std::string& filename, bool stems) {
 }
 
 void AudioEngine::stopRecording() {
+    std::lock_guard<std::mutex> lock(recordingMutex);
     mainRecorder.stop();
     
     // Stop all stem recorders

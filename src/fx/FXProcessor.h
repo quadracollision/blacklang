@@ -39,6 +39,7 @@ private:
     void handleStutter(PatternPlayState& state, const Pattern& pattern, int currentStep, double bpm);
     void handleSlice(PatternPlayState& state, const Pattern& pattern, int currentStep);
     void handleNudge(PatternPlayState& state, const Pattern& pattern, int currentStep);
+    void handleReverse(PatternPlayState& state, const Pattern& pattern, int currentStep);
 };
 
 } // namespace fx

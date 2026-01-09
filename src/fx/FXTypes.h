@@ -109,6 +109,7 @@ inline const char* GetFXName(FXType type) {
         case FX_PAN:      return "Pan";
         case FX_PITCH:    return "Pitch";
         case FX_VOLUME:   return "Volume";
+        case FX_COUNT:    return "Count";
         default:          return "Unknown";
     }
 }
@@ -129,6 +130,7 @@ inline const char* GetFXShortName(FXType type) {
         case FX_PAN:      return "PAN";
         case FX_PITCH:    return "PIT";
         case FX_VOLUME:   return "VOL";
+        case FX_COUNT:    return "CNT";
         default:          return "???";
     }
 }
@@ -140,6 +142,7 @@ inline bool IsFXImplemented(FXType type) {
         case FX_STUTTER:
         case FX_NUDGE:
         case FX_SLICE:
+        case FX_REVERSE:
             return true;
         default:
             return false;

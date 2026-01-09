@@ -47,11 +47,11 @@ void PatternEditor::Draw() {
     // Scroll Logic
     BeginScissorMode((int)winRect.x, (int)winRect.y + 50, (int)winRect.width, (int)winRect.height - 100); 
     
-    // Handle Scroll Input (Simple Wheel)
-    state.editor.scrollOffsetY -= GetMouseWheelMove() * 30.0f;
-    float maxScroll = std::max(0.0f, state.editor.contentHeight - (winRect.height - 100)); // Content - Viewport
-    if (state.editor.scrollOffsetY < 0) state.editor.scrollOffsetY = 0;
-    if (state.editor.scrollOffsetY > maxScroll) state.editor.scrollOffsetY = maxScroll;
+    // Reset consumable flag at start of draw
+    state.editor.scrollConsumed = false; 
+    
+    // ... drawing ...
+    // Note: Scroll update moved to END of this function to check for consumption
     
     float startY = winRect.y + 60 - state.editor.scrollOffsetY; // Base Y with Scroll
     
@@ -637,7 +637,9 @@ void PatternEditor::Draw() {
     // FX Controls (Modular)
     if (state.editor.showFxControls) {
         Rectangle fxArea = {winRect.x + 20, startY, winRect.width - 40, 0};
-        float heightUsed = fxControls.Draw(fxArea, state.editor.currentPattern);
+        // Define parent scissor rect based on PatternEditor's viewport
+        Rectangle parentScissor = {(float)(int)winRect.x, (float)(int)winRect.y + 50, (float)(int)winRect.width, (float)(int)winRect.height - 100};
+        float heightUsed = fxControls.Draw(fxArea, state.editor.currentPattern, parentScissor);
         startY += heightUsed;
     }
 
@@ -698,9 +700,18 @@ void PatternEditor::Draw() {
                 if (sampleIdx >= startSample && sampleIdx <= endSample) {
                     float xPos = (float)(sampleIdx - startSample) / visibleSamples * waveRect.width;
                     DrawLine(waveRect.x + xPos, waveRect.y, waveRect.x + xPos, waveRect.y + waveRect.height, RED);
+                    int textWidth = MeasureText(TextFormat("%d", mFn), 10);
                     DrawText(TextFormat("%d", mFn), waveRect.x + xPos + 2, waveRect.y + 2, 10, YELLOW);
                     
-                    // Handle Delete (Right Click near marker)
+                    // Handle Delete (Click on Number)
+                    // Only active if NOT in Play Mode
+                    if (!state.editor.slicerPlayModeEnabled && CheckCollisionPointRec(GetMousePosition(), {waveRect.x + xPos, waveRect.y, (float)textWidth + 4, 15}) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                        p.sliceMarkers.erase(p.sliceMarkers.begin() + mFn);
+                        mFn--; 
+                        engine.addPattern(p); // SYNC 
+                    }
+                    
+                    // Handle Delete (Right Click near marker - kept for alt method)
                     if (CheckCollisionPointRec(GetMousePosition(), {waveRect.x + xPos - 5, waveRect.y, 10, waveRect.height}) && IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
                         p.sliceMarkers.erase(p.sliceMarkers.begin() + mFn);
                         mFn--; 
@@ -709,8 +720,8 @@ void PatternEditor::Draw() {
                 }
             }
             
-            // Interaction: Left Click to Add Marker
-            if (CheckCollisionPointRec(GetMousePosition(), waveRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            // Interaction: Left Click to Add Marker (Only if NOT in Play Mode)
+            if (!state.editor.slicerPlayModeEnabled && CheckCollisionPointRec(GetMousePosition(), waveRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 float localX = GetMousePosition().x - waveRect.x;
                 int sampleIdx = startSample + (int)(localX / waveRect.width * visibleSamples);
                 
@@ -754,7 +765,7 @@ void PatternEditor::Draw() {
             DrawText("No Sample Loaded", waveRect.x + 10, waveRect.y + 40, 20, DARKGRAY);
         }
         
-        startY += (state.editor.waveformZoom > 1.0f) ? 125 : 110;
+        startY += (p.sampleBuffer.getNumSamples() > 0 && state.editor.waveformZoom > 1.0f) ? 125 : 110;
         
         // Controls: Clear Markers
         Rectangle clearBtn = {winRect.x + 20, startY, 100, 30};
@@ -762,20 +773,137 @@ void PatternEditor::Draw() {
         DrawText("Clear Slices", clearBtn.x + 10, clearBtn.y + 5, 10, WHITE);
         if (CheckCollisionPointRec(GetMousePosition(), clearBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             p.sliceMarkers.clear();
+            
+            // UX SYNC: Remove entire steps that have FX_SLICE
+            std::vector<int> stepsToRemove;
+            for (auto& stepPair : p.stepFX) {
+                const auto& fxList = stepPair.second;
+                if (std::find(fxList.begin(), fxList.end(), Pattern::FX_SLICE) != fxList.end()) {
+                    stepsToRemove.push_back(stepPair.first);
+                }
+            }
+            
+            for (int step : stepsToRemove) {
+                p.stepPitches.erase(step);
+                p.stepVelocities.erase(step);
+                p.stepFX.erase(step);
+                p.stepFXParams.erase(step);
+                
+                // Update UI state
+                state.editor.stepStates[step - 1] = false;
+                if (state.editor.selectedStep == step - 1) {
+                    state.editor.selectedStep = -1;
+                }
+            }
+            
             engine.addPattern(p); // SYNC
         }
         
         // Cutoff Toggle
-        Rectangle cutBtn = {winRect.x + 140, startY, 20, 20};
+        Rectangle cutBtn = {winRect.x + 150, startY, 20, 20};
         DrawRectangleRec(cutBtn, state.editor.slicerCutoffEnabled ? GREEN : DARKGRAY);
         DrawText("Cut", cutBtn.x + 25, cutBtn.y + 2, 16, WHITE);
         if (CheckCollisionPointRec(GetMousePosition(), cutBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.editor.slicerCutoffEnabled = !state.editor.slicerCutoffEnabled;
         }
         
-        // Zoom buttons (to the right of Cut)
-        Rectangle zoomOutBtn = {winRect.x + 220, startY, 25, 25};
-        Rectangle zoomInBtn = {winRect.x + 250, startY, 25, 25};
+        // Play/Slice Mode Switch
+        Rectangle switchRect = {winRect.x + 230, startY, 100, 24};
+        DrawRectangleRec(switchRect, GRAY);
+        
+        Rectangle sliceRect = {switchRect.x, switchRect.y, 50, 24};
+        Rectangle playRect = {switchRect.x + 50, switchRect.y, 50, 24};
+        
+        if (!state.editor.slicerPlayModeEnabled) {
+            DrawRectangleRec(sliceRect, WHITE);
+            DrawText("Slice", sliceRect.x + 10, sliceRect.y + 5, 12, BLACK);
+            DrawText("Play", playRect.x + 10, playRect.y + 5, 12, WHITE);
+        } else {
+            DrawRectangleRec(playRect, WHITE);
+            DrawText("Slice", sliceRect.x + 10, sliceRect.y + 5, 12, WHITE);
+            DrawText("Play", playRect.x + 10, playRect.y + 5, 12, BLACK);
+        }
+        
+        if (CheckCollisionPointRec(GetMousePosition(), sliceRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            state.editor.slicerPlayModeEnabled = false;
+        }
+        if (CheckCollisionPointRec(GetMousePosition(), playRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            state.editor.slicerPlayModeEnabled = true;
+        }
+        
+        // Play Mode Interaction: Right Click or Click in Mode
+        if (state.editor.slicerPlayModeEnabled && CheckCollisionPointRec(GetMousePosition(), waveRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+             if (p.sampleBuffer.getNumSamples() > 0) {
+                 int64_t totalSamples = p.sampleBuffer.getNumSamples();
+                 float zoom = state.editor.waveformZoom;
+                 float viewWidth = 1.0f / zoom;
+                 int64_t visibleSamples = (int64_t)(totalSamples * viewWidth);
+                 // Scroll mapping
+                 float scrollMax = 1.0f - viewWidth;
+                 if (scrollMax < 0) scrollMax = 0;
+                 // Clamp scroll
+                 if (state.editor.waveformScrollX > scrollMax) state.editor.waveformScrollX = scrollMax;
+                 
+                 int64_t startSample = (int64_t)(state.editor.waveformScrollX / (scrollMax + 0.001f) * (totalSamples - visibleSamples));
+                 if (startSample < 0) startSample = 0;
+                 
+                 float localX = GetMousePosition().x - waveRect.x;
+                 int sampleIdx = startSample + (int)(localX / waveRect.width * visibleSamples);
+                 
+                 // Find Slice
+                 int foundSlice = -1;
+                 if (sampleIdx >= 0) {
+                     // Check if valid start
+                     if (!p.sliceMarkers.empty()) {
+                         for (size_t i = 0; i < p.sliceMarkers.size(); ++i) {
+                             int64_t sStart = p.sliceMarkers[i];
+                             int64_t sEnd = (i + 1 < p.sliceMarkers.size()) ? p.sliceMarkers[i+1] : p.sampleBuffer.getNumSamples();
+                             
+                             if (sampleIdx >= sStart && sampleIdx < sEnd) {
+                                 foundSlice = (int)i;
+                                 break;
+                             }
+                         }
+                     }
+                 }
+                 
+                 if (foundSlice != -1) {
+                     // Preview
+                     engine.previewSlice(p, foundSlice, !state.editor.slicerCutoffEnabled);
+                     
+                     // Record if Live Edit Mode is ON
+                     if (state.isLiveEditMode && state.editor.selectedStep >= 0 && state.editor.selectedStep < 64) {
+                          // Assign slice to selected step
+                          int step = state.editor.selectedStep + 1;
+                          
+                          // Add Slice FX
+                          if (std::find(p.stepFX[step].begin(), p.stepFX[step].end(), Pattern::FX_SLICE) == p.stepFX[step].end()) {
+                              p.stepFX[step].push_back(Pattern::FX_SLICE);
+                          }
+                          
+                          // Set Index Param
+                          p.stepFXParams[step][Pattern::PAR_SLICE_INDEX] = (float)foundSlice;
+                          if (state.editor.slicerCutoffEnabled) {
+                              p.stepFXParams[step][Pattern::PAR_SLICE_CUTOFF] = 1.0f;
+                          } else {
+                              p.stepFXParams[step].erase(Pattern::PAR_SLICE_CUTOFF);
+                          }
+                          
+                          // Activate step if not active?
+                          state.editor.stepStates[state.editor.selectedStep] = true;
+                          p.stepPitches[step] = 0; // Default C
+                          p.stepVelocities[step] = 1.0f;
+                          
+                          engine.addPattern(p);
+                     }
+                 }
+             }
+        }
+
+        
+        // Zoom buttons (to the right of Play Mode)
+        Rectangle zoomOutBtn = {winRect.x + 360, startY, 25, 25};
+        Rectangle zoomInBtn = {winRect.x + 390, startY, 25, 25};
         DrawRectangleRec(zoomOutBtn, DARKGRAY);
         DrawRectangleRec(zoomInBtn, DARKGRAY);
         DrawText("-", zoomOutBtn.x + 9, zoomOutBtn.y + 4, 16, WHITE);
@@ -791,13 +919,29 @@ void PatternEditor::Draw() {
         
         startY += 40;
         
-        // Add "Add Start Marker" button if 0 missing
-        if (p.sliceMarkers.empty() || p.sliceMarkers[0] != 0) {
-             Rectangle startMarkerBtn = {winRect.x + 20, startY, 120, 25};
-             DrawRectangleRec(startMarkerBtn, GRAY);
-             DrawText("Add Start Marker", startMarkerBtn.x + 5, startMarkerBtn.y + 5, 10, WHITE);
-             if (CheckCollisionPointRec(GetMousePosition(), startMarkerBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                 p.sliceMarkers.insert(p.sliceMarkers.begin(), 0);
+        // Bookend Button (Add Start & End Markers)
+        if (p.sampleBuffer.getNumSamples() > 0) {
+             Rectangle bookendBtn = {winRect.x + 20, startY, 120, 25};
+             DrawRectangleRec(bookendBtn, GRAY);
+             DrawText("Bookend", bookendBtn.x + 30, bookendBtn.y + 5, 10, WHITE);
+             if (CheckCollisionPointRec(GetMousePosition(), bookendBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                 bool changed = false;
+                 // Add Start (0)
+                 if (std::find(p.sliceMarkers.begin(), p.sliceMarkers.end(), 0) == p.sliceMarkers.end()) {
+                     p.sliceMarkers.push_back(0);
+                     changed = true;
+                 }
+                 // Add End (Total Samples)
+                 int64_t total = p.sampleBuffer.getNumSamples();
+                 if (std::find(p.sliceMarkers.begin(), p.sliceMarkers.end(), total) == p.sliceMarkers.end()) {
+                     p.sliceMarkers.push_back(total);
+                     changed = true;
+                 }
+                 
+                 if (changed) {
+                     std::sort(p.sliceMarkers.begin(), p.sliceMarkers.end());
+                     engine.addPattern(p);
+                 }
              }
              startY += 35;
         }
@@ -997,6 +1141,16 @@ void PatternEditor::Draw() {
     
     // Draw Outline Last (to cover footer overlap)
     DrawRectangleLinesEx(winRect, 2, Color{200, 200, 200, 255});
+    
+    // --- LATE UPDATE SCROLL LOGIC ---
+    // We update scroll offset here because children (like FXControls) might have consumed the scroll event.
+    // By checking scrollConsumed flag, we prevent double scrolling or scrolling when hovering inner lists.
+    if (!state.editor.scrollConsumed) {
+        state.editor.scrollOffsetY -= GetMouseWheelMove() * 30.0f;
+        float maxScroll = std::max(0.0f, state.editor.contentHeight - (winRect.height - 100)); // Content - Viewport
+        if (state.editor.scrollOffsetY < 0) state.editor.scrollOffsetY = 0;
+        if (state.editor.scrollOffsetY > maxScroll) state.editor.scrollOffsetY = maxScroll;
+    }
 }
 
 

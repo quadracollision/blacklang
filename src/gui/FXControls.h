@@ -16,7 +16,7 @@ public:
     
     // Draw FX controls panel (when FX mode is active)
     // Returns height used by the controls
-    float Draw(Rectangle area, Pattern& pattern);
+    float Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor);
     
     // Handle FX button clicks on the FX panel
     void HandleInput(Rectangle area, Pattern& pattern);

@@ -3,10 +3,13 @@
 #include "../GuiState.h"
 #include "../AudioEngine.h"
 #include "../Pattern.h"
+#include "../fx/FXTypes.h"
 #include <algorithm>
 #include <cstdio>
+#include <string>
 
 namespace gui {
+
 
 FXControls::FXControls(GuiState& s, AudioEngine& e) : state(s), engine(e) {}
 
@@ -35,7 +38,7 @@ void FXControls::DrawFXSlider(Rectangle rect, const char* label, float* value, f
     DrawText(TextFormat("%.2f", *value), rect.x + rect.width + 10, rect.y, 10, WHITE);
 }
 
-float FXControls::Draw(Rectangle area, Pattern& pattern) {
+float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor) {
     float startY = area.y;
     Pattern& p = pattern;
     
@@ -44,15 +47,16 @@ float FXControls::Draw(Rectangle area, Pattern& pattern) {
     if (state.editor.selectedStep != -1 && state.editor.stepStates[state.editor.selectedStep]) {
         DrawText("FX Selection:", area.x, startY + 25, 20, WHITE);
         
-        // FX ListBox with all implemented FX
-        struct FxOption { int id; const char* name; };
-        std::vector<FxOption> availableFX = {
-            {Pattern::FX_CUTOFF, "Cut Off"},
-            {Pattern::FX_SLIDE, "Slide"},
-            {Pattern::FX_STUTTER, "Stutter"},
-            {Pattern::FX_NUDGE, "Nudge"}
-            // Future: Add more FX here as they're implemented
-        };
+        // Dynamic FX List from system
+        struct FxOption { int id; std::string name; };
+        std::vector<FxOption> availableFX;
+        
+        auto allFX = fx::GetAllFX();
+        for (auto id : allFX) {
+             if (fx::IsFXImplemented(id)) {
+                 availableFX.push_back({id, std::string(fx::GetFXName(id))});
+             }
+        }
         
         auto& currentStepFX = p.stepFX[state.editor.selectedStep + 1];
         
@@ -71,43 +75,116 @@ float FXControls::Draw(Rectangle area, Pattern& pattern) {
         DrawRectangleLinesEx(appliedBox, 1, WHITE);
         DrawText("Applied", appliedBox.x, appliedBox.y - 12, 10, LIGHTGRAY);
 
-        float availY = availBox.y + 5;
-        float appliedY = appliedBox.y + 5;
-        float itemH = 20;
+        // Filter lists
+        std::vector<FxOption> listAvailable;
+        std::vector<FxOption> listApplied;
         
         for (const auto& opt : availableFX) {
             bool isActive = std::find(currentStepFX.begin(), currentStepFX.end(), opt.id) != currentStepFX.end();
-            
-            Rectangle itemRect;
-            bool isSelected = false;
-            
             if (isActive) {
-                itemRect = {appliedBox.x + 5, appliedY, boxW - 10, itemH};
-                appliedY += itemH + 2;
-                if (state.editor.selectedAppliedFxId == opt.id) isSelected = true;
+                listApplied.push_back(opt);
             } else {
-                itemRect = {availBox.x + 5, availY, boxW - 10, itemH};
-                availY += itemH + 2;
-                if (state.editor.selectedAvailableFxId == opt.id) isSelected = true;
+                listAvailable.push_back(opt);
             }
+        }
+
+        // --- Available List Logic ---
+        BeginScissorMode((int)availBox.x, (int)availBox.y, (int)availBox.width, (int)availBox.height);
+        float itemH = 20;
+        float contentH_Avail = listAvailable.size() * (itemH + 2);
+        
+        // Scroll Wheel
+        if (CheckCollisionPointRec(GetMousePosition(), availBox)) {
+            state.editor.fxAvailableScrollY += GetMouseWheelMove() * 20.0f;
+            state.editor.scrollConsumed = true; // Block parent scroll
+        }
+        if (state.editor.fxAvailableScrollY > 0) state.editor.fxAvailableScrollY = 0;
+        if (contentH_Avail > boxH) {
+             if (state.editor.fxAvailableScrollY < -(contentH_Avail - boxH)) state.editor.fxAvailableScrollY = -(contentH_Avail - boxH);
+        } else {
+             state.editor.fxAvailableScrollY = 0;
+        }
+        
+        float currY = availBox.y + 5 + state.editor.fxAvailableScrollY;
+        for (const auto& opt : listAvailable) {
+            Rectangle itemRect = {availBox.x + 5, currY, boxW - 15, itemH}; // -15 for potential scrollbar
+            bool isSelected = (state.editor.selectedAvailableFxId == opt.id);
             
-            if (isSelected) {
-                DrawRectangleRec(itemRect, ORANGE);
-            } else if (CheckCollisionPointRec(GetMousePosition(), itemRect)) {
-                DrawRectangleRec(itemRect, {50, 50, 50, 255});
-            }
-            
-            DrawText(opt.name, itemRect.x + 5, itemRect.y + 5, 10, isSelected ? BLACK : WHITE);
-            
-            if (CheckCollisionPointRec(GetMousePosition(), itemRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                if (isActive) {
-                    state.editor.selectedAppliedFxId = opt.id;
-                    state.editor.selectedAvailableFxId = -1;
-                } else {
+            if (currY + itemH > availBox.y && currY < availBox.y + availBox.height) {
+                if (isSelected) {
+                    DrawRectangleRec(itemRect, ORANGE);
+                } else if (CheckCollisionPointRec(GetMousePosition(), itemRect) && CheckCollisionPointRec(GetMousePosition(), availBox)) {
+                    DrawRectangleRec(itemRect, {50, 50, 50, 255});
+                }
+                
+                DrawText(opt.name.c_str(), itemRect.x + 5, itemRect.y + 5, 10, isSelected ? BLACK : WHITE);
+                
+                if (CheckCollisionPointRec(GetMousePosition(), itemRect) && CheckCollisionPointRec(GetMousePosition(), availBox) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                     state.editor.selectedAvailableFxId = opt.id;
                     state.editor.selectedAppliedFxId = -1;
                 }
             }
+            currY += itemH + 2;
+        }
+        EndScissorMode();
+        
+        // RESTORE PARENT SCISSOR
+        BeginScissorMode((int)parentScissor.x, (int)parentScissor.y, (int)parentScissor.width, (int)parentScissor.height);
+        
+        // Scrollbar Available
+        if (contentH_Avail > boxH) {
+            float sbH = (boxH / contentH_Avail) * boxH;
+            float sbY = availBox.y + (-state.editor.fxAvailableScrollY / contentH_Avail) * boxH;
+            DrawRectangleRec({availBox.x + boxW - 6, sbY, 4, sbH}, DARKGRAY);
+        }
+
+        // --- Applied List Logic ---
+        BeginScissorMode((int)appliedBox.x, (int)appliedBox.y, (int)appliedBox.width, (int)appliedBox.height);
+        float contentH_Applied = listApplied.size() * (itemH + 2);
+        
+        // Scroll Wheel
+        if (CheckCollisionPointRec(GetMousePosition(), appliedBox)) {
+            state.editor.fxAppliedScrollY += GetMouseWheelMove() * 20.0f;
+            state.editor.scrollConsumed = true; // Block parent scroll
+        }
+        if (state.editor.fxAppliedScrollY > 0) state.editor.fxAppliedScrollY = 0;
+        if (contentH_Applied > boxH) {
+             if (state.editor.fxAppliedScrollY < -(contentH_Applied - boxH)) state.editor.fxAppliedScrollY = -(contentH_Applied - boxH);
+        } else {
+             state.editor.fxAppliedScrollY = 0;
+        }
+        
+        currY = appliedBox.y + 5 + state.editor.fxAppliedScrollY;
+        for (const auto& opt : listApplied) {
+            Rectangle itemRect = {appliedBox.x + 5, currY, boxW - 15, itemH};
+            bool isSelected = (state.editor.selectedAppliedFxId == opt.id);
+            
+            if (currY + itemH > appliedBox.y && currY < appliedBox.y + appliedBox.height) {
+                if (isSelected) {
+                    DrawRectangleRec(itemRect, ORANGE);
+                } else if (CheckCollisionPointRec(GetMousePosition(), itemRect) && CheckCollisionPointRec(GetMousePosition(), appliedBox)) {
+                    DrawRectangleRec(itemRect, {50, 50, 50, 255});
+                }
+                
+                DrawText(opt.name.c_str(), itemRect.x + 5, itemRect.y + 5, 10, isSelected ? BLACK : WHITE);
+                
+                if (CheckCollisionPointRec(GetMousePosition(), itemRect) && CheckCollisionPointRec(GetMousePosition(), appliedBox) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                    state.editor.selectedAppliedFxId = opt.id;
+                    state.editor.selectedAvailableFxId = -1;
+                }
+            }
+            currY += itemH + 2;
+        }
+        EndScissorMode();
+        
+        // RESTORE PARENT SCISSOR
+        BeginScissorMode((int)parentScissor.x, (int)parentScissor.y, (int)parentScissor.width, (int)parentScissor.height);
+        
+        // Scrollbar Applied
+        if (contentH_Applied > boxH) {
+            float sbH = (boxH / contentH_Applied) * boxH;
+            float sbY = appliedBox.y + (-state.editor.fxAppliedScrollY / contentH_Applied) * boxH;
+            DrawRectangleRec({appliedBox.x + boxW - 6, sbY, 4, sbH}, DARKGRAY);
         }
         
         // Add Button
@@ -125,7 +202,7 @@ float FXControls::Draw(Rectangle area, Pattern& pattern) {
                 }
             }
         }
-
+        
         // Remove Button
         Rectangle removeBtn = {appliedBox.x, appliedBox.y + boxH + 5, boxW, 25};
         DrawRectangleRec(removeBtn, GRAY);

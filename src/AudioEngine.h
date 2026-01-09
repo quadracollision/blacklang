@@ -45,6 +45,9 @@ public:
     void setBPM(int newBpm) { globalBpm.store(newBpm); }
     int getBPM() const { return globalBpm.load(); }
     
+    // Preview
+    void previewSlice(Pattern& pattern, int sliceIndex, bool playToEnd = false);
+    
     // Bus/Track Management
     void assignPatternToTrack(const std::string& patternName, const std::string& trackName);
     std::string getTrackForPattern(const std::string& patternName) const;
@@ -104,9 +107,18 @@ private:
     int64_t samplePlaybackPosition = 0;
     int64_t samplePlaybackEnd = 0;
     bool sampleIsPlaying = false;
+    bool sampleIsReverse = false;
     
     void advanceSequencer(int numSamples);
     void triggerSample(Pattern& pattern, int step);
+    
+    // Preview Logic
+    struct PreviewState {
+        int64_t position = 0;
+        int64_t endPosition = 0;
+        bool active = false;
+        Pattern* sourcePattern = nullptr;
+    } previewState;
     
     // FX
     fx::FXProcessor fxProcessor;
@@ -119,6 +131,7 @@ private:
     AudioRecorder mainRecorder;  // Records master bus (whole mix)
     std::map<std::string, AudioRecorder> stemRecorders;  // Records individual track buses
     bool recordingStems = false;
+    std::mutex recordingMutex; // Protects access to recorders
     
     // Device switching
     std::atomic<bool> deviceSwitching{false};

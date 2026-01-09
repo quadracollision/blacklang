@@ -31,6 +31,9 @@ void FXProcessor::processStepFX(PatternPlayState& state, const Pattern& pattern,
                 case Pattern::FX_NUDGE:
                     handleNudge(state, pattern, step);
                     break;
+                case Pattern::FX_REVERSE:
+                    handleReverse(state, pattern, step);
+                    break;
                 // Add new FX handlers here
                 default:
                     break;
@@ -154,6 +157,47 @@ void FXProcessor::handleNudge(PatternPlayState& state, const Pattern& pattern, i
             float norm = val * 2.0f; // 0.0 to 1.0
             state.sampleEndPosition = (int64_t)(norm * totalSamples);
         }
+    }
+}
+
+void FXProcessor::handleReverse(PatternPlayState& state, const Pattern& pattern, int currentStep) {
+    state.isReverse = true;
+    
+    // If not slicing, start from end
+    // If slicing, logic handled in handleSlice? No, slice sets playback position
+    // We need to override playback position to end of slice or end of sample
+    
+    // Check if we are slicing in this step
+    bool isSlicing = false;
+    if (pattern.stepFXParams.count(currentStep) && 
+        pattern.stepFXParams.at(currentStep).count(Pattern::PAR_SLICE_INDEX)) {
+        isSlicing = true;
+        
+        int sliceIdx = (int)pattern.stepFXParams.at(currentStep).at(Pattern::PAR_SLICE_INDEX);
+        if (sliceIdx >= 0 && sliceIdx + 1 < (int)pattern.sliceMarkers.size()) {
+             // Start at end of slice
+             state.samplePlaybackPosition = (double)pattern.sliceMarkers[sliceIdx + 1];
+             state.sampleEndPosition = pattern.sliceMarkers[sliceIdx]; // It becomes the 'end' (play backwards to this)
+             
+             // Actually, the main loop checks: if (reverse) pos--; if (pos <= endPos) stop;
+             // But AudioEngine uses 'sampleEndPosition' as a forward stop marker usually.
+             // We need to clarify usage in AudioEngine.
+             // For now, let's set play position to end of slice.
+        } else {
+             // Last slice or invalid
+             state.samplePlaybackPosition = (double)pattern.sampleBuffer.getNumSamples();
+             if (sliceIdx >= 0 && sliceIdx < (int)pattern.sliceMarkers.size()) {
+                 state.sampleEndPosition = pattern.sliceMarkers[sliceIdx];
+             } else {
+                 state.sampleEndPosition = 0; 
+             }
+        }
+    } 
+    
+    if (!isSlicing) {
+        // Full reverse
+        state.samplePlaybackPosition = (double)pattern.sampleBuffer.getNumSamples();
+        state.sampleEndPosition = 0;
     }
 }
 

@@ -106,6 +106,8 @@ struct PatternEditorState {
     int currentFxType = 0; // 0=None, 1=CutOff
     int selectedAppliedFxId = -1;
     int selectedAvailableFxId = -1;
+    float fxAvailableScrollY = 0.0f;
+    float fxAppliedScrollY = 0.0f;
     
     // Slicer Mode State
     bool showSlicerControls = false;
@@ -113,6 +115,10 @@ struct PatternEditorState {
     bool slicerCutoffEnabled = false;
     float waveformZoom = 1.0f;    // 1.0 = fit to view, >1 = zoomed in
     float waveformScrollX = 0.0f; // 0.0-1.0 scroll position (normalized)
+    bool slicerPlayModeEnabled = false; // Toggle for preview/record mode
+    
+    // Scroll Event Handling
+    bool scrollConsumed = false; // Flag to indicate if a child widget consumed the scroll event
 };
 
 // Track-level pattern clipboard (for copy/paste in track view)
