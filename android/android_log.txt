@@ -1,0 +1,22 @@
+--------- beginning of crash
+01-08 21:42:35.683 E/AndroidRuntime(17456): FATAL EXCEPTION: main
+01-08 21:42:35.683 E/AndroidRuntime(17456): Process: com.quadracollision.blacklang, PID: 17456
+01-08 21:42:35.683 E/AndroidRuntime(17456): java.lang.UnsatisfiedLinkError: Unable to load native library "/data/app/~~EoIDJ4b0Os3gauKdnKogjg==/com.quadracollision.blacklang-7z_rER7-LX7zgKJng9YH6Q==/base.apk!/lib/arm64-v8a/libblacklang.so": undefined symbol: ANativeActivity_onCreate
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.NativeActivity.onCreate(NativeActivity.java:178)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.Activity.performCreate(Activity.java:9519)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.Activity.performCreate(Activity.java:9488)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1524)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.ActivityThread.performLaunchActivity(ActivityThread.java:4692)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:4941)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:222)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:133)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:103)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:80)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.ActivityThread$H.handleMessage(ActivityThread.java:3150)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.os.Handler.dispatchMessage(Handler.java:110)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.os.Looper.loopOnce(Looper.java:273)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.os.Looper.loop(Looper.java:363)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.ActivityThread.main(ActivityThread.java:10060)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at java.lang.reflect.Method.invoke(Native Method)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:632)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:975)

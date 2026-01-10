@@ -243,42 +243,16 @@ void AudioEngine::updateActivePatterns(const std::vector<std::string>& names) {
     
     std::lock_guard<std::mutex> lock(patternMutex);
     
-    // Find a reference state from currently playing patterns for sync
-    PatternPlayState refState;
-    bool hasRef = false;
-    if (!activePatternNames.empty()) {
-        for (const auto& existing : activePatternNames) {
-            if (patternStates.count(existing)) {
-                refState = patternStates[existing];
-                hasRef = true;
-                break;
-            }
-        }
-    }
-    
     activePatternNames = names;
     
-    // Sync new patterns
+    // Initialize new pattern states - each pattern runs independently with its own timing
     for (const auto& name : names) {
         if (patternStates.find(name) == patternStates.end()) {
             PatternPlayState newState;
             newState.currentStep = 1; // Start at step 1
-            if (hasRef) {
-                // Approximate sync: copy sample position
-                newState.samplePosition = refState.samplePosition;
-                // We let currentStep be calculated/corrected in the next callback loop 
-                // or we can calculate it here if needed.
-                // But since 'patterns' map might be needed to calculate step, 
-                // and we are in lock, we can do it.
-                if (patterns.count(name)) {
-                     Pattern& p = patterns[name];
-                     double stepSamples = p.getStepDurationSamples(globalBpm.load());
-                     if (stepSamples > 0) {
-                         newState.currentStep = (int)((newState.samplePosition / (int64_t)stepSamples) % p.steps) + 1;
-                         newState.stepStartSample = newState.samplePosition - (newState.samplePosition % (int64_t)stepSamples);
-                     }
-                }
-            }
+            newState.samplePosition = 0;
+            newState.stepStartSample = 0;
+            // Each pattern uses its own syncBase for timing - no global sync
             patternStates[name] = newState;
         }
     }
@@ -290,7 +264,6 @@ void AudioEngine::updateActivePatterns(const std::vector<std::string>& names) {
         for (const auto& n : names) if (n == pair.first) found = true;
         if (!found) toRemove.push_back(pair.first);
     }
-    // Actually we don't strictly need to remove them from map, but it keeps it clean
     for (const auto& r : toRemove) patternStates.erase(r);
     
     if (!playing.load()) {

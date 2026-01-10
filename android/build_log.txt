@@ -1,0 +1,257 @@
+Initialized native services in: /home/jacob/.gradle/native
+Initialized jansi services in: /home/jacob/.gradle/native
+Received JVM installation metadata from '/usr/lib/jvm/java-17-openjdk-amd64': {JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64, JAVA_VERSION=17.0.17, JAVA_VENDOR=Ubuntu, RUNTIME_NAME=OpenJDK Runtime Environment, RUNTIME_VERSION=17.0.17+10-Ubuntu-124.04, VM_NAME=OpenJDK 64-Bit Server VM, VM_VERSION=17.0.17+10-Ubuntu-124.04, VM_VENDOR=Ubuntu, OS_ARCH=amd64}
+The client will now receive all logging from the daemon (pid: 480466). The daemon log file: /home/jacob/.gradle/daemon/8.4/daemon-480466.out.log
+Starting 4th build in daemon [uptime: 47.787 secs, performance: 100%, GC rate: 0.00/s, heap usage: 0% of 512 MiB, non-heap usage: 23% of 384 MiB]
+Using 8 worker leases.
+Now considering [/home/jacob/src/blacklang/android] as hierarchies to watch
+Watching the file system is configured to be enabled if available
+File system watching is active
+Starting Build
+Settings evaluated using settings file '/home/jacob/src/blacklang/android/settings.gradle'.
+Projects loaded. Root project using build file '/home/jacob/src/blacklang/android/build.gradle'.
+Included projects: [root project 'BlackLang', project ':app']
+
+> Configure project :
+Evaluating root project 'BlackLang' using build file '/home/jacob/src/blacklang/android/build.gradle'.
+
+> Configure project :app
+Evaluating project ':app' using build file '/home/jacob/src/blacklang/android/app/build.gradle'.
+Using default execution profile
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is /home/jacob/Android/Sdk/ndk/26.1.10909125
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is /home/jacob/Android/Sdk
+C/C++: Checking whether deleting ndk.dir and setting android.ndkVersion to [26.1.10909125] would result in the same NDK
+C/C++: ndk.dir delete check : android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: ndk.dir delete check : android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir delete check : ndk.dir in local.properties is not set
+C/C++: ndk.dir delete check : Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: ndk.dir delete check : sdkFolder is /home/jacob/Android/Sdk
+C/C++: ndk.dir delete check : Deleting ndk.dir and setting android.ndkVersion to [26.1.10909125] would result in the same NDK.
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is /home/jacob/Android/Sdk/ndk/26.1.10909125
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is /home/jacob/Android/Sdk
+C/C++: Checking whether deleting ndk.dir and setting android.ndkVersion to [26.1.10909125] would result in the same NDK
+C/C++: ndk.dir delete check : android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: ndk.dir delete check : android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir delete check : ndk.dir in local.properties is not set
+C/C++: ndk.dir delete check : Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: ndk.dir delete check : sdkFolder is /home/jacob/Android/Sdk
+C/C++: ndk.dir delete check : Deleting ndk.dir and setting android.ndkVersion to [26.1.10909125] would result in the same NDK.
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is /home/jacob/Android/Sdk/ndk/26.1.10909125
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is /home/jacob/Android/Sdk
+C/C++: Checking whether deleting ndk.dir and setting android.ndkVersion to [26.1.10909125] would result in the same NDK
+C/C++: ndk.dir delete check : android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: ndk.dir delete check : android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir delete check : ndk.dir in local.properties is not set
+C/C++: ndk.dir delete check : Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: ndk.dir delete check : sdkFolder is /home/jacob/Android/Sdk
+C/C++: ndk.dir delete check : Deleting ndk.dir and setting android.ndkVersion to [26.1.10909125] would result in the same NDK.
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is /home/jacob/Android/Sdk/ndk/26.1.10909125
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is /home/jacob/Android/Sdk
+C/C++: Checking whether deleting ndk.dir and setting android.ndkVersion to [26.1.10909125] would result in the same NDK
+C/C++: ndk.dir delete check : android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: ndk.dir delete check : android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir delete check : ndk.dir in local.properties is not set
+C/C++: ndk.dir delete check : Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: ndk.dir delete check : sdkFolder is /home/jacob/Android/Sdk
+C/C++: ndk.dir delete check : Deleting ndk.dir and setting android.ndkVersion to [26.1.10909125] would result in the same NDK.
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is /home/jacob/Android/Sdk/ndk/26.1.10909125
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is /home/jacob/Android/Sdk
+C/C++: Checking whether deleting ndk.dir and setting android.ndkVersion to [26.1.10909125] would result in the same NDK
+C/C++: ndk.dir delete check : android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: ndk.dir delete check : android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir delete check : ndk.dir in local.properties is not set
+C/C++: ndk.dir delete check : Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: ndk.dir delete check : sdkFolder is /home/jacob/Android/Sdk
+C/C++: ndk.dir delete check : Deleting ndk.dir and setting android.ndkVersion to [26.1.10909125] would result in the same NDK.
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is /home/jacob/Android/Sdk/ndk/26.1.10909125
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is /home/jacob/Android/Sdk
+C/C++: Checking whether deleting ndk.dir and setting android.ndkVersion to [26.1.10909125] would result in the same NDK
+C/C++: ndk.dir delete check : android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: ndk.dir delete check : android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir delete check : ndk.dir in local.properties is not set
+C/C++: ndk.dir delete check : Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: ndk.dir delete check : sdkFolder is /home/jacob/Android/Sdk
+C/C++: ndk.dir delete check : Deleting ndk.dir and setting android.ndkVersion to [26.1.10909125] would result in the same NDK.
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is /home/jacob/Android/Sdk/ndk/26.1.10909125
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is /home/jacob/Android/Sdk
+C/C++: Checking whether deleting ndk.dir and setting android.ndkVersion to [26.1.10909125] would result in the same NDK
+C/C++: ndk.dir delete check : android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: ndk.dir delete check : android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir delete check : ndk.dir in local.properties is not set
+C/C++: ndk.dir delete check : Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: ndk.dir delete check : sdkFolder is /home/jacob/Android/Sdk
+C/C++: ndk.dir delete check : Deleting ndk.dir and setting android.ndkVersion to [26.1.10909125] would result in the same NDK.
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is /home/jacob/Android/Sdk/ndk/26.1.10909125
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is /home/jacob/Android/Sdk
+C/C++: Checking whether deleting ndk.dir and setting android.ndkVersion to [26.1.10909125] would result in the same NDK
+C/C++: ndk.dir delete check : android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: ndk.dir delete check : android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir delete check : ndk.dir in local.properties is not set
+C/C++: ndk.dir delete check : Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: ndk.dir delete check : sdkFolder is /home/jacob/Android/Sdk
+C/C++: ndk.dir delete check : Deleting ndk.dir and setting android.ndkVersion to [26.1.10909125] would result in the same NDK.
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is /home/jacob/Android/Sdk/ndk/26.1.10909125
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is /home/jacob/Android/Sdk
+C/C++: Checking whether deleting ndk.dir and setting android.ndkVersion to [26.1.10909125] would result in the same NDK
+C/C++: ndk.dir delete check : android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: ndk.dir delete check : android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir delete check : ndk.dir in local.properties is not set
+C/C++: ndk.dir delete check : Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: ndk.dir delete check : sdkFolder is /home/jacob/Android/Sdk
+C/C++: ndk.dir delete check : Deleting ndk.dir and setting android.ndkVersion to [26.1.10909125] would result in the same NDK.
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is /home/jacob/Android/Sdk/ndk/26.1.10909125
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is /home/jacob/Android/Sdk
+C/C++: Checking whether deleting ndk.dir and setting android.ndkVersion to [26.1.10909125] would result in the same NDK
+C/C++: ndk.dir delete check : android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: ndk.dir delete check : android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir delete check : ndk.dir in local.properties is not set
+C/C++: ndk.dir delete check : Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: ndk.dir delete check : sdkFolder is /home/jacob/Android/Sdk
+C/C++: ndk.dir delete check : Deleting ndk.dir and setting android.ndkVersion to [26.1.10909125] would result in the same NDK.
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is /home/jacob/Android/Sdk/ndk/26.1.10909125
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is /home/jacob/Android/Sdk
+C/C++: Checking whether deleting ndk.dir and setting android.ndkVersion to [26.1.10909125] would result in the same NDK
+C/C++: ndk.dir delete check : android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: ndk.dir delete check : android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir delete check : ndk.dir in local.properties is not set
+C/C++: ndk.dir delete check : Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: ndk.dir delete check : sdkFolder is /home/jacob/Android/Sdk
+C/C++: ndk.dir delete check : Deleting ndk.dir and setting android.ndkVersion to [26.1.10909125] would result in the same NDK.
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+All projects evaluated.
+Task name matched 'assembleDebug'
+Selected primary task 'assembleDebug' from project :
+Tasks to be executed: [task ':app:preBuild', task ':app:preDebugBuild', task ':app:mergeDebugNativeDebugMetadata', task ':app:javaPreCompileDebug', task ':app:checkDebugAarMetadata', task ':app:generateDebugResValues', task ':app:mapDebugSourceSetPaths', task ':app:generateDebugResources', task ':app:mergeDebugResources', task ':app:packageDebugResources', task ':app:parseDebugLocalResources', task ':app:createDebugCompatibleScreenManifests', task ':app:extractDeepLinksDebug', task ':app:processDebugMainManifest', task ':app:processDebugManifest', task ':app:processDebugManifestForPackage', task ':app:processDebugResources', task ':app:compileDebugJavaWithJavac', task ':app:mergeDebugShaders', task ':app:compileDebugShaders', task ':app:generateDebugAssets', task ':app:mergeDebugAssets', task ':app:compressDebugAssets', task ':app:processDebugJavaRes', task ':app:mergeDebugJavaResource', task ':app:checkDebugDuplicateClasses', task ':app:desugarDebugFileDependencies', task ':app:mergeExtDexDebug', task ':app:mergeLibDexDebug', task ':app:dexBuilderDebug', task ':app:mergeProjectDexDebug', task ':app:configureCMakeDebug[arm64-v8a]', task ':app:buildCMakeDebug[arm64-v8a]', task ':app:mergeDebugJniLibFolders', task ':app:mergeDebugNativeLibs', task ':app:stripDebugDebugSymbols', task ':app:validateSigningDebug', task ':app:writeDebugAppMetadata', task ':app:writeDebugSigningConfigVersions', task ':app:packageDebug', task ':app:createDebugApkListingFileRedirect', task ':app:assembleDebug']
+Tasks that were excluded: []
+Resolve mutations for :app:preBuild (Thread[Execution worker,5,main]) started.
+:app:preBuild (Thread[Execution worker,5,main]) started.
+
+> Task :app:preBuild UP-TO-DATE
+Skipping task ':app:preBuild' as it has no actions.
+Resolve mutations for :app:preDebugBuild (Thread[Execution worker,5,main]) started.
+:app:preDebugBuild (Thread[Execution worker,5,main]) started.
+
+> Task :app:preDebugBuild UP-TO-DATE
+Skipping task ':app:preDebugBuild' as it has no actions.
+Resolve mutations for :app:mergeDebugNativeDebugMetadata (Thread[Execution worker,5,main]) started.
+:app:mergeDebugNativeDebugMetadata (Thread[Execution worker,5,main]) started.
+
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+Skipping task ':app:mergeDebugNativeDebugMetadata' as it has no source files and no previous output files.
+Resolve mutations for :app:javaPreCompileDebug (Thread[Execution worker,5,main]) started.
+:app:javaPreCompileDebug (Thread[Execution worker,5,main]) started.
+
+> Task :app:javaPreCompileDebug UP-TO-DATE
+Caching disabled for task ':app:javaPreCompileDebug' because:
+  Build cache is disabled
+Skipping task ':app:javaPreCompileDebug' as it is up-to-date.
+Resolve mutations for :app:checkDebugAarMetadata (Thread[Execution worker,5,main]) started.
+:app:checkDebugAarMetadata (Thread[Execution worker,5,main]) started.
+
+> Task :app:checkDebugAarMetadata FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:checkDebugAarMetadata'.
+> Configuration `:app:debugRuntimeClasspath` contains AndroidX dependencies, but the `android.useAndroidX` property is not enabled, which may cause runtime issues.
+  Set `android.useAndroidX=true` in the `gradle.properties` file and retry.
+  The following AndroidX dependencies are detected:
+  :app:debugRuntimeClasspath -> androidx.core:core-ktx:1.12.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.appcompat:appcompat-resources:1.6.1 -> androidx.annotation:annotation:1.6.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.appcompat:appcompat-resources:1.6.1 -> androidx.annotation:annotation:1.6.0 -> androidx.annotation:annotation-jvm:1.6.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.appcompat:appcompat-resources:1.6.1 -> androidx.core:core:1.12.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.fragment:fragment:1.3.6 -> androidx.annotation:annotation-experimental:1.3.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.appcompat:appcompat-resources:1.6.1 -> androidx.collection:collection:1.1.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.appcompat:appcompat-resources:1.6.1 -> androidx.core:core:1.12.0 -> androidx.concurrent:concurrent-futures:1.0.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.appcompat:appcompat-resources:1.6.1 -> androidx.vectordrawable:vectordrawable-animated:1.1.0 -> androidx.interpolator:interpolator:1.0.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.lifecycle:lifecycle-runtime:2.5.1
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.lifecycle:lifecycle-runtime:2.5.1 -> androidx.arch.core:core-common:2.1.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.lifecycle:lifecycle-runtime:2.5.1 -> androidx.arch.core:core-runtime:2.1.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.lifecycle:lifecycle-runtime:2.5.1 -> androidx.lifecycle:lifecycle-common:2.5.1
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.appcompat:appcompat-resources:1.6.1 -> androidx.core:core:1.12.0 -> androidx.versionedparcelable:versionedparcelable:1.1.1
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.activity:activity:1.6.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.lifecycle:lifecycle-viewmodel:2.5.1
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.fragment:fragment:1.3.6 -> androidx.lifecycle:lifecycle-viewmodel-savedstate:2.5.1
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.fragment:fragment:1.3.6 -> androidx.lifecycle:lifecycle-livedata-core:2.5.1
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.savedstate:savedstate:1.2.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.activity:activity:1.6.0 -> androidx.tracing:tracing:1.0.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.appcompat:appcompat-resources:1.6.1
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.appcompat:appcompat-resources:1.6.1 -> androidx.vectordrawable:vectordrawable:1.1.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.appcompat:appcompat-resources:1.6.1 -> androidx.vectordrawable:vectordrawable-animated:1.1.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.cursoradapter:cursoradapter:1.0.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.drawerlayout:drawerlayout:1.0.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.drawerlayout:drawerlayout:1.0.0 -> androidx.customview:customview:1.0.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.emoji2:emoji2:1.2.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.emoji2:emoji2:1.2.0 -> androidx.lifecycle:lifecycle-process:2.4.1
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.emoji2:emoji2:1.2.0 -> androidx.startup:startup-runtime:1.1.1
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.emoji2:emoji2-views-helper:1.2.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.fragment:fragment:1.3.6
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.fragment:fragment:1.3.6 -> androidx.viewpager:viewpager:1.0.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.fragment:fragment:1.3.6 -> androidx.loader:loader:1.0.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.fragment:fragment:1.3.6 -> androidx.loader:loader:1.0.0 -> androidx.lifecycle:lifecycle-livedata:2.0.0
+  :app:debugRuntimeClasspath -> androidx.appcompat:appcompat:1.6.1 -> androidx.resourceinspection:resourceinspection-annotation:1.0.1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 659ms
+2 actionable tasks: 1 executed, 1 up-to-date

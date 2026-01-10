@@ -1,0 +1,268 @@
+
+> Configure project :app
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [26.1.10909125] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:compileDebugJavaWithJavac NO-SOURCE
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:processDebugJavaRes NO-SOURCE
+> Task :app:mergeDebugJavaResource UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:dexBuilderDebug
+> Task :app:configureCMakeDebug[arm64-v8a]
+> Task :app:mergeProjectDexDebug
+
+> Task :app:buildCMakeDebug[arm64-v8a]
+C/C++: ninja: Entering directory `/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a'
+C/C++: /home/jacob/Android/Sdk/ndk/26.1.10909125/sources/android/cpufeatures/cpu-features.c:159:19: warning: implicit conversion loses integer precision: 'ssize_t' (aka 'long') to 'int' [-Wshorten-64-to-32]
+C/C++:         int ret = read(fd, buffer, sizeof buffer);
+C/C++:             ~~~   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C/C++: /home/jacob/Android/Sdk/ndk/26.1.10909125/sources/android/cpufeatures/cpu-features.c:192:55: warning: implicit conversion changes signedness: 'int' to 'size_t' (aka 'unsigned long') [-Wsign-conversion]
+C/C++:         int ret = read(fd, buffer + count, buffsize - count);
+C/C++:                                                     ~ ^~~~~
+C/C++: /home/jacob/Android/Sdk/ndk/26.1.10909125/sources/android/cpufeatures/cpu-features.c:192:19: warning: implicit conversion loses integer precision: 'ssize_t' (aka 'long') to 'int' [-Wshorten-64-to-32]
+C/C++:         int ret = read(fd, buffer + count, buffsize - count);
+C/C++:             ~~~   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C/C++: /home/jacob/Android/Sdk/ndk/26.1.10909125/sources/android/cpufeatures/cpu-features.c:405:31: warning: implicit conversion changes signedness: 'long' to 'size_t' (aka 'unsigned long') [-Wsign-conversion]
+C/C++:         q = memchr(p, ',', end-p);
+C/C++:             ~~~~~~         ~~~^~
+C/C++: /home/jacob/Android/Sdk/ndk/26.1.10909125/sources/android/cpufeatures/cpu-features.c:644:22: warning: implicit conversion changes signedness: 'int' to 'unsigned long' [-Wsign-conversion]
+C/C++:     cpuinfo = malloc(cpuinfo_len);
+C/C++:               ~~~~~~ ^~~~~~~~~~~
+C/C++: /home/jacob/Android/Sdk/ndk/26.1.10909125/sources/android/cpufeatures/cpu-features.c:649:55: warning: implicit conversion changes signedness: 'int' to 'size_t' (aka 'unsigned long') [-Wsign-conversion]
+C/C++:     cpuinfo_len = read_file("/proc/cpuinfo", cpuinfo, cpuinfo_len);
+C/C++:                   ~~~~~~~~~                           ^~~~~~~~~~~
+C/C++: /home/jacob/Android/Sdk/ndk/26.1.10909125/sources/android/cpufeatures/cpu-features.c:913:27: warning: implicit conversion loses integer precision: 'unsigned long' to 'uint32_t' (aka 'unsigned int') [-Wshorten-64-to-32]
+C/C++:         uint32_t hwcaps = getauxval(AT_HWCAP);
+C/C++:                  ~~~~~~   ^~~~~~~~~~~~~~~~~~~
+C/C++: 7 warnings generated.
+C/C++: In file included from /home/jacob/src/blacklang/src/fx/FXProcessor.cpp:1:
+C/C++: In file included from /home/jacob/src/blacklang/src/fx/FXProcessor.h:7:
+C/C++: /home/jacob/src/blacklang/src/fx/FXTypes.h:139:13: warning: 9 enumeration values not explicitly handled in switch: 'FX_NONE', 'FX_RETRIG', 'FX_FILTER'... [-Wswitch-enum]
+C/C++:     switch (type) {
+C/C++:             ^~~~
+C/C++: /home/jacob/src/blacklang/src/fx/FXProcessor.cpp:90:57: warning: implicit conversion turns floating-point number into integer: 'double' to 'int' [-Wfloat-conversion]
+C/C++:         double stepDur = pattern.getStepDurationSamples(bpm);
+C/C++:                                  ~~~~~~~~~~~~~~~~~~~~~~ ^~~
+C/C++: /home/jacob/src/blacklang/src/fx/FXProcessor.cpp:111:53: warning: implicit conversion turns floating-point number into integer: 'double' to 'int' [-Wfloat-conversion]
+C/C++:     double stepDur = pattern.getStepDurationSamples(bpm);
+C/C++:                              ~~~~~~~~~~~~~~~~~~~~~~ ^~~
+C/C++: /home/jacob/src/blacklang/src/fx/FXProcessor.cpp:131:73: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+C/C++:             state.samplePlaybackPosition = (double)pattern.sliceMarkers[sliceIdx];
+C/C++:                                                    ~~~~~~~              ^~~~~~~~
+C/C++: /home/jacob/src/blacklang/src/fx/FXProcessor.cpp:137:77: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+C/C++:                     state.sampleEndPosition = pattern.sliceMarkers[sliceIdx + 1];
+C/C++:                                               ~~~~~~~              ~~~~~~~~~^~~
+C/C++: /home/jacob/src/blacklang/src/fx/FXProcessor.cpp:154:60: warning: implicit conversion from 'int64_t' (aka 'long') to 'float' may lose precision [-Wimplicit-int-float-conversion]
+C/C++:             state.samplePlaybackPosition = (double)(norm * totalSamples);
+C/C++:                                                          ~ ^~~~~~~~~~~~
+C/C++: /home/jacob/src/blacklang/src/fx/FXProcessor.cpp:158:56: warning: implicit conversion from 'int64_t' (aka 'long') to 'float' may lose precision [-Wimplicit-int-float-conversion]
+C/C++:             state.sampleEndPosition = (int64_t)(norm * totalSamples);
+C/C++:                                                      ~ ^~~~~~~~~~~~
+C/C++: /home/jacob/src/blacklang/src/fx/FXProcessor.cpp:179:83: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+C/C++:              state.samplePlaybackPosition = (double)pattern.sliceMarkers[sliceIdx + 1];
+C/C++:                                                     ~~~~~~~              ~~~~~~~~~^~~
+C/C++: /home/jacob/src/blacklang/src/fx/FXProcessor.cpp:180:61: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+C/C++:              state.sampleEndPosition = pattern.sliceMarkers[sliceIdx]; // It becomes the 'end' (play backwards to this)
+C/C++:                                        ~~~~~~~              ^~~~~~~~
+C/C++: /home/jacob/src/blacklang/src/fx/FXProcessor.cpp:190:65: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+C/C++:                  state.sampleEndPosition = pattern.sliceMarkers[sliceIdx];
+C/C++:                                            ~~~~~~~              ^~~~~~~~
+C/C++: 10 warnings generated.
+C/C++: /home/jacob/Android/Sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++ --target=aarch64-none-linux-android29 --sysroot=/home/jacob/Android/Sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/sysroot -DDEBUG=1 -DGRAPHICS_API_OPENGL_ES2 -DJUCE_ANDROID=1 -DJUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1 -DJUCE_MODULE_AVAILABLE_juce_audio_basics=1 -DJUCE_MODULE_AVAILABLE_juce_audio_devices=1 -DJUCE_MODULE_AVAILABLE_juce_audio_formats=1 -DJUCE_MODULE_AVAILABLE_juce_audio_processors=1 -DJUCE_MODULE_AVAILABLE_juce_audio_utils=1 -DJUCE_MODULE_AVAILABLE_juce_core=1 -DJUCE_MODULE_AVAILABLE_juce_data_structures=1 -DJUCE_MODULE_AVAILABLE_juce_events=1 -DJUCE_MODULE_AVAILABLE_juce_graphics=1 -DJUCE_MODULE_AVAILABLE_juce_gui_basics=1 -DJUCE_MODULE_AVAILABLE_juce_gui_extra=1 -DJUCE_STANDALONE_APPLICATION=0 -DJUCE_USE_CURL=0 -DJUCE_WEB_BROWSER=0 -DOBOE_ENABLE_LOGGING=1 -DPLATFORM_ANDROID -D_DEBUG=1 -Dblacklang_EXPORTS -I/home/jacob/src/blacklang/src -I/home/jacob/Android/Sdk/ndk/26.1.10909125/sources/android/native_app_glue -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules -I/home/jacob/Android/Sdk/ndk/26.1.10909125/sources/android/cpufeatures -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_devices/native/oboe/include -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/VST3_SDK -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/lv2 -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/serd -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/sord -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/sord/src -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/sratom -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/lilv -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/lilv/src -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -std=c++17 -fno-limit-debug-info  -fPIC -g -O0 -Wall -Wshadow-all -Wshorten-64-to-32 -Wstrict-aliasing -Wuninitialized -Wunused-parameter -Wconversion -Wsign-compare -Wint-conversion -Wconditional-uninitialized -Wconstant-conversion -Wsign-conversion -Wbool-conversion -Wextra-semi -Wunreachable-code -Wcast-align -Wshift-sign-overflow -Wmissing-prototypes -Wnullable-to-nonnull-conversion -Wno-ignored-qualifiers -Wswitch-enum -Wpedantic -Wdeprecated -Wfloat-equal -Wmissing-field-initializers -Wzero-as-null-pointer-constant -Wunused-private-field -Woverloaded-virtual -Wreorder -Winconsistent-missing-destructor-override -std=c++17 -MD -MT blacklang_build/CMakeFiles/blacklang.dir/src/main_raylib.cpp.o -MF blacklang_build/CMakeFiles/blacklang.dir/src/main_raylib.cpp.o.d -o blacklang_build/CMakeFiles/blacklang.dir/src/main_raylib.cpp.o -c /home/jacob/src/blacklang/src/main_raylib.cpp
+C/C++: In file included from /home/jacob/src/blacklang/src/main_raylib.cpp:1:
+C/C++: In file included from /home/jacob/src/blacklang/src/GuiRenderer.h:3:
+C/C++: In file included from /home/jacob/src/blacklang/src/GuiState.h:3:
+C/C++: In file included from /home/jacob/src/blacklang/src/AudioEngine.h:4:
+C/C++: /home/jacob/src/blacklang/src/PatternChain.h:39:30: warning: implicit conversion changes signedness: 'difference_type' (aka 'long') to 'size_t' (aka 'unsigned long') [-Wsign-conversion]
+C/C++:                 pos += match.length();
+C/C++:                     ~~ ~~~~~~^~~~~~~~
+C/C++: In file included from /home/jacob/src/blacklang/src/main_raylib.cpp:1:
+C/C++: In file included from /home/jacob/src/blacklang/src/GuiRenderer.h:3:
+C/C++: In file included from /home/jacob/src/blacklang/src/GuiState.h:3:
+C/C++: In file included from /home/jacob/src/blacklang/src/AudioEngine.h:7:
+C/C++: In file included from /home/jacob/src/blacklang/src/fx/FXProcessor.h:7:
+C/C++: /home/jacob/src/blacklang/src/fx/FXTypes.h:139:13: warning: 9 enumeration values not explicitly handled in switch: 'FX_NONE', 'FX_RETRIG', 'FX_FILTER'... [-Wswitch-enum]
+C/C++:     switch (type) {
+C/C++:             ^~~~
+C/C++: /home/jacob/src/blacklang/src/main_raylib.cpp:24:12: error: expected unqualified-id
+C/C++:     extern "C" struct android_app* GetAndroidApp();
+C/C++:            ^
+C/C++: /home/jacob/src/blacklang/src/main_raylib.cpp:25:31: error: use of undeclared identifier 'GetAndroidApp'
+C/C++:     struct android_app* app = GetAndroidApp();
+C/C++:                               ^
+C/C++: 2 warnings and 2 errors generated.
+C/C++: In file included from /home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_gui_basics/juce_gui_basics.cpp:232:
+C/C++: /home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_gui_basics/native/juce_Windowing_android.cpp:923:14: warning: unused function 'juce_handleOnResume' [-Wunused-function]
+C/C++:  static void juce_handleOnResume() {}
+C/C++:              ^
+C/C++: 1 warning generated.
+
+> Task :app:buildCMakeDebug[arm64-v8a] FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:buildCMakeDebug[arm64-v8a]'.
+> com.android.ide.common.process.ProcessException: ninja: Entering directory `/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a'
+  [0/2] Re-checking globbed directories...
+  [1/91] Building CXX object blacklang_build/CMakeFiles/blacklang.dir/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_core/juce_core_CompilationTime.cpp.o
+  [2/91] Building C object blacklang_build/CMakeFiles/blacklang.dir/home/jacob/Android/Sdk/ndk/26.1.10909125/sources/android/cpufeatures/cpu-features.c.o
+  /home/jacob/Android/Sdk/ndk/26.1.10909125/sources/android/cpufeatures/cpu-features.c:159:19: warning: implicit conversion loses integer precision: 'ssize_t' (aka 'long') to 'int' [-Wshorten-64-to-32]
+          int ret = read(fd, buffer, sizeof buffer);
+              ~~~   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  /home/jacob/Android/Sdk/ndk/26.1.10909125/sources/android/cpufeatures/cpu-features.c:192:55: warning: implicit conversion changes signedness: 'int' to 'size_t' (aka 'unsigned long') [-Wsign-conversion]
+          int ret = read(fd, buffer + count, buffsize - count);
+                                                      ~ ^~~~~
+  /home/jacob/Android/Sdk/ndk/26.1.10909125/sources/android/cpufeatures/cpu-features.c:192:19: warning: implicit conversion loses integer precision: 'ssize_t' (aka 'long') to 'int' [-Wshorten-64-to-32]
+          int ret = read(fd, buffer + count, buffsize - count);
+              ~~~   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  /home/jacob/Android/Sdk/ndk/26.1.10909125/sources/android/cpufeatures/cpu-features.c:405:31: warning: implicit conversion changes signedness: 'long' to 'size_t' (aka 'unsigned long') [-Wsign-conversion]
+          q = memchr(p, ',', end-p);
+              ~~~~~~         ~~~^~
+  /home/jacob/Android/Sdk/ndk/26.1.10909125/sources/android/cpufeatures/cpu-features.c:644:22: warning: implicit conversion changes signedness: 'int' to 'unsigned long' [-Wsign-conversion]
+      cpuinfo = malloc(cpuinfo_len);
+                ~~~~~~ ^~~~~~~~~~~
+  /home/jacob/Android/Sdk/ndk/26.1.10909125/sources/android/cpufeatures/cpu-features.c:649:55: warning: implicit conversion changes signedness: 'int' to 'size_t' (aka 'unsigned long') [-Wsign-conversion]
+      cpuinfo_len = read_file("/proc/cpuinfo", cpuinfo, cpuinfo_len);
+                    ~~~~~~~~~                           ^~~~~~~~~~~
+  /home/jacob/Android/Sdk/ndk/26.1.10909125/sources/android/cpufeatures/cpu-features.c:913:27: warning: implicit conversion loses integer precision: 'unsigned long' to 'uint32_t' (aka 'unsigned int') [-Wshorten-64-to-32]
+          uint32_t hwcaps = getauxval(AT_HWCAP);
+                   ~~~~~~   ^~~~~~~~~~~~~~~~~~~
+  7 warnings generated.
+  [3/91] Building CXX object blacklang_build/CMakeFiles/blacklang.dir/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/juce_audio_processors_ara.cpp.o
+  [4/91] Building CXX object blacklang_build/CMakeFiles/blacklang.dir/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/juce_audio_processors_lv2_libs.cpp.o
+  [5/91] Building CXX object blacklang_build/CMakeFiles/blacklang.dir/src/fx/FXProcessor.cpp.o
+  In file included from /home/jacob/src/blacklang/src/fx/FXProcessor.cpp:1:
+  In file included from /home/jacob/src/blacklang/src/fx/FXProcessor.h:7:
+  /home/jacob/src/blacklang/src/fx/FXTypes.h:139:13: warning: 9 enumeration values not explicitly handled in switch: 'FX_NONE', 'FX_RETRIG', 'FX_FILTER'... [-Wswitch-enum]
+      switch (type) {
+              ^~~~
+  /home/jacob/src/blacklang/src/fx/FXProcessor.cpp:90:57: warning: implicit conversion turns floating-point number into integer: 'double' to 'int' [-Wfloat-conversion]
+          double stepDur = pattern.getStepDurationSamples(bpm);
+                                   ~~~~~~~~~~~~~~~~~~~~~~ ^~~
+  /home/jacob/src/blacklang/src/fx/FXProcessor.cpp:111:53: warning: implicit conversion turns floating-point number into integer: 'double' to 'int' [-Wfloat-conversion]
+      double stepDur = pattern.getStepDurationSamples(bpm);
+                               ~~~~~~~~~~~~~~~~~~~~~~ ^~~
+  /home/jacob/src/blacklang/src/fx/FXProcessor.cpp:131:73: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+              state.samplePlaybackPosition = (double)pattern.sliceMarkers[sliceIdx];
+                                                     ~~~~~~~              ^~~~~~~~
+  /home/jacob/src/blacklang/src/fx/FXProcessor.cpp:137:77: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+                      state.sampleEndPosition = pattern.sliceMarkers[sliceIdx + 1];
+                                                ~~~~~~~              ~~~~~~~~~^~~
+  /home/jacob/src/blacklang/src/fx/FXProcessor.cpp:154:60: warning: implicit conversion from 'int64_t' (aka 'long') to 'float' may lose precision [-Wimplicit-int-float-conversion]
+              state.samplePlaybackPosition = (double)(norm * totalSamples);
+                                                           ~ ^~~~~~~~~~~~
+  /home/jacob/src/blacklang/src/fx/FXProcessor.cpp:158:56: warning: implicit conversion from 'int64_t' (aka 'long') to 'float' may lose precision [-Wimplicit-int-float-conversion]
+              state.sampleEndPosition = (int64_t)(norm * totalSamples);
+                                                       ~ ^~~~~~~~~~~~
+  /home/jacob/src/blacklang/src/fx/FXProcessor.cpp:179:83: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+               state.samplePlaybackPosition = (double)pattern.sliceMarkers[sliceIdx + 1];
+                                                      ~~~~~~~              ~~~~~~~~~^~~
+  /home/jacob/src/blacklang/src/fx/FXProcessor.cpp:180:61: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+               state.sampleEndPosition = pattern.sliceMarkers[sliceIdx]; // It becomes the 'end' (play backwards to this)
+                                         ~~~~~~~              ^~~~~~~~
+  /home/jacob/src/blacklang/src/fx/FXProcessor.cpp:190:65: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+                   state.sampleEndPosition = pattern.sliceMarkers[sliceIdx];
+                                             ~~~~~~~              ^~~~~~~~
+  10 warnings generated.
+  [6/91] Building CXX object blacklang_build/CMakeFiles/blacklang.dir/src/main_raylib.cpp.o
+  FAILED: blacklang_build/CMakeFiles/blacklang.dir/src/main_raylib.cpp.o 
+  /home/jacob/Android/Sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++ --target=aarch64-none-linux-android29 --sysroot=/home/jacob/Android/Sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/sysroot -DDEBUG=1 -DGRAPHICS_API_OPENGL_ES2 -DJUCE_ANDROID=1 -DJUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1 -DJUCE_MODULE_AVAILABLE_juce_audio_basics=1 -DJUCE_MODULE_AVAILABLE_juce_audio_devices=1 -DJUCE_MODULE_AVAILABLE_juce_audio_formats=1 -DJUCE_MODULE_AVAILABLE_juce_audio_processors=1 -DJUCE_MODULE_AVAILABLE_juce_audio_utils=1 -DJUCE_MODULE_AVAILABLE_juce_core=1 -DJUCE_MODULE_AVAILABLE_juce_data_structures=1 -DJUCE_MODULE_AVAILABLE_juce_events=1 -DJUCE_MODULE_AVAILABLE_juce_graphics=1 -DJUCE_MODULE_AVAILABLE_juce_gui_basics=1 -DJUCE_MODULE_AVAILABLE_juce_gui_extra=1 -DJUCE_STANDALONE_APPLICATION=0 -DJUCE_USE_CURL=0 -DJUCE_WEB_BROWSER=0 -DOBOE_ENABLE_LOGGING=1 -DPLATFORM_ANDROID -D_DEBUG=1 -Dblacklang_EXPORTS -I/home/jacob/src/blacklang/src -I/home/jacob/Android/Sdk/ndk/26.1.10909125/sources/android/native_app_glue -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules -I/home/jacob/Android/Sdk/ndk/26.1.10909125/sources/android/cpufeatures -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_devices/native/oboe/include -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/VST3_SDK -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/lv2 -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/serd -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/sord -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/sord/src -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/sratom -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/lilv -I/home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/lilv/src -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -std=c++17 -fno-limit-debug-info  -fPIC -g -O0 -Wall -Wshadow-all -Wshorten-64-to-32 -Wstrict-aliasing -Wuninitialized -Wunused-parameter -Wconversion -Wsign-compare -Wint-conversion -Wconditional-uninitialized -Wconstant-conversion -Wsign-conversion -Wbool-conversion -Wextra-semi -Wunreachable-code -Wcast-align -Wshift-sign-overflow -Wmissing-prototypes -Wnullable-to-nonnull-conversion -Wno-ignored-qualifiers -Wswitch-enum -Wpedantic -Wdeprecated -Wfloat-equal -Wmissing-field-initializers -Wzero-as-null-pointer-constant -Wunused-private-field -Woverloaded-virtual -Wreorder -Winconsistent-missing-destructor-override -std=c++17 -MD -MT blacklang_build/CMakeFiles/blacklang.dir/src/main_raylib.cpp.o -MF blacklang_build/CMakeFiles/blacklang.dir/src/main_raylib.cpp.o.d -o blacklang_build/CMakeFiles/blacklang.dir/src/main_raylib.cpp.o -c /home/jacob/src/blacklang/src/main_raylib.cpp
+  In file included from /home/jacob/src/blacklang/src/main_raylib.cpp:1:
+  In file included from /home/jacob/src/blacklang/src/GuiRenderer.h:3:
+  In file included from /home/jacob/src/blacklang/src/GuiState.h:3:
+  In file included from /home/jacob/src/blacklang/src/AudioEngine.h:4:
+  /home/jacob/src/blacklang/src/PatternChain.h:39:30: warning: implicit conversion changes signedness: 'difference_type' (aka 'long') to 'size_t' (aka 'unsigned long') [-Wsign-conversion]
+                  pos += match.length();
+                      ~~ ~~~~~~^~~~~~~~
+  In file included from /home/jacob/src/blacklang/src/main_raylib.cpp:1:
+  In file included from /home/jacob/src/blacklang/src/GuiRenderer.h:3:
+  In file included from /home/jacob/src/blacklang/src/GuiState.h:3:
+  In file included from /home/jacob/src/blacklang/src/AudioEngine.h:7:
+  In file included from /home/jacob/src/blacklang/src/fx/FXProcessor.h:7:
+  /home/jacob/src/blacklang/src/fx/FXTypes.h:139:13: warning: 9 enumeration values not explicitly handled in switch: 'FX_NONE', 'FX_RETRIG', 'FX_FILTER'... [-Wswitch-enum]
+      switch (type) {
+              ^~~~
+  /home/jacob/src/blacklang/src/main_raylib.cpp:24:12: error: expected unqualified-id
+      extern "C" struct android_app* GetAndroidApp();
+             ^
+  /home/jacob/src/blacklang/src/main_raylib.cpp:25:31: error: use of undeclared identifier 'GetAndroidApp'
+      struct android_app* app = GetAndroidApp();
+                                ^
+  2 warnings and 2 errors generated.
+  [7/91] Building CXX object blacklang_build/CMakeFiles/blacklang.dir/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_events/juce_events.cpp.o
+  [8/91] Building CXX object blacklang_build/CMakeFiles/blacklang.dir/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_basics/juce_audio_basics.cpp.o
+  [9/91] Building CXX object blacklang_build/CMakeFiles/blacklang.dir/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_devices/juce_audio_devices.cpp.o
+  [10/91] Building CXX object blacklang_build/CMakeFiles/blacklang.dir/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_formats/juce_audio_formats.cpp.o
+  [11/91] Building CXX object blacklang_build/CMakeFiles/blacklang.dir/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_utils/juce_audio_utils.cpp.o
+  [12/91] Building CXX object blacklang_build/CMakeFiles/blacklang.dir/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_gui_extra/juce_gui_extra.cpp.o
+  [13/91] Building CXX object blacklang_build/CMakeFiles/blacklang.dir/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/juce_audio_processors.cpp.o
+  [14/91] Building CXX object blacklang_build/CMakeFiles/blacklang.dir/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_core/juce_core.cpp.o
+  [15/91] Building CXX object blacklang_build/CMakeFiles/blacklang.dir/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_gui_basics/juce_gui_basics.cpp.o
+  In file included from /home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_gui_basics/juce_gui_basics.cpp:232:
+  /home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_gui_basics/native/juce_Windowing_android.cpp:923:14: warning: unused function 'juce_handleOnResume' [-Wunused-function]
+   static void juce_handleOnResume() {}
+               ^
+  1 warning generated.
+  ninja: build stopped: subcommand failed.
+  
+  C++ build system [build] failed while executing:
+      /home/jacob/Android/Sdk/cmake/3.22.1/bin/ninja \
+        -C \
+        /home/jacob/src/blacklang/android/app/.cxx/Debug/655a5114/arm64-v8a \
+        blacklang
+    from /home/jacob/src/blacklang/android/app
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 20s
+25 actionable tasks: 4 executed, 21 up-to-date

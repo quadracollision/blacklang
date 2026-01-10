@@ -26,7 +26,7 @@ void FXControls::DrawFXSlider(Rectangle rect, const char* label, float* value, f
     DrawRectangleRec(handle, LIGHTGRAY);
     
     if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-        Vector2 mouse = GetMousePosition();
+        Vector2 mouse = state.getMousePosition();
         if (CheckCollisionPointRec(mouse, {rect.x - 5, rect.y - 5, rect.width + 10, rect.height + 10})) {
             float newVal = min + ((mouse.x - rect.x) / rect.width) * (max - min);
             if (newVal < min) newVal = min;
@@ -42,10 +42,10 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
     float startY = area.y;
     Pattern& p = pattern;
     
-    DrawText(TextFormat("Step: %d", state.editor.selectedStep + 1), area.x, startY + 10, 20, WHITE);
+    DrawText(TextFormat("Step: %d", state.editor.selectedStep + 1), area.x, startY + 10, 24, WHITE);
     
     if (state.editor.selectedStep != -1 && state.editor.stepStates[state.editor.selectedStep]) {
-        DrawText("FX Selection:", area.x, startY + 25, 20, WHITE);
+        DrawText("FX Selection:", area.x, startY + 40, 22, WHITE);
         
         // Dynamic FX List from system
         struct FxOption { int id; std::string name; };
@@ -60,20 +60,24 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
         
         auto& currentStepFX = p.stepFX[state.editor.selectedStep + 1];
         
-        float boxW = 140;
-        float boxH = 100;
-        Rectangle availBox = {area.x + 120, startY + 70, boxW, boxH};
-        Rectangle appliedBox = {area.x + 280, startY + 70, boxW, boxH};
+        // Touch-friendly box sizes - centered in area
+        float boxW = 200;
+        float boxH = 140;
+        float totalBoxWidth = boxW * 2 + 20; // 2 boxes + gap
+        float boxStartX = area.x + (area.width - totalBoxWidth) / 2; // Center
+        
+        Rectangle availBox = {boxStartX, startY + 75, boxW, boxH};
+        Rectangle appliedBox = {boxStartX + boxW + 20, startY + 75, boxW, boxH};
         
         // Draw Available Box
         DrawRectangleRec(availBox, BLACK);
-        DrawRectangleLinesEx(availBox, 1, WHITE);
-        DrawText("Available", availBox.x, availBox.y - 12, 10, LIGHTGRAY);
+        DrawRectangleLinesEx(availBox, 2, WHITE);
+        DrawText("Available", availBox.x, availBox.y - 18, 16, LIGHTGRAY);
         
         // Draw Applied Box
         DrawRectangleRec(appliedBox, BLACK);
-        DrawRectangleLinesEx(appliedBox, 1, WHITE);
-        DrawText("Applied", appliedBox.x, appliedBox.y - 12, 10, LIGHTGRAY);
+        DrawRectangleLinesEx(appliedBox, 2, WHITE);
+        DrawText("Applied", appliedBox.x, appliedBox.y - 18, 16, LIGHTGRAY);
 
         // Filter lists
         std::vector<FxOption> listAvailable;
@@ -90,14 +94,36 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
 
         // --- Available List Logic ---
         BeginScissorMode((int)availBox.x, (int)availBox.y, (int)availBox.width, (int)availBox.height);
-        float itemH = 20;
-        float contentH_Avail = listAvailable.size() * (itemH + 2);
+        float itemH = 35;  // Touch-friendly item height
+        float contentH_Avail = listAvailable.size() * (itemH + 4);
         
-        // Scroll Wheel
-        if (CheckCollisionPointRec(GetMousePosition(), availBox)) {
-            state.editor.fxAvailableScrollY += GetMouseWheelMove() * 20.0f;
-            state.editor.scrollConsumed = true; // Block parent scroll
+        // Touch drag scrolling for Available list
+        if (CheckCollisionPointRec(state.getMousePosition(), availBox)) {
+            // Mouse wheel (desktop)
+            state.editor.fxAvailableScrollY += GetMouseWheelMove() * 30.0f;
+            state.editor.scrollConsumed = true;
+            
+            // Touch drag start
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                state.editor.fxAvailDragging = true;
+                state.editor.fxDragStartY = state.getMousePosition().y;
+                state.editor.fxDragStartScrollY = state.editor.fxAvailableScrollY;
+            }
         }
+        
+        // Touch drag update
+        if (state.editor.fxAvailDragging && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+            float deltaY = state.getMousePosition().y - state.editor.fxDragStartY;
+            state.editor.fxAvailableScrollY = state.editor.fxDragStartScrollY + deltaY;
+            state.editor.scrollConsumed = true;
+        }
+        
+        // Touch drag end
+        if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+            state.editor.fxAvailDragging = false;
+        }
+        
+        // Clamp scroll
         if (state.editor.fxAvailableScrollY > 0) state.editor.fxAvailableScrollY = 0;
         if (contentH_Avail > boxH) {
              if (state.editor.fxAvailableScrollY < -(contentH_Avail - boxH)) state.editor.fxAvailableScrollY = -(contentH_Avail - boxH);
@@ -107,24 +133,24 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
         
         float currY = availBox.y + 5 + state.editor.fxAvailableScrollY;
         for (const auto& opt : listAvailable) {
-            Rectangle itemRect = {availBox.x + 5, currY, boxW - 15, itemH}; // -15 for potential scrollbar
+            Rectangle itemRect = {availBox.x + 5, currY, boxW - 12, itemH};
             bool isSelected = (state.editor.selectedAvailableFxId == opt.id);
             
             if (currY + itemH > availBox.y && currY < availBox.y + availBox.height) {
                 if (isSelected) {
                     DrawRectangleRec(itemRect, ORANGE);
-                } else if (CheckCollisionPointRec(GetMousePosition(), itemRect) && CheckCollisionPointRec(GetMousePosition(), availBox)) {
+                } else if (CheckCollisionPointRec(state.getMousePosition(), itemRect) && CheckCollisionPointRec(state.getMousePosition(), availBox)) {
                     DrawRectangleRec(itemRect, {50, 50, 50, 255});
                 }
                 
-                DrawText(opt.name.c_str(), itemRect.x + 5, itemRect.y + 5, 10, isSelected ? BLACK : WHITE);
+                DrawText(opt.name.c_str(), itemRect.x + 8, itemRect.y + 8, 16, isSelected ? BLACK : WHITE);
                 
-                if (CheckCollisionPointRec(GetMousePosition(), itemRect) && CheckCollisionPointRec(GetMousePosition(), availBox) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                if (CheckCollisionPointRec(state.getMousePosition(), itemRect) && CheckCollisionPointRec(state.getMousePosition(), availBox) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                     state.editor.selectedAvailableFxId = opt.id;
                     state.editor.selectedAppliedFxId = -1;
                 }
             }
-            currY += itemH + 2;
+            currY += itemH + 4;
         }
         EndScissorMode();
         
@@ -140,13 +166,35 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
 
         // --- Applied List Logic ---
         BeginScissorMode((int)appliedBox.x, (int)appliedBox.y, (int)appliedBox.width, (int)appliedBox.height);
-        float contentH_Applied = listApplied.size() * (itemH + 2);
+        float contentH_Applied = listApplied.size() * (itemH + 4);
         
-        // Scroll Wheel
-        if (CheckCollisionPointRec(GetMousePosition(), appliedBox)) {
-            state.editor.fxAppliedScrollY += GetMouseWheelMove() * 20.0f;
-            state.editor.scrollConsumed = true; // Block parent scroll
+        // Touch drag scrolling for Applied list
+        if (CheckCollisionPointRec(state.getMousePosition(), appliedBox)) {
+            // Mouse wheel (desktop)
+            state.editor.fxAppliedScrollY += GetMouseWheelMove() * 30.0f;
+            state.editor.scrollConsumed = true;
+            
+            // Touch drag start
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                state.editor.fxAppliedDragging = true;
+                state.editor.fxDragStartY = state.getMousePosition().y;
+                state.editor.fxDragStartScrollY = state.editor.fxAppliedScrollY;
+            }
         }
+        
+        // Touch drag update
+        if (state.editor.fxAppliedDragging && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+            float deltaY = state.getMousePosition().y - state.editor.fxDragStartY;
+            state.editor.fxAppliedScrollY = state.editor.fxDragStartScrollY + deltaY;
+            state.editor.scrollConsumed = true;
+        }
+        
+        // Touch drag end
+        if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+            state.editor.fxAppliedDragging = false;
+        }
+        
+        // Clamp scroll
         if (state.editor.fxAppliedScrollY > 0) state.editor.fxAppliedScrollY = 0;
         if (contentH_Applied > boxH) {
              if (state.editor.fxAppliedScrollY < -(contentH_Applied - boxH)) state.editor.fxAppliedScrollY = -(contentH_Applied - boxH);
@@ -156,43 +204,43 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
         
         currY = appliedBox.y + 5 + state.editor.fxAppliedScrollY;
         for (const auto& opt : listApplied) {
-            Rectangle itemRect = {appliedBox.x + 5, currY, boxW - 15, itemH};
+            Rectangle itemRect = {appliedBox.x + 5, currY, boxW - 12, itemH};
             bool isSelected = (state.editor.selectedAppliedFxId == opt.id);
             
             if (currY + itemH > appliedBox.y && currY < appliedBox.y + appliedBox.height) {
                 if (isSelected) {
                     DrawRectangleRec(itemRect, ORANGE);
-                } else if (CheckCollisionPointRec(GetMousePosition(), itemRect) && CheckCollisionPointRec(GetMousePosition(), appliedBox)) {
+                } else if (CheckCollisionPointRec(state.getMousePosition(), itemRect) && CheckCollisionPointRec(state.getMousePosition(), appliedBox)) {
                     DrawRectangleRec(itemRect, {50, 50, 50, 255});
                 }
                 
-                DrawText(opt.name.c_str(), itemRect.x + 5, itemRect.y + 5, 10, isSelected ? BLACK : WHITE);
+                DrawText(opt.name.c_str(), itemRect.x + 8, itemRect.y + 8, 16, isSelected ? BLACK : WHITE);
                 
-                if (CheckCollisionPointRec(GetMousePosition(), itemRect) && CheckCollisionPointRec(GetMousePosition(), appliedBox) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                if (CheckCollisionPointRec(state.getMousePosition(), itemRect) && CheckCollisionPointRec(state.getMousePosition(), appliedBox) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                     state.editor.selectedAppliedFxId = opt.id;
                     state.editor.selectedAvailableFxId = -1;
                 }
             }
-            currY += itemH + 2;
+            currY += itemH + 4;
         }
         EndScissorMode();
         
         // RESTORE PARENT SCISSOR
         BeginScissorMode((int)parentScissor.x, (int)parentScissor.y, (int)parentScissor.width, (int)parentScissor.height);
         
-        // Scrollbar Applied
+        // Scrollbar Applied - thicker for touch
         if (contentH_Applied > boxH) {
             float sbH = (boxH / contentH_Applied) * boxH;
             float sbY = appliedBox.y + (-state.editor.fxAppliedScrollY / contentH_Applied) * boxH;
-            DrawRectangleRec({appliedBox.x + boxW - 6, sbY, 4, sbH}, DARKGRAY);
+            DrawRectangleRec({appliedBox.x + boxW - 10, sbY, 8, sbH}, DARKGRAY);
         }
         
-        // Add Button
-        Rectangle addBtn = {availBox.x, availBox.y + boxH + 5, boxW, 25};
-        DrawRectangleRec(addBtn, GRAY);
-        DrawText("Add", addBtn.x + boxW/2 - 10, addBtn.y + 5, 10, WHITE);
+        // Add Button - touch friendly
+        Rectangle addBtn = {availBox.x, availBox.y + boxH + 10, boxW, 45};
+        DrawRectangleRec(addBtn, BLUE);
+        DrawText("Add FX", addBtn.x + boxW/2 - 30, addBtn.y + 12, 18, WHITE);
         
-        if (CheckCollisionPointRec(GetMousePosition(), addBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (CheckCollisionPointRec(state.getMousePosition(), addBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             if (state.editor.selectedAvailableFxId != -1) {
                 bool alreadyActive = std::find(currentStepFX.begin(), currentStepFX.end(), state.editor.selectedAvailableFxId) != currentStepFX.end();
                 if (!alreadyActive) {
@@ -203,12 +251,12 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
             }
         }
         
-        // Remove Button
-        Rectangle removeBtn = {appliedBox.x, appliedBox.y + boxH + 5, boxW, 25};
-        DrawRectangleRec(removeBtn, GRAY);
-        DrawText("Remove", removeBtn.x + boxW/2 - 20, removeBtn.y + 5, 10, WHITE);
+        // Remove Button - touch friendly
+        Rectangle removeBtn = {appliedBox.x, appliedBox.y + boxH + 10, boxW, 45};
+        DrawRectangleRec(removeBtn, RED);
+        DrawText("Remove", removeBtn.x + boxW/2 - 35, removeBtn.y + 12, 18, WHITE);
         
-        if (CheckCollisionPointRec(GetMousePosition(), removeBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (CheckCollisionPointRec(state.getMousePosition(), removeBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             if (state.editor.selectedAppliedFxId != -1) {
                 currentStepFX.erase(std::remove(currentStepFX.begin(), currentStepFX.end(), state.editor.selectedAppliedFxId), currentStepFX.end());
                 state.editor.selectedAppliedFxId = -1;
@@ -240,10 +288,10 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
             engine.addPattern(p);
         }
         
-        startY += boxH + 110;
+        startY += boxH + 140;  // Larger spacing for bigger boxes/buttons
     } else {
-        DrawText("Select an active step to edit FX", area.x, startY + 25, 20, GRAY);
-        startY += 40;
+        DrawText("Select an active step to edit FX", area.x, startY + 30, 22, GRAY);
+        startY += 60;
     }
     
     startY += 60;
@@ -271,7 +319,7 @@ void FXControls::DrawStutterParams(float x, float paramPanelY, Pattern& p, int s
     DrawRectangleRec(rateHandle, LIGHTGRAY);
     
     if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-        Vector2 mouse = GetMousePosition();
+        Vector2 mouse = state.getMousePosition();
         if (CheckCollisionPointRec(mouse, {rateSlider.x - 5, rateSlider.y - 5, rateSlider.width + 10, rateSlider.height + 10})) {
             float newVal = minRate + ((mouse.x - rateSlider.x) / rateSlider.width) * (maxRate - minRate);
             if (newVal < minRate) newVal = minRate;
@@ -307,7 +355,7 @@ void FXControls::DrawStutterParams(float x, float paramPanelY, Pattern& p, int s
     DrawRectangleRec(speedHandle, LIGHTGRAY);
     
     if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-        Vector2 mouse = GetMousePosition();
+        Vector2 mouse = state.getMousePosition();
         if (CheckCollisionPointRec(mouse, {speedSlider.x - 5, speedSlider.y - 5, speedSlider.width + 10, speedSlider.height + 10})) {
             float newVal = minSpeed + ((mouse.x - speedSlider.x) / speedSlider.width) * (maxSpeed - minSpeed);
             if (newVal < minSpeed) newVal = minSpeed;
@@ -344,7 +392,7 @@ void FXControls::DrawSlideParams(float x, float paramPanelY, Pattern& p, int ste
     DrawRectangleRec(timeHandle, LIGHTGRAY);
     
     if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-        Vector2 mouse = GetMousePosition();
+        Vector2 mouse = state.getMousePosition();
         if (CheckCollisionPointRec(mouse, {timeSlider.x - 5, timeSlider.y - 5, timeSlider.width + 10, timeSlider.height + 10})) {
             float newVal = minTime + ((mouse.x - timeSlider.x) / timeSlider.width) * (maxTime - minTime);
             if (newVal < minTime) newVal = minTime;
@@ -380,7 +428,7 @@ void FXControls::DrawSlideParams(float x, float paramPanelY, Pattern& p, int ste
     DrawRectangleRec(squelchHandle, LIGHTGRAY);
     
     if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-        Vector2 mouse = GetMousePosition();
+        Vector2 mouse = state.getMousePosition();
         if (CheckCollisionPointRec(mouse, {squelchSlider.x - 5, squelchSlider.y - 5, squelchSlider.width + 10, squelchSlider.height + 10})) {
             float newVal = minSquelch + ((mouse.x - squelchSlider.x) / squelchSlider.width) * (maxSquelch - minSquelch);
             if (newVal < minSquelch) newVal = minSquelch;
@@ -420,7 +468,7 @@ void FXControls::DrawNudgeParams(float x, float paramPanelY, Pattern& p, int ste
     DrawRectangleRec(offHandle, ORANGE);
 
     if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-        Vector2 mouse = GetMousePosition();
+        Vector2 mouse = state.getMousePosition();
         if (CheckCollisionPointRec(mouse, {offsetSlider.x - 5, offsetSlider.y - 5, offsetSlider.width + 10, offsetSlider.height + 10})) {
             float newVal = minOff + ((mouse.x - offsetSlider.x) / offsetSlider.width) * (maxOff - minOff);
             if (newVal < minOff) newVal = minOff;

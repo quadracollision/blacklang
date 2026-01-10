@@ -2,7 +2,8 @@
 #include "Widgets.h"
 #include "../GuiState.h"
 #include "../AudioEngine.h"
-#include "../tinyfiledialogs.h"
+#include "../FilePicker.h"
+#include "FileBrowser.h"
 #include <algorithm>
 #include <cstring>
 #include <cstdio>
@@ -20,52 +21,59 @@ bool PatternEditor::IsOpen() const {
 }
 
 void PatternEditor::Draw() {
+    // Block input when file browser is open
+    bool inputBlocked = state.editor.showFileBrowser;
+    
     // Overlay
-    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Color{0, 0, 0, 200});
+    DrawRectangle(0, 0, state.getScreenWidth(), state.getScreenHeight(), Color{0, 0, 0, 200});
     
-    // Window
-    Rectangle winRect = {
-        (float)GetScreenWidth()/2 - 250, 
-        (float)GetScreenHeight()/2 - 275, 
-        500, 550
-    };
-    DrawRectangleRec(winRect, Color{30, 30, 30, 255});
-    DrawRectangleRec(winRect, Color{30, 30, 30, 255});
-    DrawText("Edit Pattern", winRect.x + 20, winRect.y + 15, 20, WHITE);
+    // Window - full screen width for touch (minimal margins)
+    float winW = (float)state.getScreenWidth() - 10;
+    float winH = (float)state.getScreenHeight() - 10;
+    float winX = 5; 
+    float winY = 5;
     
-    // Close Button
-    Rectangle closeRect = {winRect.x + winRect.width - 30, winRect.y + 10, 20, 20};
+    Rectangle winRect = {winX, winY, winW, winH};
+    DrawRectangleRec(winRect, Color{30, 30, 30, 255});
+    DrawText("Edit Pattern", winRect.x + 20, winRect.y + 15, 24, WHITE);
+    
+    // Close Button - touch friendly (50x50)
+    Rectangle closeRect = {winRect.x + winRect.width - 55, winRect.y + 5, 50, 50};
     DrawRectangleRec(closeRect, RED);
-    DrawText("X", closeRect.x + 5, closeRect.y + 2, 20, WHITE);
+    DrawText("X", closeRect.x + 18, closeRect.y + 12, 24, WHITE);
     
-    if (CheckCollisionPointRec(GetMousePosition(), closeRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), closeRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.editor.isOpen = false;
         state.editor.showFileBrowser = false;
         state.editor.focusedFieldId = -1;
     }
 
     // Scroll Logic
-    BeginScissorMode((int)winRect.x, (int)winRect.y + 50, (int)winRect.width, (int)winRect.height - 100); 
+    BeginScissorMode((int)winRect.x, (int)winRect.y + 60, (int)winRect.width, (int)winRect.height - 80); 
     
     // Reset consumable flag at start of draw
     state.editor.scrollConsumed = false; 
     
-    // ... drawing ...
+    // ... drawing ...\
     // Note: Scroll update moved to END of this function to check for consumption
     
-    float startY = winRect.y + 60 - state.editor.scrollOffsetY; // Base Y with Scroll
+    float startY = winRect.y + 70 - state.editor.scrollOffsetY; // Base Y with Scroll
+    float rowHeight = 50; // Touch-friendly row spacing
+    float labelX = winRect.x + 20;
+    float fieldX = winRect.x + 120;
+    int labelSize = 22;
+    int fieldH = 40;
     
     // Name
-    DrawText("Name:", winRect.x + 20, startY, 20, WHITE);
-    DrawTextInput({winRect.x + 100, startY, 200, 30}, state.editor.nameBuffer, 63, 0, state.editor.focusedFieldId);
+    DrawText("Name:", labelX, startY + 8, labelSize, WHITE);
+    DrawTextInput({fieldX, startY, 280, (float)fieldH}, state.editor.nameBuffer, 63, 0, state.editor.focusedFieldId, state.getMousePosition());
     
     // Sample
-    startY += 40;
-    DrawText("Sample:", winRect.x + 20, startY, 20, WHITE);
-    // DrawTextInput({winRect.x + 100, startY, 240, 30}, state.editor.samplePathBuffer, 255, 1, state.editor.focusedFieldId);
+    startY += rowHeight;
+    DrawText("Sample:", labelX, startY + 8, labelSize, WHITE);
     
     // User requested only filename display
-    Rectangle sampleBox = {winRect.x + 100, startY, 240, 30};
+    Rectangle sampleBox = {fieldX, startY, 300, (float)fieldH};
     DrawRectangleRec(sampleBox, DARKGRAY);
     DrawRectangleLinesEx(sampleBox, 1, GRAY);
     
@@ -74,49 +82,33 @@ void PatternEditor::Draw() {
         dispName = fs::path(state.editor.samplePathBuffer).filename().string();
     }
     
-    DrawText(dispName.c_str(), sampleBox.x + 5, sampleBox.y + 8, 10, WHITE);
+    DrawText(dispName.c_str(), sampleBox.x + 8, sampleBox.y + 12, 16, WHITE);
     
-    Rectangle loadBtnRect = {winRect.x + 350, startY, 50, 30};
-    DrawRectangleRec(loadBtnRect, DARKGRAY);
-    DrawText("Load", loadBtnRect.x + 8, loadBtnRect.y + 5, 10, WHITE);
+    // Load Button - touch friendly
+    Rectangle loadBtnRect = {fieldX + 310, startY, 80, (float)fieldH};
+    DrawRectangleRec(loadBtnRect, BLUE);
+    DrawText("Load", loadBtnRect.x + 20, loadBtnRect.y + 10, 18, WHITE);
     
-    if (CheckCollisionPointRec(GetMousePosition(), loadBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-         const char* filterPatterns[3] = {"*.wav", "*.mp3", "*.ogg"};
-         const char* filePath = tinyfd_openFileDialog(
-             "Open Sample",
-             "./", // Default to current directory
-             3,
-             filterPatterns,
-             "Audio Files",
-             0 // single select
-         );
-
-         if (filePath) {
-             strcpy(state.editor.samplePathBuffer, filePath);
-             // Load sample immediately into editor's pattern for waveform display
-             state.editor.currentPattern.samplePath = filePath;
-             state.editor.currentPattern.sliceMarkers.clear(); // Clear old slices on new load
-             engine.loadSample(state.editor.currentPattern);
-         }
+    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), loadBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+         FileBrowser::Init(state);
+         state.editor.showFileBrowser = true;
     }
     
-
+    // Steps
+    startY += rowHeight;
+    DrawText("Steps:", labelX, startY + 8, labelSize, WHITE);
+    DrawTextInput({fieldX, startY, 100, (float)fieldH}, state.editor.stepsBuffer, 4, 3, state.editor.focusedFieldId, state.getMousePosition());
     
-    startY += 40;
-    startY += 40;
-    DrawText("Steps:", winRect.x + 20, startY, 20, WHITE);
-    DrawTextInput({winRect.x + 100, startY, 60, 30}, state.editor.stepsBuffer, 4, 3, state.editor.focusedFieldId);
+    // Sync Base (for polyrhythm timing)
+    startY += rowHeight;
+    DrawText("Sync:", labelX, startY + 8, labelSize, WHITE);
+    DrawTextInput({fieldX, startY, 100, (float)fieldH}, state.editor.syncBaseBuffer, 4, 4, state.editor.focusedFieldId, state.getMousePosition());
     
-    // Sync Base (for polyrhythm timing) - on its own line
-    startY += 40;
-    DrawText("Sync:", winRect.x + 20, startY, 20, WHITE);
-    DrawTextInput({winRect.x + 100, startY, 60, 30}, state.editor.syncBaseBuffer, 4, 4, state.editor.focusedFieldId);
-    
-    // Velocity Knob
-    float knobX = winRect.x + 280;
-    float knobY = startY + 15;
-    float radius = 15;
-    DrawText("Vel:", knobX - 50, startY + 5, 20, WHITE);
+    // Velocity Knob - larger for touch
+    float knobX = fieldX + 200;
+    float knobY = startY + 20;
+    float radius = 25;
+    DrawText("Vel:", knobX - 60, startY + 8, labelSize, WHITE);
     DrawCircle(knobX, knobY, radius, DARKGRAY);
     DrawCircleLines(knobX, knobY, radius, WHITE);
     
@@ -124,13 +116,13 @@ void PatternEditor::Draw() {
     float angle = -135.0f + (state.editor.currentVelocity * 270.0f);
     Vector2 center = {knobX, knobY};
     Vector2 end = {center.x + cosf(angle*DEG2RAD)*radius, center.y + sinf(angle*DEG2RAD)*radius};
-    DrawLineEx(center, end, 2.0f, RED);
+    DrawLineEx(center, end, 3.0f, RED);
     
-    // Interaction
-    Rectangle knobRect = {knobX - radius, knobY - radius, radius*2, radius*2};
+    // Interaction - larger hit area
+    Rectangle knobRect = {knobX - radius - 10, knobY - radius - 10, (radius+10)*2, (radius+10)*2};
     
     // Start drag
-    if (CheckCollisionPointRec(GetMousePosition(), knobRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), knobRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.editor.isDraggingVelocity = true;
     }
     
@@ -154,25 +146,46 @@ void PatternEditor::Draw() {
              }
          }
     }
-    DrawText(TextFormat("%d%%", (int)(state.editor.currentVelocity*100)), knobX + 25, startY + 5, 10, LIGHTGRAY);
+    DrawText(TextFormat("%d%%", (int)(state.editor.currentVelocity*100)), knobX + 35, startY + 8, 16, LIGHTGRAY);
+    
+    // Mode Toggle Buttons Row - touch friendly horizontal layout
+    startY += rowHeight + 10; // Move to next row
+    float toggleW = 90;
+    float toggleH = 50;
+    float toggleGap = 8;
+    float toggleStartX = labelX;
+    
+    // Helper: Check if any mode is active
+    bool anyModeActive = state.editor.showMelodicControls || state.editor.showFxControls || state.editor.showSlicerControls;
+    
+    // Step Toggle (default mode - just sample sequencing)
+    Rectangle stepToggleRect = {toggleStartX, startY, toggleW, toggleH};
+    DrawRectangleRec(stepToggleRect, !anyModeActive ? ORANGE : DARKGRAY);
+    DrawText("Step", stepToggleRect.x + 22, stepToggleRect.y + 14, 20, WHITE);
+    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), stepToggleRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        // Disable all special modes to return to step mode
+        state.editor.showMelodicControls = false;
+        state.editor.showFxControls = false;
+        state.editor.showSlicerControls = false;
+    }
     
     // Melodic Toggle
-    Rectangle melodyToggleRect = {winRect.x + 380, startY, 80, 30};
+    Rectangle melodyToggleRect = {toggleStartX + (toggleW + toggleGap), startY, toggleW, toggleH};
     DrawRectangleRec(melodyToggleRect, state.editor.showMelodicControls ? BLUE : DARKGRAY);
-    DrawText("Melodic", melodyToggleRect.x + 8, melodyToggleRect.y + 5, 10, WHITE);
-    if (CheckCollisionPointRec(GetMousePosition(), melodyToggleRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    DrawText("Melodic", melodyToggleRect.x + 8, melodyToggleRect.y + 14, 18, WHITE);
+    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), melodyToggleRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.editor.showMelodicControls = !state.editor.showMelodicControls;
         if (state.editor.showMelodicControls) {
-            state.editor.showFxControls = false; // Exclusive
+            state.editor.showFxControls = false;
             state.editor.showSlicerControls = false;
         }
     }
 
-    // FX Toggle (Below Melodic)
-    Rectangle fxToggleRect = {winRect.x + 380, startY + 35, 80, 30}; 
+    // FX Toggle
+    Rectangle fxToggleRect = {toggleStartX + (toggleW + toggleGap) * 2, startY, toggleW, toggleH}; 
     DrawRectangleRec(fxToggleRect, state.editor.showFxControls ? VIOLET : DARKGRAY);
-    DrawText("FX", fxToggleRect.x + 15, fxToggleRect.y + 5, 10, WHITE);
-    if (CheckCollisionPointRec(GetMousePosition(), fxToggleRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    DrawText("FX", fxToggleRect.x + 35, fxToggleRect.y + 14, 20, WHITE);
+    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), fxToggleRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.editor.showFxControls = !state.editor.showFxControls;
         if (state.editor.showFxControls) {
             state.editor.showMelodicControls = false;
@@ -180,11 +193,11 @@ void PatternEditor::Draw() {
         }
     }
     
-    // Slicer Toggle (Below FX)
-    Rectangle slicerToggleRect = {winRect.x + 380, startY + 70, 80, 30};
+    // Slicer Toggle
+    Rectangle slicerToggleRect = {toggleStartX + (toggleW + toggleGap) * 3, startY, toggleW, toggleH};
     DrawRectangleRec(slicerToggleRect, state.editor.showSlicerControls ? GREEN : DARKGRAY);
-    DrawText("Slicer", slicerToggleRect.x + 15, slicerToggleRect.y + 5, 10, WHITE);
-    if (CheckCollisionPointRec(GetMousePosition(), slicerToggleRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    DrawText("Slicer", slicerToggleRect.x + 15, slicerToggleRect.y + 14, 18, WHITE);
+    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), slicerToggleRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.editor.showSlicerControls = !state.editor.showSlicerControls;
         if (state.editor.showSlicerControls) {
             state.editor.showMelodicControls = false;
@@ -192,9 +205,9 @@ void PatternEditor::Draw() {
         }
     }
     
-    startY += 110; // Increased spacing to accommodate toggle buttons and prevent overlap 
+    startY += toggleH + 15; // Spacing before grid 
     
-    // Editor Grid (Moved ABOVE Keyboard)
+    // Editor Grid
     Pattern& p = state.editor.currentPattern;
     Rectangle gridRect = {winRect.x + 20, startY, winRect.width - 40, 150};
     
@@ -336,9 +349,9 @@ void PatternEditor::Draw() {
             }
         }
         
-        bool inViewport = CheckCollisionPointRec(GetMousePosition(), {winRect.x, winRect.y+50, winRect.width, winRect.height-100});
+        bool inViewport = CheckCollisionPointRec(state.getMousePosition(), {winRect.x, winRect.y+50, winRect.width, winRect.height-100});
         
-        if (inViewport && CheckCollisionPointRec(GetMousePosition(), stepRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (!inputBlocked && inViewport && CheckCollisionPointRec(state.getMousePosition(), stepRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             
             // Modal Copy Logic
             if (state.editor.clipboard.isCopyMode) {
@@ -510,7 +523,7 @@ void PatternEditor::Draw() {
         }
         
         // Right Click -> Delete / Clear Step
-        if (inViewport && CheckCollisionPointRec(GetMousePosition(), stepRect) && IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+        if (!inputBlocked && inViewport && CheckCollisionPointRec(state.getMousePosition(), stepRect) && IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
              if (state.editor.stepStates[i]) {
                  state.editor.stepStates[i] = false;
                  p.stepPitches.erase(i+1);
@@ -546,7 +559,7 @@ void PatternEditor::Draw() {
             DrawRectangleRec(sBtn, isSelected ? GREEN : DARKGRAY);
             DrawText(TextFormat("%d", s), sBtn.x + 12, sBtn.y + 5, 10, WHITE);
             
-            if (CheckCollisionPointRec(GetMousePosition(), sBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), sBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 state.editor.selectedSliceIndex = s;
                 
                 // UX FIX: If a step is selected, update its slice index immediately
@@ -567,33 +580,35 @@ void PatternEditor::Draw() {
     
     // Melodic Controls (NOW BELOW GRID)
     if (state.editor.showMelodicControls) {
-        DrawText(TextFormat("Oct: %d", state.editor.selectedOctave), winRect.x + 20, startY + 10, 20, WHITE);
+        DrawText(TextFormat("Oct: %d", state.editor.selectedOctave), winRect.x + 20, startY + 15, 24, WHITE);
         
-        Rectangle octDown = {winRect.x + 100, startY, 30, 30};
+        // Octave buttons - touch friendly
+        Rectangle octDown = {winRect.x + 120, startY, 50, 50};
         DrawRectangleRec(octDown, DARKGRAY);
-        DrawText("-", octDown.x + 10, octDown.y + 5, 20, WHITE);
-        if (CheckCollisionPointRec(GetMousePosition(), octDown) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) state.editor.selectedOctave--;
+        DrawText("-", octDown.x + 18, octDown.y + 10, 28, WHITE);
+        if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), octDown) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) state.editor.selectedOctave--;
         
-        Rectangle octUp = {winRect.x + 140, startY, 30, 30};
+        Rectangle octUp = {winRect.x + 180, startY, 50, 50};
         DrawRectangleRec(octUp, DARKGRAY);
-        DrawText("+", octUp.x + 10, octUp.y + 5, 20, WHITE);
-        if (CheckCollisionPointRec(GetMousePosition(), octUp) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) state.editor.selectedOctave++;
+        DrawText("+", octUp.x + 15, octUp.y + 10, 28, WHITE);
+        if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), octUp) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) state.editor.selectedOctave++;
         
         const char* notes[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
-        float keyX = winRect.x + 200;
+        float keyX = winRect.x + 250;
         float keyY = startY; 
-        float whiteKeyWidth = 25;
-        float blackKeyWidth = 18;
-        float keyHeight = 80;
+        float whiteKeyWidth = 45;  // Increased from 25
+        float blackKeyWidth = 30;  // Increased from 18
+        float keyHeight = 100;     // Increased from 80
         
+        // White keys first
         for (int i = 0; i < 12; ++i) {
             bool isBlack = (i==1 || i==3 || i==6 || i==8 || i==10);
             if (!isBlack) {
                 Rectangle keyRect = {keyX, keyY, whiteKeyWidth, keyHeight};
                 bool isSelected = (state.editor.selectedNote == i);
                 DrawRectangleRec(keyRect, isSelected ? YELLOW : WHITE);
-                DrawRectangleLinesEx(keyRect, 1, BLACK);
-                if (CheckCollisionPointRec(GetMousePosition(), keyRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                DrawRectangleLinesEx(keyRect, 2, BLACK);
+                if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), keyRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                     state.editor.selectedNote = i;
                     // Update selected step's pitch if in edit mode
                     if (state.editor.selectedStep != -1 && state.editor.stepStates[state.editor.selectedStep]) {
@@ -602,11 +617,13 @@ void PatternEditor::Draw() {
                         engine.addPattern(p);
                     }
                 }
-                DrawText(notes[i], keyRect.x + 5, keyRect.y + keyHeight - 20, 10, BLACK);
+                DrawText(notes[i], keyRect.x + 12, keyRect.y + keyHeight - 25, 16, BLACK);
                 keyX += whiteKeyWidth;
             }
         }
-        keyX = winRect.x + 200;
+        
+        // Black keys on top
+        keyX = winRect.x + 250;
         for (int i = 0; i < 12; ++i) {
             bool isBlack = (i==1 || i==3 || i==6 || i==8 || i==10);
             if (isBlack) {
@@ -616,11 +633,11 @@ void PatternEditor::Draw() {
                  if(i==6) xPos = whiteKeyWidth * 4 - (blackKeyWidth/2);
                  if(i==8) xPos = whiteKeyWidth * 5 - (blackKeyWidth/2);
                  if(i==10) xPos = whiteKeyWidth * 6 - (blackKeyWidth/2);
-                 Rectangle keyRect = {winRect.x + 200 + xPos, keyY, blackKeyWidth, keyHeight * 0.6f};
+                 Rectangle keyRect = {winRect.x + 250 + xPos, keyY, blackKeyWidth, keyHeight * 0.6f};
                  bool isSelected = (state.editor.selectedNote == i);
                  DrawRectangleRec(keyRect, isSelected ? YELLOW : BLACK);
                  DrawRectangleLinesEx(keyRect, 1, DARKGRAY);
-                 if (CheckCollisionPointRec(GetMousePosition(), keyRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                 if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), keyRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                      state.editor.selectedNote = i;
                      // Update selected step's pitch if in edit mode
                      if (state.editor.selectedStep != -1 && state.editor.stepStates[state.editor.selectedStep]) {
@@ -631,7 +648,7 @@ void PatternEditor::Draw() {
                  }
             }
         }
-        startY += 90;
+        startY += keyHeight + 10;
     }
 
     // FX Controls (Modular)
@@ -645,13 +662,13 @@ void PatternEditor::Draw() {
 
     // Slicer Controls
     if (state.editor.showSlicerControls) {
-        DrawText("Sample Slicer", winRect.x + 20, startY + 10, 20, WHITE);
-        startY += 40;
+        DrawText("Sample Slicer", winRect.x + 20, startY + 10, 24, WHITE);
+        startY += 45;
 
-        // Waveform Viewer
-        Rectangle waveRect = {winRect.x + 20, startY, winRect.width - 40, 100};
+        // Waveform Viewer - larger for touch
+        Rectangle waveRect = {winRect.x + 20, startY, winRect.width - 40, 150};
         DrawRectangleRec(waveRect, BLACK);
-        DrawRectangleLinesEx(waveRect, 1, GRAY);
+        DrawRectangleLinesEx(waveRect, 2, GRAY);
         
         // Use editor's pattern buffer (loaded when Load button is clicked)
         if (p.sampleBuffer.getNumSamples() > 0) {
@@ -705,14 +722,14 @@ void PatternEditor::Draw() {
                     
                     // Handle Delete (Click on Number)
                     // Only active if NOT in Play Mode
-                    if (!state.editor.slicerPlayModeEnabled && CheckCollisionPointRec(GetMousePosition(), {waveRect.x + xPos, waveRect.y, (float)textWidth + 4, 15}) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                    if (!inputBlocked && !state.editor.slicerPlayModeEnabled && CheckCollisionPointRec(state.getMousePosition(), {waveRect.x + xPos, waveRect.y, (float)textWidth + 4, 15}) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                         p.sliceMarkers.erase(p.sliceMarkers.begin() + mFn);
                         mFn--; 
                         engine.addPattern(p); // SYNC 
                     }
                     
                     // Handle Delete (Right Click near marker - kept for alt method)
-                    if (CheckCollisionPointRec(GetMousePosition(), {waveRect.x + xPos - 5, waveRect.y, 10, waveRect.height}) && IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+                    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), {waveRect.x + xPos - 5, waveRect.y, 10, waveRect.height}) && IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
                         p.sliceMarkers.erase(p.sliceMarkers.begin() + mFn);
                         mFn--; 
                         engine.addPattern(p); // SYNC 
@@ -721,8 +738,8 @@ void PatternEditor::Draw() {
             }
             
             // Interaction: Left Click to Add Marker (Only if NOT in Play Mode)
-            if (!state.editor.slicerPlayModeEnabled && CheckCollisionPointRec(GetMousePosition(), waveRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                float localX = GetMousePosition().x - waveRect.x;
+            if (!inputBlocked && !state.editor.slicerPlayModeEnabled && CheckCollisionPointRec(state.getMousePosition(), waveRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                float localX = state.getMousePosition().x - waveRect.x;
                 int sampleIdx = startSample + (int)(localX / waveRect.width * visibleSamples);
                 
                 // Add and Sort
@@ -731,14 +748,14 @@ void PatternEditor::Draw() {
                 engine.addPattern(p); // SYNC
             }
             
-            // Horizontal Scrollbar (only if zoomed)
+            // Horizontal Scrollbar (only if zoomed) - touch friendly
             if (zoom > 1.0f) {
-                Rectangle scrollBarBg = {waveRect.x, waveRect.y + waveRect.height + 2, waveRect.width, 12};
+                Rectangle scrollBarBg = {waveRect.x, waveRect.y + waveRect.height + 5, waveRect.width, 25};
                 DrawRectangleRec(scrollBarBg, DARKGRAY);
                 
                 float thumbWidth = scrollBarBg.width / zoom;
                 float thumbX = scrollBarBg.x + state.editor.waveformScrollX / (1.0f - viewWidth + 0.001f) * (scrollBarBg.width - thumbWidth);
-                Rectangle scrollThumb = {thumbX, scrollBarBg.y + 2, thumbWidth, 8};
+                Rectangle scrollThumb = {thumbX, scrollBarBg.y + 3, thumbWidth, 19};
                 DrawRectangleRec(scrollThumb, LIGHTGRAY);
                 
                 // Drag scrollbar
@@ -746,13 +763,13 @@ void PatternEditor::Draw() {
                 static float dragStartX = 0;
                 static float dragStartScroll = 0;
                 
-                if (CheckCollisionPointRec(GetMousePosition(), scrollBarBg) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), scrollBarBg) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                     isDraggingScroll = true;
-                    dragStartX = GetMousePosition().x;
+                    dragStartX = state.getMousePosition().x;
                     dragStartScroll = state.editor.waveformScrollX;
                 }
                 if (isDraggingScroll && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-                    float deltaX = GetMousePosition().x - dragStartX;
+                    float deltaX = state.getMousePosition().x - dragStartX;
                     float deltaScroll = deltaX / (scrollBarBg.width - thumbWidth) * scrollMax;
                     state.editor.waveformScrollX = std::min(std::max(dragStartScroll + deltaScroll, 0.0f), scrollMax);
                 }
@@ -762,16 +779,17 @@ void PatternEditor::Draw() {
             }
             
         } else {
-            DrawText("No Sample Loaded", waveRect.x + 10, waveRect.y + 40, 20, DARKGRAY);
+            DrawText("No Sample Loaded", waveRect.x + 10, waveRect.y + 60, 20, DARKGRAY);
         }
         
-        startY += (p.sampleBuffer.getNumSamples() > 0 && state.editor.waveformZoom > 1.0f) ? 125 : 110;
+        // Move past the waveform (150px) and scrollbar area
+        startY += (p.sampleBuffer.getNumSamples() > 0 && state.editor.waveformZoom > 1.0f) ? 185 : 165;
         
-        // Controls: Clear Markers
-        Rectangle clearBtn = {winRect.x + 20, startY, 100, 30};
-        DrawRectangleRec(clearBtn, DARKGRAY);
-        DrawText("Clear Slices", clearBtn.x + 10, clearBtn.y + 5, 10, WHITE);
-        if (CheckCollisionPointRec(GetMousePosition(), clearBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        // Controls: Clear Markers - touch friendly
+        Rectangle clearBtn = {winRect.x + 20, startY, 140, 45};
+        DrawRectangleRec(clearBtn, RED);
+        DrawText("Clear Slices", clearBtn.x + 15, clearBtn.y + 12, 16, WHITE);
+        if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), clearBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             p.sliceMarkers.clear();
             
             // UX SYNC: Remove entire steps that have FX_SLICE
@@ -799,40 +817,40 @@ void PatternEditor::Draw() {
             engine.addPattern(p); // SYNC
         }
         
-        // Cutoff Toggle
-        Rectangle cutBtn = {winRect.x + 150, startY, 20, 20};
+        // Cutoff Toggle - touch friendly
+        Rectangle cutBtn = {winRect.x + 170, startY, 80, 45};
         DrawRectangleRec(cutBtn, state.editor.slicerCutoffEnabled ? GREEN : DARKGRAY);
-        DrawText("Cut", cutBtn.x + 25, cutBtn.y + 2, 16, WHITE);
-        if (CheckCollisionPointRec(GetMousePosition(), cutBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        DrawText("Cut", cutBtn.x + 25, cutBtn.y + 12, 18, WHITE);
+        if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), cutBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.editor.slicerCutoffEnabled = !state.editor.slicerCutoffEnabled;
         }
         
-        // Play/Slice Mode Switch
-        Rectangle switchRect = {winRect.x + 230, startY, 100, 24};
-        DrawRectangleRec(switchRect, GRAY);
-        
-        Rectangle sliceRect = {switchRect.x, switchRect.y, 50, 24};
-        Rectangle playRect = {switchRect.x + 50, switchRect.y, 50, 24};
+        // Play/Slice Mode Switch - touch friendly
+        float switchStartX = winRect.x + 260;
+        Rectangle sliceRect = {switchStartX, startY, 70, 45};
+        Rectangle playRect = {switchStartX + 70, startY, 70, 45};
         
         if (!state.editor.slicerPlayModeEnabled) {
             DrawRectangleRec(sliceRect, WHITE);
-            DrawText("Slice", sliceRect.x + 10, sliceRect.y + 5, 12, BLACK);
-            DrawText("Play", playRect.x + 10, playRect.y + 5, 12, WHITE);
+            DrawRectangleRec(playRect, GRAY);
+            DrawText("Slice", sliceRect.x + 12, sliceRect.y + 12, 18, BLACK);
+            DrawText("Play", playRect.x + 15, playRect.y + 12, 18, WHITE);
         } else {
+            DrawRectangleRec(sliceRect, GRAY);
             DrawRectangleRec(playRect, WHITE);
-            DrawText("Slice", sliceRect.x + 10, sliceRect.y + 5, 12, WHITE);
-            DrawText("Play", playRect.x + 10, playRect.y + 5, 12, BLACK);
+            DrawText("Slice", sliceRect.x + 12, sliceRect.y + 12, 18, WHITE);
+            DrawText("Play", playRect.x + 15, playRect.y + 12, 18, BLACK);
         }
         
-        if (CheckCollisionPointRec(GetMousePosition(), sliceRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), sliceRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.editor.slicerPlayModeEnabled = false;
         }
-        if (CheckCollisionPointRec(GetMousePosition(), playRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), playRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.editor.slicerPlayModeEnabled = true;
         }
         
         // Play Mode Interaction: Right Click or Click in Mode
-        if (state.editor.slicerPlayModeEnabled && CheckCollisionPointRec(GetMousePosition(), waveRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (!inputBlocked && state.editor.slicerPlayModeEnabled && CheckCollisionPointRec(state.getMousePosition(), waveRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
              if (p.sampleBuffer.getNumSamples() > 0) {
                  int64_t totalSamples = p.sampleBuffer.getNumSamples();
                  float zoom = state.editor.waveformZoom;
@@ -847,7 +865,7 @@ void PatternEditor::Draw() {
                  int64_t startSample = (int64_t)(state.editor.waveformScrollX / (scrollMax + 0.001f) * (totalSamples - visibleSamples));
                  if (startSample < 0) startSample = 0;
                  
-                 float localX = GetMousePosition().x - waveRect.x;
+                 float localX = state.getMousePosition().x - waveRect.x;
                  int sampleIdx = startSample + (int)(localX / waveRect.width * visibleSamples);
                  
                  // Find Slice
@@ -901,30 +919,30 @@ void PatternEditor::Draw() {
         }
 
         
-        // Zoom buttons (to the right of Play Mode)
-        Rectangle zoomOutBtn = {winRect.x + 360, startY, 25, 25};
-        Rectangle zoomInBtn = {winRect.x + 390, startY, 25, 25};
+        // Zoom buttons (to the right of Play Mode) - touch friendly
+        Rectangle zoomOutBtn = {winRect.x + 410, startY, 45, 45};
+        Rectangle zoomInBtn = {winRect.x + 460, startY, 45, 45};
         DrawRectangleRec(zoomOutBtn, DARKGRAY);
         DrawRectangleRec(zoomInBtn, DARKGRAY);
-        DrawText("-", zoomOutBtn.x + 9, zoomOutBtn.y + 4, 16, WHITE);
-        DrawText("+", zoomInBtn.x + 8, zoomInBtn.y + 4, 16, WHITE);
+        DrawText("-", zoomOutBtn.x + 16, zoomOutBtn.y + 10, 24, WHITE);
+        DrawText("+", zoomInBtn.x + 14, zoomInBtn.y + 10, 24, WHITE);
         
-        if (CheckCollisionPointRec(GetMousePosition(), zoomInBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), zoomInBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.editor.waveformZoom = std::min(state.editor.waveformZoom * 1.5f, 20.0f);
         }
-        if (CheckCollisionPointRec(GetMousePosition(), zoomOutBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), zoomOutBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.editor.waveformZoom = std::max(state.editor.waveformZoom / 1.5f, 1.0f);
             if (state.editor.waveformZoom <= 1.0f) state.editor.waveformScrollX = 0.0f;
         }
         
-        startY += 40;
+        startY += 55;
         
-        // Bookend Button (Add Start & End Markers)
+        // Bookend Button (Add Start & End Markers) - touch friendly
         if (p.sampleBuffer.getNumSamples() > 0) {
-             Rectangle bookendBtn = {winRect.x + 20, startY, 120, 25};
-             DrawRectangleRec(bookendBtn, GRAY);
-             DrawText("Bookend", bookendBtn.x + 30, bookendBtn.y + 5, 10, WHITE);
-             if (CheckCollisionPointRec(GetMousePosition(), bookendBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+             Rectangle bookendBtn = {winRect.x + 20, startY, 150, 45};
+             DrawRectangleRec(bookendBtn, BLUE);
+             DrawText("Bookend", bookendBtn.x + 35, bookendBtn.y + 12, 18, WHITE);
+             if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), bookendBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                  bool changed = false;
                  // Add Start (0)
                  if (std::find(p.sliceMarkers.begin(), p.sliceMarkers.end(), 0) == p.sliceMarkers.end()) {
@@ -943,7 +961,7 @@ void PatternEditor::Draw() {
                      engine.addPattern(p);
                  }
              }
-             startY += 35;
+             startY += 55;
         }
 
         startY += 10;
@@ -956,66 +974,68 @@ void PatternEditor::Draw() {
 
     EndScissorMode();
     
-    // Draw Scrollbar (Right side)
-    if (state.editor.contentHeight > (winRect.height - 100)) {
-        float viewH = winRect.height - 100;
-        float ratio = viewH / state.editor.contentHeight;
-        float barH = std::max(20.0f, viewH * ratio);
-        float barY = (winRect.y + 50) + (state.editor.scrollOffsetY / (state.editor.contentHeight - viewH)) * (viewH - barH);
-        
-        if (state.editor.contentHeight - viewH <= 0.1f) barY = winRect.y + 50; // Safety
-        
-        DrawRectangle(winRect.x + winRect.width - 10, barY, 6, barH, Color{100, 100, 100, 200});
-    }
-    
     // --- FOOTER CONTROLS ---
-    DrawRectangle(winRect.x, winRect.y + winRect.height - 50, winRect.width, 50, Color{30, 30, 30, 255}); // Footer BG
+    DrawRectangle(winRect.x, winRect.y + winRect.height - 55, winRect.width, 55, Color{30, 30, 30, 255}); // Footer BG
 
-    // Copy Button (Left)
-    Rectangle copyRect = {winRect.x + 20, winRect.y + winRect.height - 40, 60, 30};
+    // Copy Button (Left) - larger for touch
+    Rectangle copyRect = {winRect.x + 10, winRect.y + winRect.height - 48, 80, 40};
     bool copyActive = state.editor.clipboard.isCopyMode;
-    DrawRectangleRec(copyRect, copyActive ? ORANGE : DARKGRAY); // Orange when waiting for copy
-    DrawText("Copy", copyRect.x + 10, copyRect.y + 5, 20, WHITE);
+    DrawRectangleRec(copyRect, copyActive ? ORANGE : DARKGRAY);
+    DrawText("Copy", copyRect.x + 18, copyRect.y + 10, 20, WHITE);
     
-    if (CheckCollisionPointRec(GetMousePosition(), copyRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), copyRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.editor.clipboard.isCopyMode = !state.editor.clipboard.isCopyMode;
         state.editor.clipboard.isPasteMode = false;
         state.editor.clipboard.isEditMode = false;
     }
 
-    // Paste Button (Left, next to Copy)
-    Rectangle pasteRect = {winRect.x + 90, winRect.y + winRect.height - 40, 80, 30};
+    // Paste Button - larger for touch
+    Rectangle pasteRect = {winRect.x + 100, winRect.y + winRect.height - 48, 90, 40};
     bool canPaste = state.editor.clipboard.hasData;
     bool pasteActive = state.editor.clipboard.isPasteMode;
     
-    // User requested "turn back to gray" if deactivated. 
-    // We will use DARKGRAY for inactive, MAGENTA for Active. 
-    // We rely on 'canPaste' only for clickability check, not color (to keep it gray).
     Color pasteColor = pasteActive ? MAGENTA : DARKGRAY; 
     
     DrawRectangleRec(pasteRect, pasteColor);
-    DrawText("Paste", pasteRect.x + 5, pasteRect.y + 5, 20, WHITE);
+    DrawText("Paste", pasteRect.x + 18, pasteRect.y + 10, 20, WHITE);
     
-    if (canPaste && CheckCollisionPointRec(GetMousePosition(), pasteRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (!inputBlocked && canPaste && CheckCollisionPointRec(state.getMousePosition(), pasteRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.editor.clipboard.isPasteMode = !state.editor.clipboard.isPasteMode;
         state.editor.clipboard.isCopyMode = false;
         state.editor.clipboard.isEditMode = false;
     }
 
-    // Edit Button (Use Cyan for distinction)
-    Rectangle editRect = {winRect.x + 180, winRect.y + winRect.height - 40, 60, 30};
+    // Edit Button (Use Cyan for distinction) - larger for touch
+    Rectangle editRect = {winRect.x + 200, winRect.y + winRect.height - 45, 80, 40};
     bool editActive = state.editor.clipboard.isEditMode;
     DrawRectangleRec(editRect, editActive ? SKYBLUE : DARKGRAY);
-    DrawText("Edit", editRect.x + 10, editRect.y + 5, 20, WHITE);
+    DrawText("Edit", editRect.x + 18, editRect.y + 10, 20, WHITE);
     
-    if (CheckCollisionPointRec(GetMousePosition(), editRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), editRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.editor.clipboard.isEditMode = !state.editor.clipboard.isEditMode;
         state.editor.clipboard.isCopyMode = false;
         state.editor.clipboard.isPasteMode = false;
     }
 
-    // Save Button (Fixed at Bottom Footer)
-    Rectangle saveRect = {winRect.x + winRect.width - 100, winRect.y + winRect.height - 40, 80, 30};
+    // Preview Button - plays just this pattern
+    Rectangle previewRect = {winRect.x + 290, winRect.y + winRect.height - 45, 100, 40};
+    DrawRectangleRec(previewRect, LIME);
+    DrawText("Preview", previewRect.x + 12, previewRect.y + 10, 20, BLACK);
+    
+    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), previewRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        // Save current pattern state first
+        p.name = state.editor.nameBuffer;
+        p.steps = atoi(state.editor.stepsBuffer);
+        p.syncBase = atoi(state.editor.syncBaseBuffer);
+        if (p.syncBase <= 0) p.syncBase = p.steps;
+        engine.addPattern(p);
+        
+        // Play just this pattern
+        engine.playPattern(p.name);
+    }
+
+    // Save Button (Fixed at Bottom Footer) - larger for touch
+    Rectangle saveRect = {winRect.x + winRect.width - 100, winRect.y + winRect.height - 45, 90, 40};
     
     // Play Button (only visible in Shift mode during playback)
     if (state.isShiftMode && state.isPlaying) {
@@ -1023,7 +1043,7 @@ void PatternEditor::Draw() {
         DrawRectangleRec(playBtn, GREEN);
         DrawText("Play", playBtn.x + 18, playBtn.y + 5, 20, BLACK);
         
-        if (CheckCollisionPointRec(GetMousePosition(), playBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), playBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             // --- SAVE THE PATTERN FIRST (same as Save button) ---
             p.name = state.editor.nameBuffer;
             
@@ -1086,7 +1106,7 @@ void PatternEditor::Draw() {
     DrawRectangleRec(saveRect, BLUE);
     DrawText("Save", saveRect.x + 20, saveRect.y + 5, 20, WHITE);
     
-    if (CheckCollisionPointRec(GetMousePosition(), saveRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), saveRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         // Save back to pattern
         p.name = state.editor.nameBuffer;
         
@@ -1144,13 +1164,40 @@ void PatternEditor::Draw() {
     
     // --- LATE UPDATE SCROLL LOGIC ---
     // We update scroll offset here because children (like FXControls) might have consumed the scroll event.
-    // By checking scrollConsumed flag, we prevent double scrolling or scrolling when hovering inner lists.
+    Rectangle scrollArea = {winRect.x, winRect.y + 60, winRect.width, winRect.height - 110};
+    float maxScroll = std::max(0.0f, state.editor.contentHeight - (winRect.height - 100));
+    
     if (!state.editor.scrollConsumed) {
+        // Mouse wheel (desktop)
         state.editor.scrollOffsetY -= GetMouseWheelMove() * 30.0f;
-        float maxScroll = std::max(0.0f, state.editor.contentHeight - (winRect.height - 100)); // Content - Viewport
-        if (state.editor.scrollOffsetY < 0) state.editor.scrollOffsetY = 0;
-        if (state.editor.scrollOffsetY > maxScroll) state.editor.scrollOffsetY = maxScroll;
+        
+        // Touch drag scrolling
+        if (CheckCollisionPointRec(state.getMousePosition(), scrollArea)) {
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                state.editor.editorDragging = true;
+                state.editor.editorDragStartY = state.getMousePosition().y;
+                state.editor.editorDragStartScrollY = state.editor.scrollOffsetY;
+            }
+        }
     }
+    
+    // Update drag (even if scrollConsumed, continue tracking existing drag)
+    if (state.editor.editorDragging && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+        float deltaY = state.editor.editorDragStartY - state.getMousePosition().y;
+        state.editor.scrollOffsetY = state.editor.editorDragStartScrollY + deltaY;
+    }
+    
+    // End drag
+    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        state.editor.editorDragging = false;
+    }
+    
+    // Clamp scroll
+    if (state.editor.scrollOffsetY < 0) state.editor.scrollOffsetY = 0;
+    if (state.editor.scrollOffsetY > maxScroll) state.editor.scrollOffsetY = maxScroll;
+    
+    // Draw File Browser Overlay (if active)
+    FileBrowser::Draw(state, engine);
 }
 
 

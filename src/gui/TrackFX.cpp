@@ -20,7 +20,7 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
     DrawRectangleRec(backBtn, Color{40, 40, 40, 255});
     DrawText("<", backBtn.x + 10, backBtn.y + 5, 20, WHITE);
     
-    if (canInteract && CheckCollisionPointRec(GetMousePosition(), backBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (canInteract && CheckCollisionPointRec(state.getMousePosition(), backBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         col.mixerMode = false;
         return;
     }
@@ -40,9 +40,9 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
     DrawRectangle(panHandleX - 5, panRect.y, 10, panRect.height, ORANGE); // Handle
     
     // Pan Interaction
-    if (canInteract && CheckCollisionPointRec(GetMousePosition(), panRect)) {
+    if (canInteract && CheckCollisionPointRec(state.getMousePosition(), panRect)) {
         if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-             float mouseX = GetMousePosition().x;
+             float mouseX = state.getMousePosition().x;
              float newPan = (mouseX - panRect.x) / panRect.width;
              if (newPan < 0.0f) newPan = 0.0f;
              if (newPan > 1.0f) newPan = 1.0f;
@@ -54,7 +54,7 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
     }
     
     // Reset Pan on Double Click
-    if (canInteract && CheckCollisionPointRec(GetMousePosition(), panRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (canInteract && CheckCollisionPointRec(state.getMousePosition(), panRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
          static double lastPanClick = 0;
          double now = GetTime();
          if (now - lastPanClick < 0.3) {
@@ -102,9 +102,9 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
     
     // Interaction
     Rectangle hitTestVol = {volRect.x - 10, volRect.y, volRect.width + 20, volRect.height};
-    if (canInteract && CheckCollisionPointRec(GetMousePosition(), hitTestVol)) {
+    if (canInteract && CheckCollisionPointRec(state.getMousePosition(), hitTestVol)) {
         if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-            float mouseY = GetMousePosition().y;
+            float mouseY = state.getMousePosition().y;
             float bottomY = volRect.y + volRect.height;
             float rawVal = (bottomY - mouseY) / volRect.height;
             

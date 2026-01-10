@@ -27,12 +27,29 @@ void GuiRenderer::Draw() {
     ClearBackground(Color{20, 20, 20, 255});
     
     // Draw Headers
-    Rectangle headerRect = {0, 0, (float)GetScreenWidth(), (float)state.HEADER_HEIGHT};
+    Rectangle headerRect = {0, 0, (float)state.getScreenWidth(), (float)state.HEADER_HEIGHT};
     DrawRectangleRec(headerRect, Color{30, 30, 30, 255});
-    DrawText("Quadracollision BlackLang", 20, 15, 30, WHITE);
+    DrawText("QC-33", 20, 15, 30, WHITE);
+    
+    // BPM Display in header (top right)
+    float bpmX = state.getScreenWidth() - 150;
+    DrawText("BPM:", bpmX, 15, 20, LIGHTGRAY);
+    if (!state.editor.isOpen) {
+        DrawTextInput({bpmX + 55, 10, 80, 35}, state.globalBpmBuffer, 5, 999, state.focusedFieldId, state.getMousePosition());
+    } else {
+        DrawRectangleRec({bpmX + 55, 10, 80, 35}, LIGHTGRAY);
+        DrawText(state.globalBpmBuffer, bpmX + 65, 18, 20, BLACK);
+    }
+    
+    // Update BPM if changed
+    int newBpm = atoi(state.globalBpmBuffer);
+    if (newBpm > 20 && newBpm < 300 && newBpm != state.bpm) {
+        state.bpm = newBpm;
+        engine.setBPM(newBpm);
+    }
     
     // Main View Area
-    Rectangle viewRect = {0, (float)state.HEADER_HEIGHT, (float)GetScreenWidth(), (float)GetScreenHeight() - state.HEADER_HEIGHT - state.FOOTER_HEIGHT};
+    Rectangle viewRect = {0, (float)state.HEADER_HEIGHT, (float)state.getScreenWidth(), (float)state.getScreenHeight() - state.HEADER_HEIGHT - state.FOOTER_HEIGHT};
     
     // Calculate Content Width
     float startX = 20;
@@ -45,7 +62,7 @@ void GuiRenderer::Draw() {
     }
     
     // Clamp Scroll
-    float maxScroll = std::max(0.0f, state.mainContentWidth - GetScreenWidth());
+    float maxScroll = std::max(0.0f, state.mainContentWidth - state.getScreenWidth());
     if (state.mainScrollX < 0) state.mainScrollX = 0;
     if (state.mainScrollX > maxScroll) state.mainScrollX = maxScroll;
     
@@ -53,16 +70,16 @@ void GuiRenderer::Draw() {
     trackView.Draw();
     
     // Draw Horizontal Scrollbar (if needed)
-    if (state.mainContentWidth > GetScreenWidth()) {
+    if (state.mainContentWidth > state.getScreenWidth()) {
         float barH = 10;
         float barY = viewRect.y + viewRect.height - barH - 5;
         
-        float viewRatio = GetScreenWidth() / state.mainContentWidth;
-        float thumbW = std::max(30.0f, GetScreenWidth() * viewRatio);
-        float thumbX = (state.mainScrollX / (state.mainContentWidth - GetScreenWidth())) * (GetScreenWidth() - thumbW);
+        float viewRatio = state.getScreenWidth() / state.mainContentWidth;
+        float thumbW = std::max(30.0f, state.getScreenWidth() * viewRatio);
+        float thumbX = (state.mainScrollX / (state.mainContentWidth - state.getScreenWidth())) * (state.getScreenWidth() - thumbW);
         
         // Track
-        DrawRectangle(0, barY, GetScreenWidth(), barH, Color{20, 20, 20, 200});
+        DrawRectangle(0, barY, state.getScreenWidth(), barH, Color{20, 20, 20, 200});
         // Thumb
         Rectangle thumbRect = {thumbX, barY, thumbW, barH};
         DrawRectangleRec(thumbRect, Color{100, 100, 100, 255});
@@ -71,17 +88,17 @@ void GuiRenderer::Draw() {
         static bool isDraggingScroll = false;
         static float dragOffsetX = 0;
         
-        if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), thumbRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), thumbRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             isDraggingScroll = true;
-            dragOffsetX = GetMousePosition().x - thumbRect.x;
+            dragOffsetX = state.getMousePosition().x - thumbRect.x;
         }
         
         if (isDraggingScroll) {
             if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) isDraggingScroll = false;
             else {
-                float targetX = GetMousePosition().x - dragOffsetX;
-                float pct = targetX / (GetScreenWidth() - thumbW);
-                state.mainScrollX = pct * (state.mainContentWidth - GetScreenWidth());
+                float targetX = state.getMousePosition().x - dragOffsetX;
+                float pct = targetX / (state.getScreenWidth() - thumbW);
+                state.mainScrollX = pct * (state.mainContentWidth - state.getScreenWidth());
                 if (state.mainScrollX < 0) state.mainScrollX = 0;
                 if (state.mainScrollX > maxScroll) state.mainScrollX = maxScroll;
             }

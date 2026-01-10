@@ -11,7 +11,7 @@ namespace gui {
 TransportBar::TransportBar(GuiState& s, AudioEngine& e) : state(s), engine(e) {}
 
 void TransportBar::Draw() {
-    Rectangle rect = {0, (float)GetScreenHeight() - state.FOOTER_HEIGHT, (float)GetScreenWidth(), (float)state.FOOTER_HEIGHT};
+    Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
     DrawRectangleRec(rect, Color{25, 25, 25, 255});
     
     DrawPlayStop();
@@ -24,8 +24,8 @@ void TransportBar::Draw() {
 }
 
 void TransportBar::DrawRecording() {
-    Rectangle rect = {0, (float)GetScreenHeight() - state.FOOTER_HEIGHT, (float)GetScreenWidth(), (float)state.FOOTER_HEIGHT};
-    float centerX = GetScreenWidth() / 2.0f;
+    Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
+    float centerX = state.getScreenWidth() / 2.0f;
     
     // Record Button (Beside Stop)
     Rectangle recBtn = {centerX + 60, rect.y + 10, 40, 40};
@@ -40,7 +40,7 @@ void TransportBar::DrawRecording() {
         DrawCircle(recBtn.x + 20, recBtn.y + 20, 10, RED);
     }
     
-    if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), recBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), recBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         if (state.recorder.isRecording) {
             // Stop Recording
             state.recorder.isRecording = false;
@@ -64,42 +64,10 @@ void TransportBar::DrawRecording() {
         DrawRectangleLines(panelX, panelY, panelW, panelH, LIGHTGRAY);
         
         // Name Input
-        // "small text box with a black background and white boarder"
         DrawText("Name:", panelX + 10, panelY + 12, 14, WHITE);
         
         Rectangle nameBox = {panelX + 60, panelY + 8, 100, 24};
-        DrawRectangleRec(nameBox, BLACK);
-        DrawRectangleLinesEx(nameBox, 1, WHITE);
-        
-        // Clip text to box
-        BeginScissorMode((int)nameBox.x + 2, (int)nameBox.y, (int)nameBox.width - 4, (int)nameBox.height);
-        DrawText(state.recorder.filenameBuffer, nameBox.x + 5, nameBox.y + 4, 14, WHITE);
-        
-        // Simple cursor simulation (blink?)
-        if ((int)(GetTime() * 2) % 2 == 0) {
-            int len = MeasureText(state.recorder.filenameBuffer, 14);
-            DrawText("|", nameBox.x + 5 + len, nameBox.y + 4, 14, WHITE);
-        }
-        EndScissorMode();
-        
-        // Handle Input (only if pattern editor is NOT open)
-        if (!state.editor.isOpen) {
-            int key = GetCharPressed();
-            while (key > 0) {
-                if ((key >= 32) && (key <= 125)) {
-                    int len = strlen(state.recorder.filenameBuffer);
-                    if (len < 63) {
-                        state.recorder.filenameBuffer[len] = (char)key;
-                        state.recorder.filenameBuffer[len+1] = '\0';
-                    }
-                }
-                key = GetCharPressed();
-            }
-            if (IsKeyPressed(KEY_BACKSPACE)) {
-                 int len = strlen(state.recorder.filenameBuffer);
-                 if (len > 0) state.recorder.filenameBuffer[len-1] = '\0';
-            }
-        }
+        DrawTextInput(nameBox, state.recorder.filenameBuffer, 63, 500, state.focusedFieldId, state.getMousePosition());
 
         // Switch: "Stems" or "Whole"
         Rectangle switchRect = {panelX + 170, panelY + 8, 100, 24};
@@ -121,10 +89,10 @@ void TransportBar::DrawRecording() {
             DrawText("Stems", stemsRect.x + 5, stemsRect.y + 5, 12, BLACK);
         }
         
-        if (CheckCollisionPointRec(GetMousePosition(), wholeRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (CheckCollisionPointRec(state.getMousePosition(), wholeRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.recorder.recordStems = false;
         }
-        if (CheckCollisionPointRec(GetMousePosition(), stemsRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (CheckCollisionPointRec(state.getMousePosition(), stemsRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.recorder.recordStems = true;
         }
         
@@ -133,7 +101,7 @@ void TransportBar::DrawRecording() {
         DrawRectangleRec(saveBtn, GREEN);
         DrawText("Save", saveBtn.x + 10, saveBtn.y + 5, 14, BLACK);
         
-        if (CheckCollisionPointRec(GetMousePosition(), saveBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (CheckCollisionPointRec(state.getMousePosition(), saveBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             // Start Recording
             state.recorder.isRecording = true;
             state.recorder.showControls = false;
@@ -145,14 +113,16 @@ void TransportBar::DrawRecording() {
 }
 
 void TransportBar::DrawPlayStop() {
-    Rectangle rect = {0, (float)GetScreenHeight() - state.FOOTER_HEIGHT, (float)GetScreenWidth(), (float)state.FOOTER_HEIGHT};
-    float centerX = GetScreenWidth() / 2.0f;
+    Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
+    float centerX = state.getScreenWidth() / 2.0f;
+    float btnH = (float)state.FOOTER_HEIGHT;  // Full height
+    float btnW = 70;  // Wider buttons
     
     // Play
-    Rectangle playRect = {centerX - 60, rect.y + 10, 40, 40};
+    Rectangle playRect = {centerX - btnW - 5, rect.y, btnW, btnH};
     DrawRectangleRec(playRect, state.isPlaying ? GREEN : GRAY);
-    DrawText(">", playRect.x + 15, playRect.y + 10, 20, BLACK);
-    if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), playRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    DrawText(">", playRect.x + 28, playRect.y + 18, 24, BLACK);
+    if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), playRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         std::vector<std::string> names;
         
         if (!state.activePatternSlots.empty()) {
@@ -193,23 +163,23 @@ void TransportBar::DrawPlayStop() {
     }
     
     // Stop
-    Rectangle stopRect = {centerX, rect.y + 10, 40, 40};
+    Rectangle stopRect = {centerX + 5, rect.y, btnW, btnH};
     DrawRectangleRec(stopRect, RED);
-    DrawRectangle(stopRect.x + 10, stopRect.y + 10, 20, 20, WHITE);
-    if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), stopRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    DrawRectangle(stopRect.x + 25, stopRect.y + 20, 20, 20, WHITE);
+    if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), stopRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         engine.stop();
     }
 }
 
 void TransportBar::DrawBPM() {
-    Rectangle rect = {0, (float)GetScreenHeight() - state.FOOTER_HEIGHT, (float)GetScreenWidth(), (float)state.FOOTER_HEIGHT};
+    Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
     
     // Move to left side, after Edit/Shift (approx 250px)
     float bpmX = 260.0f; 
     
     DrawText("BPM:", bpmX, rect.y + 10, 20, LIGHTGRAY);
     if (!state.editor.isOpen) {
-        DrawTextInput({bpmX + 50, rect.y + 10, 60, 25}, state.globalBpmBuffer, 5, 999, state.focusedFieldId);
+        DrawTextInput({bpmX + 50, rect.y + 10, 60, 25}, state.globalBpmBuffer, 5, 999, state.focusedFieldId, state.getMousePosition());
     } else {
         DrawRectangleRec({bpmX + 50, rect.y + 10, 60, 25}, LIGHTGRAY);
         DrawText(state.globalBpmBuffer, bpmX + 55, rect.y + 15, 20, BLACK);
@@ -223,7 +193,7 @@ void TransportBar::DrawBPM() {
 }
 
 void TransportBar::DrawCopyPaste() {
-    Rectangle rect = {0, (float)GetScreenHeight() - state.FOOTER_HEIGHT, (float)GetScreenWidth(), (float)state.FOOTER_HEIGHT};
+    Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
     
     // Copy Button (Starts the workflow)
     Rectangle copyBtn = {20, rect.y + 15, 60, 30};
@@ -236,7 +206,7 @@ void TransportBar::DrawCopyPaste() {
     DrawRectangleRec(copyBtn, isActive ? ORANGE : DARKGRAY);
     DrawText("Copy", copyBtn.x + 10, copyBtn.y + 8, 14, WHITE);
     
-    if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), copyBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), copyBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         // Toggle selection mode
         if (state.trackClipboard.isPasting) {
              // If we were pasting, clicking Copy resets everything? Or maybe starts a NEW copy?
@@ -255,7 +225,7 @@ void TransportBar::DrawCopyPaste() {
         DrawRectangleRec(pasteBtn, RED); // Red for "Exit/Stop" feel
         DrawText(state.trackClipboard.isPasting ? "Pasting..." : "Cancel", pasteBtn.x + 8, pasteBtn.y + 8, 14, WHITE);
         
-        if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), pasteBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), pasteBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.trackClipboard.isSelectingSource = false;
             state.trackClipboard.isPasting = false;
         }
@@ -263,14 +233,14 @@ void TransportBar::DrawCopyPaste() {
 }
 
 void TransportBar::DrawEditShift() {
-    Rectangle rect = {0, (float)GetScreenHeight() - state.FOOTER_HEIGHT, (float)GetScreenWidth(), (float)state.FOOTER_HEIGHT};
+    Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
     
     if (state.isPlaying && !state.activePatternSlots.empty()) {
         Rectangle editBtn = {145, rect.y + 15, 45, 30};
         DrawRectangleRec(editBtn, state.isLiveEditMode ? SKYBLUE : DARKGRAY);
         DrawText("Edit", editBtn.x + 5, editBtn.y + 8, 14, WHITE);
         
-        if (CheckCollisionPointRec(GetMousePosition(), editBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (CheckCollisionPointRec(state.getMousePosition(), editBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.isLiveEditMode = !state.isLiveEditMode;
             
             if (!state.isLiveEditMode) {
@@ -285,7 +255,7 @@ void TransportBar::DrawEditShift() {
             DrawRectangleRec(shiftBtn, state.isShiftMode ? ORANGE : DARKGRAY);
             DrawText("Shift", shiftBtn.x + 3, shiftBtn.y + 8, 12, WHITE);
             
-            if (CheckCollisionPointRec(GetMousePosition(), shiftBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            if (CheckCollisionPointRec(state.getMousePosition(), shiftBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 state.isShiftMode = !state.isShiftMode;
                 if (!state.isShiftMode) {
                     state.shiftEditingPatternName = "";
@@ -296,7 +266,7 @@ void TransportBar::DrawEditShift() {
 }
 
 void TransportBar::DrawSettingsButton() {
-    Rectangle rect = {0, (float)GetScreenHeight() - state.FOOTER_HEIGHT, (float)GetScreenWidth(), (float)state.FOOTER_HEIGHT};
+    Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
     
     // Move next to BPM (BPM input ends around 260+50+60 = 370)
     float gearX = 380.0f;
@@ -305,7 +275,7 @@ void TransportBar::DrawSettingsButton() {
     DrawRectangleRec(gearBtn, isOpen ? ORANGE : DARKGRAY);
     DrawText("*", gearBtn.x + 8, gearBtn.y + 3, 24, WHITE);
     
-    if (CheckCollisionPointRec(GetMousePosition(), gearBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (CheckCollisionPointRec(state.getMousePosition(), gearBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         if (isOpen) {
             state.settings.activePopup = PopupType::None;
             state.settings.showSettingsMenu = false;
@@ -319,7 +289,7 @@ void TransportBar::DrawSettingsButton() {
 void TransportBar::DrawSettingsPopup() {
     if (state.settings.activePopup == PopupType::None) return;
     
-    Rectangle rect = {0, (float)GetScreenHeight() - state.FOOTER_HEIGHT, (float)GetScreenWidth(), (float)state.FOOTER_HEIGHT};
+    Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
     
     float popW = 350;
     float popH = 200;
@@ -341,7 +311,7 @@ void TransportBar::DrawSettingsPopup() {
     Rectangle closeBtn = {popX + popW - 30, popY + 5, 25, 25};
     DrawRectangleRec(closeBtn, RED);
     DrawText("X", closeBtn.x + 7, closeBtn.y + 3, 18, WHITE);
-    if (CheckCollisionPointRec(GetMousePosition(), closeBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (CheckCollisionPointRec(state.getMousePosition(), closeBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.settings.activePopup = PopupType::None;
         state.settings.showSettingsMenu = false;
     }
@@ -351,7 +321,7 @@ void TransportBar::DrawSettingsPopup() {
         Rectangle backBtn = {popX + popW - 60, popY + 5, 25, 25};
         DrawRectangleRec(backBtn, DARKGRAY);
         DrawText("<", backBtn.x + 8, backBtn.y + 3, 18, WHITE);
-        if (CheckCollisionPointRec(GetMousePosition(), backBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (CheckCollisionPointRec(state.getMousePosition(), backBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.settings.activePopup = PopupType::Main;
         }
     }
@@ -363,14 +333,14 @@ void TransportBar::DrawSettingsPopup() {
         Rectangle projBtn = {popX + 20, currentY, popW - 40, 30};
         DrawRectangleRec(projBtn, DARKGRAY);
         DrawText("Project...", projBtn.x + 10, projBtn.y + 5, 14, WHITE);
-        if (CheckCollisionPointRec(GetMousePosition(), projBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (CheckCollisionPointRec(state.getMousePosition(), projBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.settings.activePopup = PopupType::Project;
         }
         
         Rectangle audioBtn = {popX + 20, currentY + 40, popW - 40, 30};
         DrawRectangleRec(audioBtn, DARKGRAY);
         DrawText("Audio Settings...", audioBtn.x + 10, audioBtn.y + 5, 14, WHITE);
-        if (CheckCollisionPointRec(GetMousePosition(), audioBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (CheckCollisionPointRec(state.getMousePosition(), audioBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.settings.activePopup = PopupType::Audio;
             state.settings.availableOutputDevices = engine.getAvailableOutputDevices();
             state.settings.currentDevice = engine.getCurrentOutputDevice();
@@ -384,7 +354,7 @@ void TransportBar::DrawSettingsPopup() {
         Rectangle saveBtn = {popX + 20, currentY, 140, 30};
         DrawRectangleRec(saveBtn, DARKGRAY);
         DrawText("Save Project", saveBtn.x + 25, saveBtn.y + 8, 14, WHITE);
-        if (CheckCollisionPointRec(GetMousePosition(), saveBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (CheckCollisionPointRec(state.getMousePosition(), saveBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             const char* filters[] = { "*.json" };
             const char* path = tinyfd_saveFileDialog("Save Project", "project.json", 1, filters, "JSON Project Files");
             if (path) {
@@ -402,7 +372,7 @@ void TransportBar::DrawSettingsPopup() {
         Rectangle loadBtn = {popX + 170, currentY, 140, 30};
         DrawRectangleRec(loadBtn, DARKGRAY);
         DrawText("Load Project", loadBtn.x + 25, loadBtn.y + 8, 14, WHITE);
-        if (CheckCollisionPointRec(GetMousePosition(), loadBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (CheckCollisionPointRec(state.getMousePosition(), loadBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             const char* filters[] = { "*.json" };
             const char* path = tinyfd_openFileDialog("Load Project", "", 1, filters, "JSON Project Files", 0);
             if (path) {
@@ -465,7 +435,7 @@ void TransportBar::DrawSettingsPopup() {
             DrawText(devName.c_str(), devBtn.x + 5, devBtn.y + 4, 12, textColor);
             
             // Only allow clicking if not currently switching and not the current device
-            if (!isCurrent && !isSwitching && CheckCollisionPointRec(GetMousePosition(), devBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            if (!isCurrent && !isSwitching && CheckCollisionPointRec(state.getMousePosition(), devBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 state.settings.isSwitchingDevice = true;
                 
                 // Use async switching - capture state pointer

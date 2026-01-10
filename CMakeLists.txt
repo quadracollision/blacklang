@@ -14,6 +14,9 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(JUCE)
 
 # Fetch Raylib for GUI
+if (ANDROID)
+    set(PLATFORM "Android" CACHE STRING "Raylib Platform" FORCE)
+endif()
 FetchContent_Declare(
     raylib
     GIT_REPOSITORY https://github.com/raysan5/raylib.git
@@ -21,45 +24,115 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(raylib)
 
-# Main executable (Raylib GUI)
-add_executable(blacklang-raylib
-    src/main_raylib.cpp
-    src/GuiRenderer.cpp
+# Copy JUCE Java files for Android
+if (ANDROID)
+    message(STATUS "Copying JUCE Java files...")
+    file(COPY "${juce_SOURCE_DIR}/modules/juce_core/native/javacore/init/com" DESTINATION "${CMAKE_SOURCE_DIR}/android/app/src/main/java")
+    file(COPY "${juce_SOURCE_DIR}/modules/juce_core/native/javacore/app/com" DESTINATION "${CMAKE_SOURCE_DIR}/android/app/src/main/java")
+    file(COPY "${juce_SOURCE_DIR}/modules/juce_audio_devices/native/java/app/com" DESTINATION "${CMAKE_SOURCE_DIR}/android/app/src/main/java")
+endif()
 
-    src/AudioEngine.cpp
-    src/AudioRecorder.cpp
-    src/BusManager.cpp
-    src/ProjectFile.cpp
-    src/tinyfiledialogs.c
-    src/gui/Widgets.cpp
-    src/gui/TransportBar.cpp
-    src/gui/StepGrid.cpp
-    src/gui/DragDrop.cpp
-    src/gui/TrackView.cpp
-    src/gui/PatternEditor.cpp
-    src/gui/FXControls.cpp
-    src/gui/TrackFX.cpp
-    src/fx/FXProcessor.cpp
-)
+# Main Target
+if (ANDROID)
+    # Android requires a shared library
+    add_library(blacklang SHARED
+        src/main_raylib.cpp
+        src/GuiRenderer.cpp
+        src/FilePicker.cpp
+        src/gui/FileBrowser.cpp
 
-target_include_directories(blacklang-raylib PRIVATE src)
+        src/AudioEngine.cpp
+        src/AudioRecorder.cpp
+        src/BusManager.cpp
+        src/ProjectFile.cpp
+        src/tinyfiledialogs.c
+        src/gui/Widgets.cpp
+        src/gui/TransportBar.cpp
+        src/gui/StepGrid.cpp
+        src/gui/DragDrop.cpp
+        src/gui/TrackView.cpp
+        src/gui/PatternEditor.cpp
+        src/gui/FXControls.cpp
+        src/gui/TrackFX.cpp
+        src/fx/FXProcessor.cpp
+    )
+    
+    target_include_directories(blacklang PRIVATE src)
+    
+    # Android App Glue
+    add_library(app-glue STATIC
+        ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c
+    )
+    target_include_directories(app-glue PUBLIC ${ANDROID_NDK}/sources/android/native_app_glue)
 
-target_link_libraries(blacklang-raylib
-    PRIVATE
-        raylib
-        juce::juce_audio_basics
-        juce::juce_audio_devices
-        juce::juce_audio_formats
-        juce::juce_audio_utils
-        juce::juce_core
-    PUBLIC
-        juce::juce_recommended_config_flags
-        juce::juce_recommended_warning_flags
-)
+    target_link_libraries(blacklang
+        PRIVATE
+            -Wl,--whole-archive app-glue -Wl,--no-whole-archive
+            raylib
+            juce::juce_audio_basics
+            juce::juce_audio_devices
+            juce::juce_audio_formats
+            juce::juce_audio_utils
+            juce::juce_core
+            log
+            android
+            EGL
+            GLESv2
+        PUBLIC
+            juce::juce_recommended_config_flags
+            juce::juce_recommended_warning_flags
+    )
+    
+    target_compile_definitions(blacklang
+        PRIVATE
+            JUCE_STANDALONE_APPLICATION=0
+            JUCE_ANDROID=1
+            JUCE_USE_CURL=0
+            JUCE_WEB_BROWSER=0
+    )
+else()
+    # Desktop Executable
+    add_executable(blacklang-raylib
+        src/main_raylib.cpp
+        src/GuiRenderer.cpp
+        src/FilePicker.cpp
+        src/gui/FileBrowser.cpp
 
-target_compile_definitions(blacklang-raylib
-    PRIVATE
-        JUCE_STANDALONE_APPLICATION=1
-        JUCE_USE_CURL=0
-        JUCE_WEB_BROWSER=0
-)
+        src/AudioEngine.cpp
+        src/AudioRecorder.cpp
+        src/BusManager.cpp
+        src/ProjectFile.cpp
+        src/tinyfiledialogs.c
+        src/gui/Widgets.cpp
+        src/gui/TransportBar.cpp
+        src/gui/StepGrid.cpp
+        src/gui/DragDrop.cpp
+        src/gui/TrackView.cpp
+        src/gui/PatternEditor.cpp
+        src/gui/FXControls.cpp
+        src/gui/TrackFX.cpp
+        src/fx/FXProcessor.cpp
+    )
+
+    target_include_directories(blacklang-raylib PRIVATE src)
+
+    target_link_libraries(blacklang-raylib
+        PRIVATE
+            raylib
+            juce::juce_audio_basics
+            juce::juce_audio_devices
+            juce::juce_audio_formats
+            juce::juce_audio_utils
+            juce::juce_core
+        PUBLIC
+            juce::juce_recommended_config_flags
+            juce::juce_recommended_warning_flags
+    )
+
+    target_compile_definitions(blacklang-raylib
+        PRIVATE
+            JUCE_STANDALONE_APPLICATION=1
+            JUCE_USE_CURL=0
+            JUCE_WEB_BROWSER=0
+    )
+endif()

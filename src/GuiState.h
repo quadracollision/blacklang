@@ -36,10 +36,12 @@ struct DragState {
     bool isHolding = false;
     Vector2 initialClickPos;
     
-    // Touch Scroll
+    // Touch Scroll with direction detection
     bool isScrolling = false;
-    int scrollColumnIndex = -1;
+    int scrollColumnIndex = -1;  // For vertical scroll
     Vector2 lastMousePos = {0,0};
+    Vector2 scrollStartPos = {0,0};  // Where scroll started
+    int scrollDirection = 0;  // 0=pending, 1=vertical, 2=horizontal
     
     // Scrollbar Interaction
     int scrollbarDraggingColumn = -1;
@@ -81,7 +83,11 @@ struct PatternEditorState {
     
     // File Browser
     bool showFileBrowser = false;
+    std::string currentPath;
     std::vector<std::string> fileList;
+    std::vector<std::string> dirList; // Separate dirs vs files
+    float browserScrollY = 0.0f;
+    char selectedFileBuffer[256] = {0};
     
     // Melodic Mode State
     bool showMelodicControls = false;
@@ -91,9 +97,12 @@ struct PatternEditorState {
     float currentVelocity = 1.0f; // [0.0 - 1.0]
     bool isDraggingVelocity = false;
     
-    // Scrolling
+    // Scrolling with touch drag support
     float scrollOffsetY = 0.0f;
     float contentHeight = 600.0f; // Estimated content height
+    bool editorDragging = false;
+    float editorDragStartY = 0.0f;
+    float editorDragStartScrollY = 0.0f;
     
 
     
@@ -108,6 +117,10 @@ struct PatternEditorState {
     int selectedAvailableFxId = -1;
     float fxAvailableScrollY = 0.0f;
     float fxAppliedScrollY = 0.0f;
+    bool fxAvailDragging = false;
+    bool fxAppliedDragging = false;
+    float fxDragStartY = 0.0f;
+    float fxDragStartScrollY = 0.0f;
     
     // Slicer Mode State
     bool showSlicerControls = false;
@@ -164,9 +177,12 @@ struct GuiState {
     char columnRenameBuffer[64] = {0};
     int focusedFieldId = -1; // Global focus tracker
     
-    // Main View Scroll
+    // Main View Scroll with touch drag support
     float mainScrollX = 0.0f;
     float mainContentWidth = 0.0f;
+    bool mainDraggingX = false;
+    float mainDragStartX = 0.0f;
+    float mainDragStartScrollX = 0.0f;
     
     // Transport state mirroring AudioEngine
     bool isPlaying = false;
@@ -182,6 +198,17 @@ struct GuiState {
     const int PATTERN_HEIGHT = 90;
     const int HEADER_HEIGHT = 60;
     const int FOOTER_HEIGHT = 60;
+    
+    // Virtual screen dimensions (for render-texture scaling on mobile)
+    int virtualWidth = 960;
+    int virtualHeight = 540;
+    Vector2 virtualMouse = {0, 0};  // Transformed mouse position
+    float uiScale = 1.0f;           // Current UI scale factor
+    
+    // Helper methods for consistent virtual screen/mouse access
+    int getScreenWidth() const { return virtualWidth; }
+    int getScreenHeight() const { return virtualHeight; }
+    Vector2 getMousePosition() const { return virtualMouse; }
     
     void initDemo() {
      // Add some default columns with track names

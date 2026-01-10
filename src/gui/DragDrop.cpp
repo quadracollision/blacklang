@@ -15,7 +15,7 @@ void HandleDragAndDrop(GuiState& state) {
         }
         
         // Cancel if moved too much
-        Vector2 mouse = GetMousePosition();
+        Vector2 mouse = state.getMousePosition();
         float dist = Vector2Distance(mouse, state.drag.initialClickPos);
         if (dist > 10) {
              state.drag.isHolding = false;
@@ -33,13 +33,13 @@ void HandleDragAndDrop(GuiState& state) {
 
     if (!state.drag.isDragging) return;
     
-    state.drag.currentPos = GetMousePosition();
+    state.drag.currentPos = state.getMousePosition();
     
     if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
         // Find target column
         int targetCol = -1;
         for (size_t i = 0; i < state.columns.size(); ++i) {
-            if (CheckCollisionPointRec(GetMousePosition(), state.columns[i].bounds)) {
+            if (CheckCollisionPointRec(state.getMousePosition(), state.columns[i].bounds)) {
                 targetCol = i;
                 break;
             }

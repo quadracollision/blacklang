@@ -17,33 +17,61 @@ TrackView::TrackView(GuiState& s, AudioEngine& e) : state(s), engine(e) {}
 void TrackView::Draw() {
     // 1. Manage Drag State Promotion (Hold -> Drag)
     if (state.drag.isHolding) {
-        float dist = Vector2Distance(GetMousePosition(), state.drag.initialClickPos);
+        float dist = Vector2Distance(state.getMousePosition(), state.drag.initialClickPos);
         double holdDuration = GetTime() - state.drag.holdStartTime;
         
-        // Promote if moved > 5px OR held > 0.225s (75% of previous 0.3s)
-        if (dist > 5.0f || holdDuration > 0.225) {
+        // Only promote to drag after long hold (0.4s) - quick drags are for scrolling
+        if (holdDuration > 0.4) {
             state.drag.isDragging = true;
             state.drag.isHolding = false;
+            state.drag.isScrolling = false;  // Stop scroll when starting drag
+            state.drag.scrollDirection = 0;
         } else if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
             // Released before dragging - just a click, already handled by HandlePatternClick
             state.drag.isHolding = false;
         }
     }
 
-    // 1.5 Touch Scroll Logic
+    // 1.5 Touch Scroll Logic with direction detection
     if (state.drag.isScrolling) {
         if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-            Vector2 mouse = GetMousePosition();
+            Vector2 mouse = state.getMousePosition();
             Vector2 delta = Vector2Subtract(mouse, state.drag.lastMousePos);
             
-            if (state.drag.scrollColumnIndex >= 0 && state.drag.scrollColumnIndex < (int)state.columns.size()) {
-                // Drag UP (negative Y) should increase scrollY (move content UP, show lower content)
-                state.columns[(size_t)state.drag.scrollColumnIndex].scrollY -= delta.y;
+            // Determine direction if pending
+            if (state.drag.scrollDirection == 0) {
+                float totalDeltaX = std::abs(mouse.x - state.drag.scrollStartPos.x);
+                float totalDeltaY = std::abs(mouse.y - state.drag.scrollStartPos.y);
+                
+                // Need at least 10px movement to lock direction
+                if (totalDeltaX > 10 || totalDeltaY > 10) {
+                    if (totalDeltaX > totalDeltaY) {
+                        state.drag.scrollDirection = 2;  // Horizontal
+                    } else {
+                        state.drag.scrollDirection = 1;  // Vertical
+                    }
+                }
             }
+            
+            // Apply scroll based on locked direction
+            if (state.drag.scrollDirection == 1) {
+                // Vertical scroll within column
+                if (state.drag.scrollColumnIndex >= 0 && state.drag.scrollColumnIndex < (int)state.columns.size()) {
+                    state.columns[(size_t)state.drag.scrollColumnIndex].scrollY -= delta.y;
+                }
+            } else if (state.drag.scrollDirection == 2) {
+                // Horizontal scroll of track view
+                state.mainScrollX -= delta.x;
+                float maxScrollX = (state.columns.size() * (state.COLUMN_WIDTH + 10)) - state.getScreenWidth() + 100;
+                if (state.mainScrollX < 0) state.mainScrollX = 0;
+                if (maxScrollX > 0 && state.mainScrollX > maxScrollX) state.mainScrollX = maxScrollX;
+            }
+            
             state.drag.lastMousePos = mouse;
         } else {
-             state.drag.isScrolling = false;
-             state.drag.scrollColumnIndex = -1;
+            state.drag.isScrolling = false;
+            state.drag.scrollColumnIndex = -1;
+            state.drag.scrollDirection = 0;
         }
     }
 
@@ -52,7 +80,7 @@ void TrackView::Draw() {
     float colX = startX - state.mainScrollX;
     
     // Scissor for main view area
-    Rectangle viewRect = {0, (float)state.HEADER_HEIGHT, (float)GetScreenWidth(), (float)GetScreenHeight() - state.HEADER_HEIGHT - state.FOOTER_HEIGHT};
+    Rectangle viewRect = {0, (float)state.HEADER_HEIGHT, (float)state.getScreenWidth(), (float)state.getScreenHeight() - state.HEADER_HEIGHT - state.FOOTER_HEIGHT};
     BeginScissorMode((int)viewRect.x, (int)viewRect.y, (int)viewRect.width, (int)viewRect.height);
 
     for (size_t i = 0; i < state.columns.size(); ++i) {
@@ -60,7 +88,7 @@ void TrackView::Draw() {
             colX,
             (float)state.HEADER_HEIGHT + 20, // Margin
             (float)state.COLUMN_WIDTH,
-            (float)(GetScreenHeight() - state.HEADER_HEIGHT - state.FOOTER_HEIGHT - 40)
+            (float)(state.getScreenHeight() - state.HEADER_HEIGHT - state.FOOTER_HEIGHT - 40)
         };
         DrawColumn((int)i, state.columns[i]);
         colX += state.COLUMN_WIDTH + 10;
@@ -71,8 +99,8 @@ void TrackView::Draw() {
     DrawRectangleRec(addColBtn, Color{40, 40, 40, 255});
     DrawText("+", addColBtn.x + 13, addColBtn.y + 30, 30, GRAY);
     
-    if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), addColBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-         if (CheckCollisionPointRec(GetMousePosition(), viewRect)) {
+    if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), addColBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+         if (CheckCollisionPointRec(state.getMousePosition(), viewRect)) {
              state.columns.push_back({"Track " + std::to_string(state.columns.size() + 1), std::vector<std::string>(16, ""), {0, 0, 0, 0}, 0.0f});
          }
     }
@@ -82,7 +110,7 @@ void TrackView::Draw() {
     // 3. Global Drop Logic (if Dragging)
     if (state.drag.isDragging) {
         // Draw Ghost
-        Vector2 mouse = GetMousePosition();
+        Vector2 mouse = state.getMousePosition();
         Rectangle ghostRect = { mouse.x + 10, mouse.y + 10, 140, 45 };
         DrawRectangleRec(ghostRect, Color{60, 60, 60, 200});
         DrawRectangleLinesEx(ghostRect, 1, WHITE);
@@ -178,7 +206,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
     float totalContentHeight = (float)col.patternNames.size() * (float)(state.PATTERN_HEIGHT + 5);
     
     // Scroll Logic
-    if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), col.bounds)) {
+    if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), col.bounds)) {
         float wheel = GetMouseWheelMove();
         if (std::abs(wheel) > 0.001f) {
             col.scrollY -= wheel * 20.0f; // Smoother scrolling (reduced from 30)
@@ -202,7 +230,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
         DrawText(col.title.c_str(), headerRect.x + 5, headerRect.y + 4, 18, WHITE);
         
         // Double-click to rename
-        if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), headerRect)) {
+        if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), headerRect)) {
             static double lastHeaderClickTime = 0;
             static int lastHeaderClickIndex = -1;
             
@@ -242,7 +270,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
         Rectangle cellRect = {
             col.bounds.x + 5,
             y,
-            col.bounds.width - 25, // Reduced width to clear scrollbar
+            col.bounds.width - 15, // Reduced width to clear scrollbar (thinner now)
             (float)state.PATTERN_HEIGHT
         };
         y += state.PATTERN_HEIGHT + 5;
@@ -303,7 +331,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
         // NEW WORKFLOW HIGHLIGHTING: Source Selection
         if (state.trackClipboard.isSelectingSource && !overlapsButton) {
              // Highlight pattern to be copied (must be occupied)
-             if (!col.patternNames[i].empty() && CheckCollisionPointRec(GetMousePosition(), cellRect)) {
+             if (!col.patternNames[i].empty() && CheckCollisionPointRec(state.getMousePosition(), cellRect)) {
                  DrawRectangleLinesEx(cellRect, 2, ORANGE);
                  DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{255, 161, 0, 50}); // translucent orange
              }
@@ -315,7 +343,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
             bool isEmpty = col.patternNames[i].empty();
             
             // Highlight specific cell only if empty
-           if (isEmpty && CheckCollisionPointRec(GetMousePosition(), cellRect)) {
+           if (isEmpty && CheckCollisionPointRec(state.getMousePosition(), cellRect)) {
                 DrawRectangleLinesEx(cellRect, 2, MAGENTA);
                 DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{255, 0, 255, 50});
                 
@@ -333,7 +361,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
         }
 
         // Drag Destination Logic - VISUAL OVERLAY (Draw LAST to be visible over content)
-        if (state.drag.isDragging && CheckCollisionPointRec(GetMousePosition(), cellRect) && !overlapsButton) {
+        if (state.drag.isDragging && CheckCollisionPointRec(state.getMousePosition(), cellRect) && !overlapsButton) {
             // Visible Indicator
             DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{0, 255, 0, 60}); // Brighter Green Highlight
             DrawRectangleLinesEx(cellRect, 3.0f, GREEN); // Thicker Border
@@ -344,7 +372,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
     
     // Scrollbar
     if (totalContentHeight > contentArea.height) {
-        float barW = 14; 
+        float barW = 6;  // Thinner scrollbar for mobile
         float barX = col.bounds.x + col.bounds.width - barW - 2;
         float barY = contentArea.y;
         float barH = contentArea.height;
@@ -364,7 +392,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
         if (state.drag.scrollbarDraggingColumn == index) {
             // DRAGGING
             if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-                float mouseY = GetMousePosition().y;
+                float mouseY = state.getMousePosition().y;
                 float newThumbY = mouseY - state.drag.scrollbarClickOffsetY;
                 
                 // Clamp thumb
@@ -383,14 +411,14 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
             }
         } else {
             // IDLE / CLICK
-            if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), barRect)) {
-                 DrawRectangleRec(barRect, Color{40, 40, 40, 150}); // Hover
+            if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), barRect)) {
+                 DrawRectangleRec(barRect, Color{40, 40, 40, 80}); // Hover - more transparent
                  
                  if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                      state.drag.scrollbarDraggingColumn = index;
-                     float mouseY = GetMousePosition().y;
+                     float mouseY = state.getMousePosition().y;
                      
-                     if (CheckCollisionPointRec(GetMousePosition(), thumbRect)) {
+                     if (CheckCollisionPointRec(state.getMousePosition(), thumbRect)) {
                          // Clicked Thumb
                          state.drag.scrollbarClickOffsetY = mouseY - thumbY;
                      } else {
@@ -412,7 +440,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
                      }
                  }
             } else {
-                DrawRectangleRec(barRect, Color{0, 0, 0, 100});
+                // Removed idle scrollbar background for cleaner look on mobile
             }
         }
         
@@ -420,7 +448,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
         thumbY = barY + (col.scrollY / scrollableH) * trackH;
         thumbRect.y = thumbY;
 
-        DrawRectangleRec(thumbRect, state.drag.scrollbarDraggingColumn == index ? LIGHTGRAY : Color{80, 80, 80, 200});
+        DrawRectangleRec(thumbRect, state.drag.scrollbarDraggingColumn == index ? Color{150, 150, 150, 200} : Color{80, 80, 80, 120});
     }
 
     // Add Button (Small, Left) - Drawn using pre-calculated rect
@@ -433,7 +461,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
     DrawText("-", delBtnRect.x + 15, delBtnRect.y + 2, 24, WHITE);
     
     // Delete button action
-    if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), delBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), delBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         // Delete the selected pattern in this column
         if (state.activePatternSlots.count(index)) {
             int selectedSlot = state.activePatternSlots[index];
@@ -449,7 +477,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
     DrawRectangleRec(mixBtnRect, Color{30, 30, 40, 255});
     DrawText("MIXER", mixBtnRect.x + mixBtnRect.width/2 - 25, mixBtnRect.y + 8, 14, GRAY);
     
-    if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), mixBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), mixBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         col.mixerMode = true;
     }
     
@@ -469,7 +497,7 @@ void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::strin
     };
     
     // Check Collision using PASSED cellRect (Matches Drawing)
-    if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), contentArea) && CheckCollisionPointRec(GetMousePosition(), cellRect)) {
+    if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), contentArea) && CheckCollisionPointRec(state.getMousePosition(), cellRect)) {
         static double lastPatternClickTime = 0;
         static std::string lastPatternClickName = "";
 
@@ -506,7 +534,7 @@ void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::strin
             // Replaces double-click logic. Only applies to occupied patterns.
             if (!patternName.empty()) {
                 Rectangle headerRect = {cellRect.x, cellRect.y, cellRect.width, 22};
-                if (CheckCollisionPointRec(GetMousePosition(), headerRect)) {
+                if (CheckCollisionPointRec(state.getMousePosition(), headerRect)) {
                      Pattern* p = engine.getPattern(patternName);
                      if (p) {
                          state.editor.currentPattern = *p;
@@ -592,19 +620,26 @@ void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::strin
             
             // Start hold for drag OR scroll
             if (!patternName.empty()) {
-                state.drag.isDragging = false; // Reset drag?
+                state.drag.isDragging = false;
                 state.drag.isHolding = true;
                 state.drag.holdStartTime = GetTime();
-                state.drag.initialClickPos = GetMousePosition();
+                state.drag.initialClickPos = state.getMousePosition();
                 state.drag.sourceColumnIndex = colIndex;
                 state.drag.sourceSlotIndex = slotIndex;
                 state.drag.patternName = patternName;
-                state.drag.isScrolling = false; // Priority to drag
+                // Also start scroll mode - will switch to drag if hold long enough
+                state.drag.isScrolling = true;
+                state.drag.scrollColumnIndex = colIndex;
+                state.drag.lastMousePos = state.getMousePosition();
+                state.drag.scrollStartPos = state.getMousePosition();
+                state.drag.scrollDirection = 0;  // Pending
             } else {
                 // Empty cell -> Start Scroll
                 state.drag.isScrolling = true;
                 state.drag.scrollColumnIndex = colIndex;
-                state.drag.lastMousePos = GetMousePosition();
+                state.drag.lastMousePos = state.getMousePosition();
+                state.drag.scrollStartPos = state.getMousePosition();
+                state.drag.scrollDirection = 0;  // Pending
                 state.drag.isHolding = false;
                 state.drag.isDragging = false;
             }
@@ -617,7 +652,7 @@ void TrackView::HandleAddPattern(int colIndex, PatternColumn& col) {
     
     Rectangle addBtnRect = {col.bounds.x + 5, col.bounds.y + col.bounds.height - 35, 40, 30};
     
-    if (!state.editor.isOpen && CheckCollisionPointRec(GetMousePosition(), addBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), addBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         // Only create pattern if we have a selected EMPTY slot
         int targetSlot = -1;
         

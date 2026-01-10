@@ -1,0 +1,1242 @@
+--------- beginning of crash
+01-08 21:42:35.683 E/AndroidRuntime(17456): FATAL EXCEPTION: main
+01-08 21:42:35.683 E/AndroidRuntime(17456): Process: com.quadracollision.blacklang, PID: 17456
+01-08 21:42:35.683 E/AndroidRuntime(17456): java.lang.UnsatisfiedLinkError: Unable to load native library "/data/app/~~EoIDJ4b0Os3gauKdnKogjg==/com.quadracollision.blacklang-7z_rER7-LX7zgKJng9YH6Q==/base.apk!/lib/arm64-v8a/libblacklang.so": undefined symbol: ANativeActivity_onCreate
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.NativeActivity.onCreate(NativeActivity.java:178)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.Activity.performCreate(Activity.java:9519)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.Activity.performCreate(Activity.java:9488)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1524)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.ActivityThread.performLaunchActivity(ActivityThread.java:4692)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:4941)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:222)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:133)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:103)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:80)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.ActivityThread$H.handleMessage(ActivityThread.java:3150)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.os.Handler.dispatchMessage(Handler.java:110)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.os.Looper.loopOnce(Looper.java:273)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.os.Looper.loop(Looper.java:363)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at android.app.ActivityThread.main(ActivityThread.java:10060)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at java.lang.reflect.Method.invoke(Native Method)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:632)
+01-08 21:42:35.683 E/AndroidRuntime(17456): 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:975)
+01-08 21:44:30.790 E/AndroidRuntime(18229): FATAL EXCEPTION: main
+01-08 21:44:30.790 E/AndroidRuntime(18229): Process: com.quadracollision.blacklang, PID: 18229
+01-08 21:44:30.790 E/AndroidRuntime(18229): java.lang.UnsatisfiedLinkError: Unable to load native library "/data/app/~~H2idKRyGnUg6puNzpZQ4VQ==/com.quadracollision.blacklang--QBJN9MP71D18ivnCQ3_fA==/base.apk!/lib/arm64-v8a/libblacklang.so": undefined symbol: ANativeActivity_onCreate
+01-08 21:44:30.790 E/AndroidRuntime(18229): 	at android.app.NativeActivity.onCreate(NativeActivity.java:178)
+01-08 21:44:30.790 E/AndroidRuntime(18229): 	at android.app.Activity.performCreate(Activity.java:9519)
+01-08 21:44:30.790 E/AndroidRuntime(18229): 	at android.app.Activity.performCreate(Activity.java:9488)
+01-08 21:44:30.790 E/AndroidRuntime(18229): 	at android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1524)
+01-08 21:44:30.790 E/AndroidRuntime(18229): 	at android.app.ActivityThread.performLaunchActivity(ActivityThread.java:4692)
+01-08 21:44:30.790 E/AndroidRuntime(18229): 	at android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:4941)
+01-08 21:44:30.790 E/AndroidRuntime(18229): 	at android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:222)
+01-08 21:44:30.790 E/AndroidRuntime(18229): 	at android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:133)
+01-08 21:44:30.790 E/AndroidRuntime(18229): 	at android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:103)
+01-08 21:44:30.790 E/AndroidRuntime(18229): 	at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:80)
+01-08 21:44:30.790 E/AndroidRuntime(18229): 	at android.app.ActivityThread$H.handleMessage(ActivityThread.java:3150)
+01-08 21:44:30.790 E/AndroidRuntime(18229): 	at android.os.Handler.dispatchMessage(Handler.java:110)
+01-08 21:44:30.790 E/AndroidRuntime(18229): 	at android.os.Looper.loopOnce(Looper.java:273)
+01-08 21:44:30.790 E/AndroidRuntime(18229): 	at android.os.Looper.loop(Looper.java:363)
+01-08 21:44:30.790 E/AndroidRuntime(18229): 	at android.app.ActivityThread.main(ActivityThread.java:10060)
+01-08 21:44:30.790 E/AndroidRuntime(18229): 	at java.lang.reflect.Method.invoke(Native Method)
+01-08 21:44:30.790 E/AndroidRuntime(18229): 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:632)
+01-08 21:44:30.790 E/AndroidRuntime(18229): 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:975)
+--------- beginning of main
+01-08 21:45:51.045 I/raylib  (19384): Initializing raylib 5.0
+01-08 21:45:51.045 I/raylib  (19384): Platform backend: ANDROID
+01-08 21:45:51.045 I/raylib  (19384): Supported raylib modules:
+01-08 21:45:51.045 I/raylib  (19384):     > rcore:..... loaded (mandatory)
+01-08 21:45:51.045 I/raylib  (19384):     > rlgl:...... loaded (mandatory)
+01-08 21:45:51.045 I/raylib  (19384):     > rshapes:... loaded (optional)
+01-08 21:45:51.045 I/raylib  (19384):     > rtextures:. loaded (optional)
+01-08 21:45:51.045 I/raylib  (19384):     > rtext:..... loaded (optional)
+01-08 21:45:51.045 I/raylib  (19384):     > rmodels:... loaded (optional)
+01-08 21:45:51.045 I/raylib  (19384):     > raudio:.... loaded (optional)
+01-08 21:45:51.045 I/raylib  (19384): ANDROID: Window orientation set as landscape
+01-08 21:45:51.045 W/raylib  (19384): ANDROID: Window orientation changed to landscape
+01-08 21:45:51.045 I/raylib  (19384): PLATFORM: ANDROID: Initialized successfully
+01-08 21:45:51.142 I/raylib  (19384): DISPLAY: Upscaling required: Screen size (1000x700) smaller than display size (2259x1080)
+01-08 21:45:51.157 I/raylib  (19384): DISPLAY: Device initialized successfully
+01-08 21:45:51.157 I/raylib  (19384):     > Display size: 2259 x 1080
+01-08 21:45:51.157 I/raylib  (19384):     > Screen size:  1000 x 700
+01-08 21:45:51.157 I/raylib  (19384):     > Render size:  1000 x 700
+01-08 21:45:51.157 I/raylib  (19384):     > Viewport offsets: 464, 0
+01-08 21:45:51.157 I/raylib  (19384): GL: Supported extensions count: 104
+01-08 21:45:51.157 I/raylib  (19384): GL: OpenGL device information:
+01-08 21:45:51.157 I/raylib  (19384):     > Vendor:   Qualcomm
+01-08 21:45:51.157 I/raylib  (19384):     > Renderer: Adreno (TM) 730
+01-08 21:45:51.157 I/raylib  (19384):     > Version:  OpenGL ES 3.2 V@0615.98 (GIT@0c393b63cf, I94e2bd5684, 1746191168) (Date:05/02/25)
+01-08 21:45:51.157 I/raylib  (19384):     > GLSL:     OpenGL ES GLSL ES 3.20
+01-08 21:45:51.157 I/raylib  (19384): GL: VAO extension detected, VAO functions loaded successfully
+01-08 21:45:51.157 I/raylib  (19384): GL: NPOT textures extension detected, full NPOT textures supported
+01-08 21:45:51.157 I/raylib  (19384): GL: ETC1 compressed textures supported
+01-08 21:45:51.157 I/raylib  (19384): GL: ASTC compressed textures supported
+01-08 21:45:51.157 I/raylib  (19384): TEXTURE: [ID 1] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+01-08 21:45:51.157 I/raylib  (19384): TEXTURE: [ID 1] Default texture loaded successfully
+01-08 21:45:51.198 I/raylib  (19384): SHADER: [ID 1] Vertex shader compiled successfully
+01-08 21:45:51.214 I/raylib  (19384): SHADER: [ID 2] Fragment shader compiled successfully
+01-08 21:45:51.219 I/raylib  (19384): SHADER: [ID 3] Program shader loaded successfully
+01-08 21:45:51.219 I/raylib  (19384): SHADER: [ID 3] Default shader loaded successfully
+01-08 21:45:51.219 I/raylib  (19384): RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+01-08 21:45:51.220 I/raylib  (19384): RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+01-08 21:45:51.220 I/raylib  (19384): RLGL: Default OpenGL state initialized successfully
+01-08 21:45:51.224 I/raylib  (19384): TEXTURE: [ID 2] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+01-08 21:45:51.224 I/raylib  (19384): FONT: Default font loaded successfully (224 glyphs)
+01-08 21:45:51.224 I/raylib  (19384): TEXTURE: [ID 3] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+01-08 21:45:51.224 I/raylib  (19384): TEXTURE: [ID 3] Default texture loaded successfully
+01-08 21:45:51.224 I/raylib  (19384): SHADER: [ID 4] Vertex shader compiled successfully
+01-08 21:45:51.224 I/raylib  (19384): SHADER: [ID 5] Fragment shader compiled successfully
+01-08 21:45:51.225 I/raylib  (19384): SHADER: [ID 6] Program shader loaded successfully
+01-08 21:45:51.225 I/raylib  (19384): SHADER: [ID 6] Default shader loaded successfully
+01-08 21:45:51.225 I/raylib  (19384): RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+01-08 21:45:51.225 I/raylib  (19384): RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+01-08 21:45:51.225 I/raylib  (19384): RLGL: Default OpenGL state initialized successfully
+01-08 21:45:51.225 I/raylib  (19384): TEXTURE: [ID 4] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+01-08 21:45:51.225 I/raylib  (19384): FONT: Default font loaded successfully (224 glyphs)
+01-08 21:45:51.225 I/raylib  (19384): TIMER: Target time per frame: 16.667 milliseconds
+01-08 21:45:51.225 I/JUCE    (19384): JUCE Assertion failure in juce_Threads_android.cpp:67
+01-08 21:45:52.251 F/DEBUG   (19433): *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+01-08 21:45:52.251 F/DEBUG   (19433): Build fingerprint: 'samsung/r0qsqw/r0q:16/BP2A.250605.031.A3/S901USQS8GYL1:user/release-keys'
+01-08 21:45:52.251 F/DEBUG   (19433): Revision: '14'
+01-08 21:45:52.251 F/DEBUG   (19433): ABI: 'arm64'
+01-08 21:45:52.251 F/DEBUG   (19433): Processor: '4'
+01-08 21:45:52.251 F/DEBUG   (19433): Timestamp: 2026-01-08 21:45:51.450369746-0500
+01-08 21:45:52.251 F/DEBUG   (19433): Process uptime: 2s
+01-08 21:45:52.251 F/DEBUG   (19433): Cmdline: com.quadracollision.blacklang
+01-08 21:45:52.251 F/DEBUG   (19433): pid: 19384, tid: 19415, name: ision.blacklang  >>> com.quadracollision.blacklang <<<
+01-08 21:45:52.251 F/DEBUG   (19433): uid: 10404
+01-08 21:45:52.251 F/DEBUG   (19433): tagged_addr_ctrl: 0000000000000001 (PR_TAGGED_ADDR_ENABLE)
+01-08 21:45:52.251 F/DEBUG   (19433): pac_enabled_keys: 000000000000000f (PR_PAC_APIAKEY, PR_PAC_APIBKEY, PR_PAC_APDAKEY, PR_PAC_APDBKEY)
+01-08 21:45:52.251 F/DEBUG   (19433): signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0000000000000000
+01-08 21:45:52.251 F/DEBUG   (19433): Cause: null pointer dereference
+01-08 21:45:52.251 F/DEBUG   (19433):     x0  0000000000000000  x1  000000793bdd912f  x2  0000007d54bd6784  x3  00000079c4243e98
+01-08 21:45:52.251 F/DEBUG   (19433):     x4  00000000000001c0  x5  0000007c43bfbd3c  x6  0000000000000001  x7  7f7f7f7f7f7f7f7f
+01-08 21:45:52.251 F/DEBUG   (19433):     x8  0000000000000000  x9  12f3788df402e1c4  x10 0000007d54bd6ee0  x11 00000000ca660885
+01-08 21:45:52.251 F/DEBUG   (19433):     x12 00000000001c000e  x13 0000007d54bd6984  x14 000000000000000b  x15 000000000000bb0c
+01-08 21:45:52.251 F/DEBUG   (19433):     x16 000000793d2e4f40  x17 000000793c5b5860  x18 00000079c0ad4000  x19 00000079c42453c0
+01-08 21:45:52.251 F/DEBUG   (19433):     x20 0000007d54bdc000  x21 00000079c42453c0  x22 0000000000004bb8  x23 0000000000004bb8
+01-08 21:45:52.251 F/DEBUG   (19433):     x24 00000079c42453c0  x25 00000079c4245728  x26 00000000000fc000  x27 00000079c414d000
+01-08 21:45:52.251 F/DEBUG   (19433):     x28 00000079c414c000  x29 00000079c4244020
+01-08 21:45:52.251 F/DEBUG   (19433):     lr  000000793c5b84d4  sp  00000079c4244010  pc  000000793c5b5878  pst 0000000060001000
+01-08 21:45:52.251 F/DEBUG   (19433): 15 total frames
+01-08 21:45:52.251 F/DEBUG   (19433): backtrace:
+01-08 21:45:52.251 F/DEBUG   (19433):       #00 pc 000000000116a878  /data/app/~~C1-R-YlHquo2Wuk2CJm2vg==/com.quadracollision.blacklang-q0VC-fO5h4cHlJ_LglA72w==/base.apk!libblacklang.so (offset 0x649000) (_JNIEnv::FindClass(char const*)+24) (BuildId: 20dfc8dbfe4a74d9da76387c44b9a405df6a9f14)
+01-08 21:45:52.251 F/DEBUG   (19433):       #01 pc 000000000116d4d0  /data/app/~~C1-R-YlHquo2Wuk2CJm2vg==/com.quadracollision.blacklang-q0VC-fO5h4cHlJ_LglA72w==/base.apk!libblacklang.so (offset 0x649000) (BuildId: 20dfc8dbfe4a74d9da76387c44b9a405df6a9f14)
+01-08 21:45:52.251 F/DEBUG   (19433):       #02 pc 000000000116a4bc  /data/app/~~C1-R-YlHquo2Wuk2CJm2vg==/com.quadracollision.blacklang-q0VC-fO5h4cHlJ_LglA72w==/base.apk!libblacklang.so (offset 0x649000) (juce::getAndroidSDKVersion()+68) (BuildId: 20dfc8dbfe4a74d9da76387c44b9a405df6a9f14)
+01-08 21:45:52.251 F/DEBUG   (19433):       #03 pc 00000000012deb98  /data/app/~~C1-R-YlHquo2Wuk2CJm2vg==/com.quadracollision.blacklang-q0VC-fO5h4cHlJ_LglA72w==/base.apk!libblacklang.so (offset 0x649000) (juce::MidiInput::getAvailableDevices()+32) (BuildId: 20dfc8dbfe4a74d9da76387c44b9a405df6a9f14)
+01-08 21:45:52.251 F/DEBUG   (19433):       #04 pc 00000000012f1900  /data/app/~~C1-R-YlHquo2Wuk2CJm2vg==/com.quadracollision.blacklang-q0VC-fO5h4cHlJ_LglA72w==/base.apk!libblacklang.so (offset 0x649000) (juce::MidiDeviceListConnectionBroadcaster::State::State()+24) (BuildId: 20dfc8dbfe4a74d9da76387c44b9a405df6a9f14)
+01-08 21:45:52.251 F/DEBUG   (19433):       #05 pc 00000000012f3c50  /data/app/~~C1-R-YlHquo2Wuk2CJm2vg==/com.quadracollision.blacklang-q0VC-fO5h4cHlJ_LglA72w==/base.apk!libblacklang.so (offset 0x649000) (juce::MidiDeviceListConnectionBroadcaster::MidiDeviceListConnectionBroadcaster()+76) (BuildId: 20dfc8dbfe4a74d9da76387c44b9a405df6a9f14)
+01-08 21:45:52.251 F/DEBUG   (19433):       #06 pc 00000000012e0d54  /data/app/~~C1-R-YlHquo2Wuk2CJm2vg==/com.quadracollision.blacklang-q0VC-fO5h4cHlJ_LglA72w==/base.apk!libblacklang.so (offset 0x649000) (juce::MidiDeviceListConnectionBroadcaster::get()+88) (BuildId: 20dfc8dbfe4a74d9da76387c44b9a405df6a9f14)
+01-08 21:45:52.251 F/DEBUG   (19433):       #07 pc 00000000012e0c40  /data/app/~~C1-R-YlHquo2Wuk2CJm2vg==/com.quadracollision.blacklang-q0VC-fO5h4cHlJ_LglA72w==/base.apk!libblacklang.so (offset 0x649000) (juce::MidiDeviceListConnection::make(std::__ndk1::function<void ()>)+36) (BuildId: 20dfc8dbfe4a74d9da76387c44b9a405df6a9f14)
+01-08 21:45:52.251 F/DEBUG   (19433):       #08 pc 00000000012e1ce4  /data/app/~~C1-R-YlHquo2Wuk2CJm2vg==/com.quadracollision.blacklang-q0VC-fO5h4cHlJ_LglA72w==/base.apk!libblacklang.so (offset 0x649000) (juce::AudioDeviceManager::AudioDeviceManager()+320) (BuildId: 20dfc8dbfe4a74d9da76387c44b9a405df6a9f14)
+01-08 21:45:52.251 F/DEBUG   (19433):       #09 pc 0000000000fce744  /data/app/~~C1-R-YlHquo2Wuk2CJm2vg==/com.quadracollision.blacklang-q0VC-fO5h4cHlJ_LglA72w==/base.apk!libblacklang.so (offset 0x649000) (AudioEngine::AudioEngine()+64) (BuildId: 20dfc8dbfe4a74d9da76387c44b9a405df6a9f14)
+01-08 21:45:52.251 F/DEBUG   (19433):       #10 pc 0000000000fc40a4  /data/app/~~C1-R-YlHquo2Wuk2CJm2vg==/com.quadracollision.blacklang-q0VC-fO5h4cHlJ_LglA72w==/base.apk!libblacklang.so (offset 0x649000) (main+104) (BuildId: 20dfc8dbfe4a74d9da76387c44b9a405df6a9f14)
+01-08 21:45:52.251 F/DEBUG   (19433):       #11 pc 0000000001cac444  /data/app/~~C1-R-YlHquo2Wuk2CJm2vg==/com.quadracollision.blacklang-q0VC-fO5h4cHlJ_LglA72w==/base.apk!libblacklang.so (offset 0x649000) (android_main+88) (BuildId: 20dfc8dbfe4a74d9da76387c44b9a405df6a9f14)
+01-08 21:45:52.251 F/DEBUG   (19433):       #12 pc 0000000001c96654  /data/app/~~C1-R-YlHquo2Wuk2CJm2vg==/com.quadracollision.blacklang-q0VC-fO5h4cHlJ_LglA72w==/base.apk!libblacklang.so (offset 0x649000) (BuildId: 20dfc8dbfe4a74d9da76387c44b9a405df6a9f14)
+01-08 21:45:52.251 F/DEBUG   (19433):       #13 pc 0000000000080fa4  /apex/com.android.runtime/lib64/bionic/libc.so (__pthread_start(void*)+184) (BuildId: e59f6db702cf4b200d6a6f0e384072ab)
+01-08 21:45:52.251 F/DEBUG   (19433):       #14 pc 0000000000073760  /apex/com.android.runtime/lib64/bionic/libc.so (__start_thread+68) (BuildId: e59f6db702cf4b200d6a6f0e384072ab)
+01-08 21:49:31.971 I/raylib  (20666): Initializing raylib 5.0
+01-08 21:49:31.971 I/raylib  (20666): Platform backend: ANDROID
+01-08 21:49:31.971 I/raylib  (20666): Supported raylib modules:
+01-08 21:49:31.971 I/raylib  (20666):     > rcore:..... loaded (mandatory)
+01-08 21:49:31.971 I/raylib  (20666):     > rlgl:...... loaded (mandatory)
+01-08 21:49:31.971 I/raylib  (20666):     > rshapes:... loaded (optional)
+01-08 21:49:31.971 I/raylib  (20666):     > rtextures:. loaded (optional)
+01-08 21:49:31.971 I/raylib  (20666):     > rtext:..... loaded (optional)
+01-08 21:49:31.971 I/raylib  (20666):     > rmodels:... loaded (optional)
+01-08 21:49:31.971 I/raylib  (20666):     > raudio:.... loaded (optional)
+01-08 21:49:31.972 I/raylib  (20666): ANDROID: Window orientation set as landscape
+01-08 21:49:31.972 W/raylib  (20666): ANDROID: Window orientation changed to landscape
+01-08 21:49:31.972 I/raylib  (20666): PLATFORM: ANDROID: Initialized successfully
+01-08 21:49:32.029 I/raylib  (20666): DISPLAY: Upscaling required: Screen size (1000x700) smaller than display size (2259x1080)
+01-08 21:49:32.031 I/raylib  (20666): DISPLAY: Device initialized successfully
+01-08 21:49:32.031 I/raylib  (20666):     > Display size: 2259 x 1080
+01-08 21:49:32.031 I/raylib  (20666):     > Screen size:  1000 x 700
+01-08 21:49:32.031 I/raylib  (20666):     > Render size:  1000 x 700
+01-08 21:49:32.031 I/raylib  (20666):     > Viewport offsets: 464, 0
+01-08 21:49:32.031 I/raylib  (20666): GL: Supported extensions count: 104
+01-08 21:49:32.031 I/raylib  (20666): GL: OpenGL device information:
+01-08 21:49:32.031 I/raylib  (20666):     > Vendor:   Qualcomm
+01-08 21:49:32.031 I/raylib  (20666):     > Renderer: Adreno (TM) 730
+01-08 21:49:32.031 I/raylib  (20666):     > Version:  OpenGL ES 3.2 V@0615.98 (GIT@0c393b63cf, I94e2bd5684, 1746191168) (Date:05/02/25)
+01-08 21:49:32.031 I/raylib  (20666):     > GLSL:     OpenGL ES GLSL ES 3.20
+01-08 21:49:32.031 I/raylib  (20666): GL: VAO extension detected, VAO functions loaded successfully
+01-08 21:49:32.031 I/raylib  (20666): GL: NPOT textures extension detected, full NPOT textures supported
+01-08 21:49:32.031 I/raylib  (20666): GL: ETC1 compressed textures supported
+01-08 21:49:32.031 I/raylib  (20666): GL: ASTC compressed textures supported
+01-08 21:49:32.031 I/raylib  (20666): TEXTURE: [ID 1] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+01-08 21:49:32.031 I/raylib  (20666): TEXTURE: [ID 1] Default texture loaded successfully
+01-08 21:49:32.054 I/raylib  (20666): SHADER: [ID 1] Vertex shader compiled successfully
+01-08 21:49:32.056 I/raylib  (20666): SHADER: [ID 2] Fragment shader compiled successfully
+01-08 21:49:32.061 I/raylib  (20666): SHADER: [ID 3] Program shader loaded successfully
+01-08 21:49:32.061 I/raylib  (20666): SHADER: [ID 3] Default shader loaded successfully
+01-08 21:49:32.061 I/raylib  (20666): RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+01-08 21:49:32.062 I/raylib  (20666): RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+01-08 21:49:32.062 I/raylib  (20666): RLGL: Default OpenGL state initialized successfully
+01-08 21:49:32.067 I/raylib  (20666): TEXTURE: [ID 2] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+01-08 21:49:32.067 I/raylib  (20666): FONT: Default font loaded successfully (224 glyphs)
+01-08 21:49:32.067 I/raylib  (20666): TEXTURE: [ID 3] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+01-08 21:49:32.068 I/raylib  (20666): TEXTURE: [ID 3] Default texture loaded successfully
+01-08 21:49:32.068 I/raylib  (20666): SHADER: [ID 4] Vertex shader compiled successfully
+01-08 21:49:32.068 I/raylib  (20666): SHADER: [ID 5] Fragment shader compiled successfully
+01-08 21:49:32.069 I/raylib  (20666): SHADER: [ID 6] Program shader loaded successfully
+01-08 21:49:32.069 I/raylib  (20666): SHADER: [ID 6] Default shader loaded successfully
+01-08 21:49:32.069 I/raylib  (20666): RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+01-08 21:49:32.069 I/raylib  (20666): RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+01-08 21:49:32.069 I/raylib  (20666): RLGL: Default OpenGL state initialized successfully
+01-08 21:49:32.073 I/raylib  (20666): TEXTURE: [ID 4] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+01-08 21:49:32.073 I/raylib  (20666): FONT: Default font loaded successfully (224 glyphs)
+01-08 21:49:32.073 I/raylib  (20666): TIMER: Target time per frame: 16.667 milliseconds
+01-08 21:49:32.573 F/DEBUG   (20722): *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+01-08 21:49:32.573 F/DEBUG   (20722): Build fingerprint: 'samsung/r0qsqw/r0q:16/BP2A.250605.031.A3/S901USQS8GYL1:user/release-keys'
+01-08 21:49:32.573 F/DEBUG   (20722): Revision: '14'
+01-08 21:49:32.573 F/DEBUG   (20722): ABI: 'arm64'
+01-08 21:49:32.573 F/DEBUG   (20722): Processor: '7'
+01-08 21:49:32.573 F/DEBUG   (20722): Timestamp: 2026-01-08 21:49:32.403439922-0500
+01-08 21:49:32.573 F/DEBUG   (20722): Process uptime: 2s
+01-08 21:49:32.573 F/DEBUG   (20722): Cmdline: com.quadracollision.blacklang
+01-08 21:49:32.573 F/DEBUG   (20722): pid: 20666, tid: 20691, name: Thread-2  >>> com.quadracollision.blacklang <<<
+01-08 21:49:32.573 F/DEBUG   (20722): uid: 10404
+01-08 21:49:32.573 F/DEBUG   (20722): tagged_addr_ctrl: 0000000000000001 (PR_TAGGED_ADDR_ENABLE)
+01-08 21:49:32.573 F/DEBUG   (20722): pac_enabled_keys: 000000000000000f (PR_PAC_APIAKEY, PR_PAC_APIBKEY, PR_PAC_APDAKEY, PR_PAC_APDBKEY)
+01-08 21:49:32.573 F/DEBUG   (20722): signal 6 (SIGABRT), code -1 (SI_QUEUE), fault addr --------
+01-08 21:49:32.573 F/DEBUG   (20722): Abort message: 'JNI DETECTED ERROR IN APPLICATION: IsInstanceOf received NULL jclass
+01-08 21:49:32.573 F/DEBUG   (20722):     in call to IsInstanceOf'
+01-08 21:49:32.573 F/DEBUG   (20722):     x0  0000000000000000  x1  00000000000050d3  x2  0000000000000006  x3  0000007a5ba439d0
+01-08 21:49:32.573 F/DEBUG   (20722):     x4  5151441f43445342  x5  5151441f43445342  x6  5151441f43445342  x7  7f7f7f7f7f7f7f7f
+01-08 21:49:32.573 F/DEBUG   (20722):     x8  00000000000000f0  x9  b8d52e67b025ffa4  x10 000000ff00000020  x11 0000000057a6c6c5
+01-08 21:49:32.573 F/DEBUG   (20722):     x12 000000000012800c  x13 0000007a5ba427e0  x14 000000000120da7a  x15 000000d588983596
+01-08 21:49:32.573 F/DEBUG   (20722):     x16 0000007d54bc60d8  x17 0000007d54bae780  x18 00000079c0850000  x19 00000000000050ba
+01-08 21:49:32.573 F/DEBUG   (20722):     x20 00000000000050d3  x21 00000000ffffffff  x22 0000007a6140d000  x23 0000007a6140ee20
+01-08 21:49:32.573 F/DEBUG   (20722):     x24 0000007a5ba45740  x25 0000007a5ba45740  x26 0000000000000000  x27 20c49ba5e353f7cf
+01-08 21:49:32.573 F/DEBUG   (20722):     x28 0000007a6089a8a8  x29 0000007a5ba43a50
+01-08 21:49:32.573 F/DEBUG   (20722):     lr  0000007d54b4a5d8  sp  0000007a5ba439d0  pc  0000007d54b4a5fc  pst 0000000000001000
+01-08 21:49:32.573 F/DEBUG   (20722): 20 total frames
+01-08 21:49:32.573 F/DEBUG   (20722): backtrace:
+01-08 21:49:32.573 F/DEBUG   (20722):       #00 pc 00000000000705fc  /apex/com.android.runtime/lib64/bionic/libc.so (abort+160) (BuildId: e59f6db702cf4b200d6a6f0e384072ab)
+01-08 21:49:32.573 F/DEBUG   (20722):       #01 pc 00000000008a0c74  /apex/com.android.art/lib64/libart.so (art::Runtime::Abort(char const*)+476) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:49:32.573 F/DEBUG   (20722):       #02 pc 0000000000016188  /apex/com.android.art/lib64/libbase.so (android::base::SetAborter(std::__1::function<void (char const*)>&&)::$_0::__invoke(char const*)+80) (BuildId: 8aca1185566f3990ce9d6c61841c18af)
+01-08 21:49:32.573 F/DEBUG   (20722):       #03 pc 0000000000015730  /apex/com.android.art/lib64/libbase.so (android::base::LogMessage::~LogMessage()+544) (BuildId: 8aca1185566f3990ce9d6c61841c18af)
+01-08 21:49:32.573 F/DEBUG   (20722):       #04 pc 00000000004e7114  /apex/com.android.art/lib64/libart.so (art::JavaVMExt::JniAbort(char const*, char const*)+804) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:49:32.573 F/DEBUG   (20722):       #05 pc 00000000004e6da8  /apex/com.android.art/lib64/libart.so (art::JavaVMExt::JniAbortV(char const*, char const*, std::__va_list)+104) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:49:32.573 F/DEBUG   (20722):       #06 pc 000000000035d6bc  /apex/com.android.art/lib64/libart.so (art::(anonymous namespace)::ScopedCheck::AbortF(char const*, ...) (.__uniq.99033978352804627313491551960229047428)+140) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:49:32.573 F/DEBUG   (20722):       #07 pc 00000000003598d0  /apex/com.android.art/lib64/libart.so (art::(anonymous namespace)::ScopedCheck::CheckInstance(art::ScopedObjectAccess&, art::(anonymous namespace)::ScopedCheck::InstanceKind, _jobject*, bool) (.__uniq.99033978352804627313491551960229047428)+1100) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:49:32.573 F/DEBUG   (20722):       #08 pc 000000000035a680  /apex/com.android.art/lib64/libart.so (art::(anonymous namespace)::ScopedCheck::Check(art::ScopedObjectAccess&, bool, char const*, art::(anonymous namespace)::JniValueType*) (.__uniq.99033978352804627313491551960229047428)+1124) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:49:32.573 F/DEBUG   (20722):       #09 pc 000000000061c3b8  /apex/com.android.art/lib64/libart.so (art::(anonymous namespace)::CheckJNI::IsInstanceOf(_JNIEnv*, _jobject*, _jclass*) (.__uniq.99033978352804627313491551960229047428.llvm.14444604947282681502)+208) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:49:32.573 F/DEBUG   (20722):       #10 pc 0000000001173c28  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (_JNIEnv::IsInstanceOf(_jobject*, _jclass*)+44) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:49:32.573 F/DEBUG   (20722):       #11 pc 000000000116daf8  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (juce::getAppContext()+224) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:49:32.573 F/DEBUG   (20722):       #12 pc 0000000001244268  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (juce::JuceActivityWatcher::JuceActivityWatcher()+132) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:49:32.573 F/DEBUG   (20722):       #13 pc 0000000001173b9c  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (juce::JuceActivityWatcher::getInstance()+88) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:49:32.573 F/DEBUG   (20722):       #14 pc 0000000001173aa4  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (juce::Thread::initialiseJUCE(void*, void*)+508) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:49:32.573 F/DEBUG   (20722):       #15 pc 0000000000fc4128  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (main+204) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:49:32.573 F/DEBUG   (20722):       #16 pc 0000000001cac4d8  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (android_main+88) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:49:32.573 F/DEBUG   (20722):       #17 pc 0000000001c966e8  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:49:32.573 F/DEBUG   (20722):       #18 pc 0000000000080fa4  /apex/com.android.runtime/lib64/bionic/libc.so (__pthread_start(void*)+184) (BuildId: e59f6db702cf4b200d6a6f0e384072ab)
+01-08 21:49:32.573 F/DEBUG   (20722):       #19 pc 0000000000073760  /apex/com.android.runtime/lib64/bionic/libc.so (__start_thread+68) (BuildId: e59f6db702cf4b200d6a6f0e384072ab)
+01-08 21:49:53.038 I/raylib  (20824): Initializing raylib 5.0
+01-08 21:49:53.038 I/raylib  (20824): Platform backend: ANDROID
+01-08 21:49:53.038 I/raylib  (20824): Supported raylib modules:
+01-08 21:49:53.038 I/raylib  (20824):     > rcore:..... loaded (mandatory)
+01-08 21:49:53.038 I/raylib  (20824):     > rlgl:...... loaded (mandatory)
+01-08 21:49:53.038 I/raylib  (20824):     > rshapes:... loaded (optional)
+01-08 21:49:53.038 I/raylib  (20824):     > rtextures:. loaded (optional)
+01-08 21:49:53.038 I/raylib  (20824):     > rtext:..... loaded (optional)
+01-08 21:49:53.038 I/raylib  (20824):     > rmodels:... loaded (optional)
+01-08 21:49:53.038 I/raylib  (20824):     > raudio:.... loaded (optional)
+01-08 21:49:53.038 I/raylib  (20824): ANDROID: Window orientation set as landscape
+01-08 21:49:53.038 W/raylib  (20824): ANDROID: Window orientation changed to landscape
+01-08 21:49:53.038 I/raylib  (20824): PLATFORM: ANDROID: Initialized successfully
+01-08 21:49:53.075 I/raylib  (20824): DISPLAY: Upscaling required: Screen size (1000x700) smaller than display size (2259x1080)
+01-08 21:49:53.083 I/raylib  (20824): DISPLAY: Device initialized successfully
+01-08 21:49:53.083 I/raylib  (20824):     > Display size: 2259 x 1080
+01-08 21:49:53.083 I/raylib  (20824):     > Screen size:  1000 x 700
+01-08 21:49:53.083 I/raylib  (20824):     > Render size:  1000 x 700
+01-08 21:49:53.083 I/raylib  (20824):     > Viewport offsets: 464, 0
+01-08 21:49:53.083 I/raylib  (20824): GL: Supported extensions count: 104
+01-08 21:49:53.083 I/raylib  (20824): GL: OpenGL device information:
+01-08 21:49:53.083 I/raylib  (20824):     > Vendor:   Qualcomm
+01-08 21:49:53.083 I/raylib  (20824):     > Renderer: Adreno (TM) 730
+01-08 21:49:53.083 I/raylib  (20824):     > Version:  OpenGL ES 3.2 V@0615.98 (GIT@0c393b63cf, I94e2bd5684, 1746191168) (Date:05/02/25)
+01-08 21:49:53.083 I/raylib  (20824):     > GLSL:     OpenGL ES GLSL ES 3.20
+01-08 21:49:53.083 I/raylib  (20824): GL: VAO extension detected, VAO functions loaded successfully
+01-08 21:49:53.083 I/raylib  (20824): GL: NPOT textures extension detected, full NPOT textures supported
+01-08 21:49:53.083 I/raylib  (20824): GL: ETC1 compressed textures supported
+01-08 21:49:53.083 I/raylib  (20824): GL: ASTC compressed textures supported
+01-08 21:49:53.083 I/raylib  (20824): TEXTURE: [ID 1] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+01-08 21:49:53.083 I/raylib  (20824): TEXTURE: [ID 1] Default texture loaded successfully
+01-08 21:49:53.090 I/raylib  (20824): SHADER: [ID 1] Vertex shader compiled successfully
+01-08 21:49:53.091 I/raylib  (20824): SHADER: [ID 2] Fragment shader compiled successfully
+01-08 21:49:53.100 I/raylib  (20824): SHADER: [ID 3] Program shader loaded successfully
+01-08 21:49:53.100 I/raylib  (20824): SHADER: [ID 3] Default shader loaded successfully
+01-08 21:49:53.100 I/raylib  (20824): RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+01-08 21:49:53.100 I/raylib  (20824): RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+01-08 21:49:53.100 I/raylib  (20824): RLGL: Default OpenGL state initialized successfully
+01-08 21:49:53.102 I/raylib  (20824): TEXTURE: [ID 2] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+01-08 21:49:53.102 I/raylib  (20824): FONT: Default font loaded successfully (224 glyphs)
+01-08 21:49:53.102 I/raylib  (20824): TEXTURE: [ID 3] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+01-08 21:49:53.102 I/raylib  (20824): TEXTURE: [ID 3] Default texture loaded successfully
+01-08 21:49:53.102 I/raylib  (20824): SHADER: [ID 4] Vertex shader compiled successfully
+01-08 21:49:53.102 I/raylib  (20824): SHADER: [ID 5] Fragment shader compiled successfully
+01-08 21:49:53.102 I/raylib  (20824): SHADER: [ID 6] Program shader loaded successfully
+01-08 21:49:53.102 I/raylib  (20824): SHADER: [ID 6] Default shader loaded successfully
+01-08 21:49:53.103 I/raylib  (20824): RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+01-08 21:49:53.103 I/raylib  (20824): RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+01-08 21:49:53.103 I/raylib  (20824): RLGL: Default OpenGL state initialized successfully
+01-08 21:49:53.103 I/raylib  (20824): TEXTURE: [ID 4] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+01-08 21:49:53.103 I/raylib  (20824): FONT: Default font loaded successfully (224 glyphs)
+01-08 21:49:53.103 I/raylib  (20824): TIMER: Target time per frame: 16.667 milliseconds
+01-08 21:49:53.392 F/DEBUG   (20884): *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+01-08 21:49:53.392 F/DEBUG   (20884): Build fingerprint: 'samsung/r0qsqw/r0q:16/BP2A.250605.031.A3/S901USQS8GYL1:user/release-keys'
+01-08 21:49:53.392 F/DEBUG   (20884): Revision: '14'
+01-08 21:49:53.392 F/DEBUG   (20884): ABI: 'arm64'
+01-08 21:49:53.392 F/DEBUG   (20884): Processor: '6'
+01-08 21:49:53.392 F/DEBUG   (20884): Timestamp: 2026-01-08 21:49:53.273211737-0500
+01-08 21:49:53.392 F/DEBUG   (20884): Process uptime: 2s
+01-08 21:49:53.392 F/DEBUG   (20884): Cmdline: com.quadracollision.blacklang
+01-08 21:49:53.392 F/DEBUG   (20884): pid: 20824, tid: 20857, name: Thread-2  >>> com.quadracollision.blacklang <<<
+01-08 21:49:53.392 F/DEBUG   (20884): uid: 10404
+01-08 21:49:53.392 F/DEBUG   (20884): tagged_addr_ctrl: 0000000000000001 (PR_TAGGED_ADDR_ENABLE)
+01-08 21:49:53.392 F/DEBUG   (20884): pac_enabled_keys: 000000000000000f (PR_PAC_APIAKEY, PR_PAC_APIBKEY, PR_PAC_APDAKEY, PR_PAC_APDBKEY)
+01-08 21:49:53.392 F/DEBUG   (20884): signal 6 (SIGABRT), code -1 (SI_QUEUE), fault addr --------
+01-08 21:49:53.392 F/DEBUG   (20884): Abort message: 'JNI DETECTED ERROR IN APPLICATION: IsInstanceOf received NULL jclass
+01-08 21:49:53.392 F/DEBUG   (20884):     in call to IsInstanceOf'
+01-08 21:49:53.392 F/DEBUG   (20884):     x0  0000000000000000  x1  0000000000005179  x2  0000000000000006  x3  00000079c43399d0
+01-08 21:49:53.392 F/DEBUG   (20884):     x4  5151441f43445342  x5  5151441f43445342  x6  5151441f43445342  x7  7f7f7f7f7f7f7f7f
+01-08 21:49:53.392 F/DEBUG   (20884):     x8  00000000000000f0  x9  09c7d7831c83b076  x10 000000ff00000020  x11 000000004681826c
+01-08 21:49:53.392 F/DEBUG   (20884):     x12 000000000012800c  x13 00000079c43387e0  x14 000000000120f920  x15 000000d5a0853024
+01-08 21:49:53.392 F/DEBUG   (20884):     x16 0000007d54bc60d8  x17 0000007d54bae780  x18 00000079c3684000  x19 0000000000005158
+01-08 21:49:53.392 F/DEBUG   (20884):     x20 0000000000005179  x21 00000000ffffffff  x22 0000007a6140d000  x23 0000007a6140ee20
+01-08 21:49:53.392 F/DEBUG   (20884):     x24 00000079c433b740  x25 00000079c433b740  x26 0000000000000000  x27 20c49ba5e353f7cf
+01-08 21:49:53.392 F/DEBUG   (20884):     x28 0000007a6089a8a8  x29 00000079c4339a50
+01-08 21:49:53.392 F/DEBUG   (20884):     lr  0000007d54b4a5d8  sp  00000079c43399d0  pc  0000007d54b4a5fc  pst 0000000000001000
+01-08 21:49:53.392 F/DEBUG   (20884): 20 total frames
+01-08 21:49:53.392 F/DEBUG   (20884): backtrace:
+01-08 21:49:53.392 F/DEBUG   (20884):       #00 pc 00000000000705fc  /apex/com.android.runtime/lib64/bionic/libc.so (abort+160) (BuildId: e59f6db702cf4b200d6a6f0e384072ab)
+01-08 21:49:53.392 F/DEBUG   (20884):       #01 pc 00000000008a0c74  /apex/com.android.art/lib64/libart.so (art::Runtime::Abort(char const*)+476) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:49:53.392 F/DEBUG   (20884):       #02 pc 0000000000016188  /apex/com.android.art/lib64/libbase.so (android::base::SetAborter(std::__1::function<void (char const*)>&&)::$_0::__invoke(char const*)+80) (BuildId: 8aca1185566f3990ce9d6c61841c18af)
+01-08 21:49:53.392 F/DEBUG   (20884):       #03 pc 0000000000015730  /apex/com.android.art/lib64/libbase.so (android::base::LogMessage::~LogMessage()+544) (BuildId: 8aca1185566f3990ce9d6c61841c18af)
+01-08 21:49:53.392 F/DEBUG   (20884):       #04 pc 00000000004e7114  /apex/com.android.art/lib64/libart.so (art::JavaVMExt::JniAbort(char const*, char const*)+804) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:49:53.392 F/DEBUG   (20884):       #05 pc 00000000004e6da8  /apex/com.android.art/lib64/libart.so (art::JavaVMExt::JniAbortV(char const*, char const*, std::__va_list)+104) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:49:53.392 F/DEBUG   (20884):       #06 pc 000000000035d6bc  /apex/com.android.art/lib64/libart.so (art::(anonymous namespace)::ScopedCheck::AbortF(char const*, ...) (.__uniq.99033978352804627313491551960229047428)+140) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:49:53.392 F/DEBUG   (20884):       #07 pc 00000000003598d0  /apex/com.android.art/lib64/libart.so (art::(anonymous namespace)::ScopedCheck::CheckInstance(art::ScopedObjectAccess&, art::(anonymous namespace)::ScopedCheck::InstanceKind, _jobject*, bool) (.__uniq.99033978352804627313491551960229047428)+1100) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:49:53.392 F/DEBUG   (20884):       #08 pc 000000000035a680  /apex/com.android.art/lib64/libart.so (art::(anonymous namespace)::ScopedCheck::Check(art::ScopedObjectAccess&, bool, char const*, art::(anonymous namespace)::JniValueType*) (.__uniq.99033978352804627313491551960229047428)+1124) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:49:53.392 F/DEBUG   (20884):       #09 pc 000000000061c3b8  /apex/com.android.art/lib64/libart.so (art::(anonymous namespace)::CheckJNI::IsInstanceOf(_JNIEnv*, _jobject*, _jclass*) (.__uniq.99033978352804627313491551960229047428.llvm.14444604947282681502)+208) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:49:53.392 F/DEBUG   (20884):       #10 pc 0000000001173c28  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (_JNIEnv::IsInstanceOf(_jobject*, _jclass*)+44) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:49:53.392 F/DEBUG   (20884):       #11 pc 000000000116daf8  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (juce::getAppContext()+224) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:49:53.392 F/DEBUG   (20884):       #12 pc 0000000001244268  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (juce::JuceActivityWatcher::JuceActivityWatcher()+132) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:49:53.392 F/DEBUG   (20884):       #13 pc 0000000001173b9c  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (juce::JuceActivityWatcher::getInstance()+88) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:49:53.392 F/DEBUG   (20884):       #14 pc 0000000001173aa4  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (juce::Thread::initialiseJUCE(void*, void*)+508) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:49:53.392 F/DEBUG   (20884):       #15 pc 0000000000fc4128  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (main+204) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:49:53.392 F/DEBUG   (20884):       #16 pc 0000000001cac4d8  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (android_main+88) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:49:53.392 F/DEBUG   (20884):       #17 pc 0000000001c966e8  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:49:53.392 F/DEBUG   (20884):       #18 pc 0000000000080fa4  /apex/com.android.runtime/lib64/bionic/libc.so (__pthread_start(void*)+184) (BuildId: e59f6db702cf4b200d6a6f0e384072ab)
+01-08 21:49:53.392 F/DEBUG   (20884):       #19 pc 0000000000073760  /apex/com.android.runtime/lib64/bionic/libc.so (__start_thread+68) (BuildId: e59f6db702cf4b200d6a6f0e384072ab)
+01-08 21:50:01.100 I/raylib  (20953): Initializing raylib 5.0
+01-08 21:50:01.100 I/raylib  (20953): Platform backend: ANDROID
+01-08 21:50:01.100 I/raylib  (20953): Supported raylib modules:
+01-08 21:50:01.100 I/raylib  (20953):     > rcore:..... loaded (mandatory)
+01-08 21:50:01.100 I/raylib  (20953):     > rlgl:...... loaded (mandatory)
+01-08 21:50:01.100 I/raylib  (20953):     > rshapes:... loaded (optional)
+01-08 21:50:01.100 I/raylib  (20953):     > rtextures:. loaded (optional)
+01-08 21:50:01.100 I/raylib  (20953):     > rtext:..... loaded (optional)
+01-08 21:50:01.100 I/raylib  (20953):     > rmodels:... loaded (optional)
+01-08 21:50:01.100 I/raylib  (20953):     > raudio:.... loaded (optional)
+01-08 21:50:01.100 I/raylib  (20953): ANDROID: Window orientation set as landscape
+01-08 21:50:01.100 W/raylib  (20953): ANDROID: Window orientation changed to landscape
+01-08 21:50:01.100 I/raylib  (20953): PLATFORM: ANDROID: Initialized successfully
+01-08 21:50:01.145 I/raylib  (20953): DISPLAY: Upscaling required: Screen size (1000x700) smaller than display size (2259x1080)
+01-08 21:50:01.146 I/raylib  (20953): DISPLAY: Device initialized successfully
+01-08 21:50:01.146 I/raylib  (20953):     > Display size: 2259 x 1080
+01-08 21:50:01.146 I/raylib  (20953):     > Screen size:  1000 x 700
+01-08 21:50:01.146 I/raylib  (20953):     > Render size:  1000 x 700
+01-08 21:50:01.146 I/raylib  (20953):     > Viewport offsets: 464, 0
+01-08 21:50:01.146 I/raylib  (20953): GL: Supported extensions count: 104
+01-08 21:50:01.146 I/raylib  (20953): GL: OpenGL device information:
+01-08 21:50:01.146 I/raylib  (20953):     > Vendor:   Qualcomm
+01-08 21:50:01.146 I/raylib  (20953):     > Renderer: Adreno (TM) 730
+01-08 21:50:01.147 I/raylib  (20953):     > Version:  OpenGL ES 3.2 V@0615.98 (GIT@0c393b63cf, I94e2bd5684, 1746191168) (Date:05/02/25)
+01-08 21:50:01.147 I/raylib  (20953):     > GLSL:     OpenGL ES GLSL ES 3.20
+01-08 21:50:01.147 I/raylib  (20953): GL: VAO extension detected, VAO functions loaded successfully
+01-08 21:50:01.147 I/raylib  (20953): GL: NPOT textures extension detected, full NPOT textures supported
+01-08 21:50:01.147 I/raylib  (20953): GL: ETC1 compressed textures supported
+01-08 21:50:01.147 I/raylib  (20953): GL: ASTC compressed textures supported
+01-08 21:50:01.147 I/raylib  (20953): TEXTURE: [ID 1] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+01-08 21:50:01.147 I/raylib  (20953): TEXTURE: [ID 1] Default texture loaded successfully
+01-08 21:50:01.151 I/raylib  (20953): SHADER: [ID 1] Vertex shader compiled successfully
+01-08 21:50:01.152 I/raylib  (20953): SHADER: [ID 2] Fragment shader compiled successfully
+01-08 21:50:01.157 I/raylib  (20953): SHADER: [ID 3] Program shader loaded successfully
+01-08 21:50:01.158 I/raylib  (20953): SHADER: [ID 3] Default shader loaded successfully
+01-08 21:50:01.158 I/raylib  (20953): RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+01-08 21:50:01.158 I/raylib  (20953): RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+01-08 21:50:01.158 I/raylib  (20953): RLGL: Default OpenGL state initialized successfully
+01-08 21:50:01.161 I/raylib  (20953): TEXTURE: [ID 2] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+01-08 21:50:01.162 I/raylib  (20953): FONT: Default font loaded successfully (224 glyphs)
+01-08 21:50:01.162 I/raylib  (20953): TEXTURE: [ID 3] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+01-08 21:50:01.162 I/raylib  (20953): TEXTURE: [ID 3] Default texture loaded successfully
+01-08 21:50:01.162 I/raylib  (20953): SHADER: [ID 4] Vertex shader compiled successfully
+01-08 21:50:01.163 I/raylib  (20953): SHADER: [ID 5] Fragment shader compiled successfully
+01-08 21:50:01.163 I/raylib  (20953): SHADER: [ID 6] Program shader loaded successfully
+01-08 21:50:01.163 I/raylib  (20953): SHADER: [ID 6] Default shader loaded successfully
+01-08 21:50:01.163 I/raylib  (20953): RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+01-08 21:50:01.164 I/raylib  (20953): RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+01-08 21:50:01.164 I/raylib  (20953): RLGL: Default OpenGL state initialized successfully
+01-08 21:50:01.164 I/raylib  (20953): TEXTURE: [ID 4] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+01-08 21:50:01.164 I/raylib  (20953): FONT: Default font loaded successfully (224 glyphs)
+01-08 21:50:01.164 I/raylib  (20953): TIMER: Target time per frame: 16.667 milliseconds
+01-08 21:50:01.439 F/DEBUG   (20990): *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+01-08 21:50:01.439 F/DEBUG   (20990): Build fingerprint: 'samsung/r0qsqw/r0q:16/BP2A.250605.031.A3/S901USQS8GYL1:user/release-keys'
+01-08 21:50:01.439 F/DEBUG   (20990): Revision: '14'
+01-08 21:50:01.439 F/DEBUG   (20990): ABI: 'arm64'
+01-08 21:50:01.439 F/DEBUG   (20990): Processor: '7'
+01-08 21:50:01.439 F/DEBUG   (20990): Timestamp: 2026-01-08 21:50:01.308513713-0500
+01-08 21:50:01.439 F/DEBUG   (20990): Process uptime: 2s
+01-08 21:50:01.439 F/DEBUG   (20990): Cmdline: com.quadracollision.blacklang
+01-08 21:50:01.439 F/DEBUG   (20990): pid: 20953, tid: 20973, name: Thread-2  >>> com.quadracollision.blacklang <<<
+01-08 21:50:01.439 F/DEBUG   (20990): uid: 10404
+01-08 21:50:01.439 F/DEBUG   (20990): tagged_addr_ctrl: 0000000000000001 (PR_TAGGED_ADDR_ENABLE)
+01-08 21:50:01.439 F/DEBUG   (20990): pac_enabled_keys: 000000000000000f (PR_PAC_APIAKEY, PR_PAC_APIBKEY, PR_PAC_APDAKEY, PR_PAC_APDBKEY)
+01-08 21:50:01.439 F/DEBUG   (20990): signal 6 (SIGABRT), code -1 (SI_QUEUE), fault addr --------
+01-08 21:50:01.439 F/DEBUG   (20990): Abort message: 'JNI DETECTED ERROR IN APPLICATION: IsInstanceOf received NULL jclass
+01-08 21:50:01.439 F/DEBUG   (20990):     in call to IsInstanceOf'
+01-08 21:50:01.439 F/DEBUG   (20990):     x0  0000000000000000  x1  00000000000051ed  x2  0000000000000006  x3  00000079c43399d0
+01-08 21:50:01.439 F/DEBUG   (20990):     x4  5151441f43445342  x5  5151441f43445342  x6  5151441f43445342  x7  7f7f7f7f7f7f7f7f
+01-08 21:50:01.439 F/DEBUG   (20990):     x8  00000000000000f0  x9  566fe2a6012331d6  x10 000000ff00000020  x11 0000000057a6c6c5
+01-08 21:50:01.439 F/DEBUG   (20990):     x12 000000000012800c  x13 00000079c43387e0  x14 00000000012108ae  x15 000000d5a9b9140c
+01-08 21:50:01.439 F/DEBUG   (20990):     x16 0000007d54bc60d8  x17 0000007d54bae780  x18 000000793f00c000  x19 00000000000051d9
+01-08 21:50:01.439 F/DEBUG   (20990):     x20 00000000000051ed  x21 00000000ffffffff  x22 0000007a6140d000  x23 0000007a6140ee20
+01-08 21:50:01.439 F/DEBUG   (20990):     x24 00000079c433b740  x25 00000079c433b740  x26 0000000000000000  x27 20c49ba5e353f7cf
+01-08 21:50:01.439 F/DEBUG   (20990):     x28 0000007a6089a8a8  x29 00000079c4339a50
+01-08 21:50:01.439 F/DEBUG   (20990):     lr  0000007d54b4a5d8  sp  00000079c43399d0  pc  0000007d54b4a5fc  pst 0000000000001000
+01-08 21:50:01.439 F/DEBUG   (20990): 20 total frames
+01-08 21:50:01.439 F/DEBUG   (20990): backtrace:
+01-08 21:50:01.439 F/DEBUG   (20990):       #00 pc 00000000000705fc  /apex/com.android.runtime/lib64/bionic/libc.so (abort+160) (BuildId: e59f6db702cf4b200d6a6f0e384072ab)
+01-08 21:50:01.439 F/DEBUG   (20990):       #01 pc 00000000008a0c74  /apex/com.android.art/lib64/libart.so (art::Runtime::Abort(char const*)+476) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:50:01.439 F/DEBUG   (20990):       #02 pc 0000000000016188  /apex/com.android.art/lib64/libbase.so (android::base::SetAborter(std::__1::function<void (char const*)>&&)::$_0::__invoke(char const*)+80) (BuildId: 8aca1185566f3990ce9d6c61841c18af)
+01-08 21:50:01.439 F/DEBUG   (20990):       #03 pc 0000000000015730  /apex/com.android.art/lib64/libbase.so (android::base::LogMessage::~LogMessage()+544) (BuildId: 8aca1185566f3990ce9d6c61841c18af)
+01-08 21:50:01.439 F/DEBUG   (20990):       #04 pc 00000000004e7114  /apex/com.android.art/lib64/libart.so (art::JavaVMExt::JniAbort(char const*, char const*)+804) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:50:01.439 F/DEBUG   (20990):       #05 pc 00000000004e6da8  /apex/com.android.art/lib64/libart.so (art::JavaVMExt::JniAbortV(char const*, char const*, std::__va_list)+104) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:50:01.439 F/DEBUG   (20990):       #06 pc 000000000035d6bc  /apex/com.android.art/lib64/libart.so (art::(anonymous namespace)::ScopedCheck::AbortF(char const*, ...) (.__uniq.99033978352804627313491551960229047428)+140) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:50:01.439 F/DEBUG   (20990):       #07 pc 00000000003598d0  /apex/com.android.art/lib64/libart.so (art::(anonymous namespace)::ScopedCheck::CheckInstance(art::ScopedObjectAccess&, art::(anonymous namespace)::ScopedCheck::InstanceKind, _jobject*, bool) (.__uniq.99033978352804627313491551960229047428)+1100) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:50:01.439 F/DEBUG   (20990):       #08 pc 000000000035a680  /apex/com.android.art/lib64/libart.so (art::(anonymous namespace)::ScopedCheck::Check(art::ScopedObjectAccess&, bool, char const*, art::(anonymous namespace)::JniValueType*) (.__uniq.99033978352804627313491551960229047428)+1124) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:50:01.439 F/DEBUG   (20990):       #09 pc 000000000061c3b8  /apex/com.android.art/lib64/libart.so (art::(anonymous namespace)::CheckJNI::IsInstanceOf(_JNIEnv*, _jobject*, _jclass*) (.__uniq.99033978352804627313491551960229047428.llvm.14444604947282681502)+208) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:50:01.439 F/DEBUG   (20990):       #10 pc 0000000001173c28  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (_JNIEnv::IsInstanceOf(_jobject*, _jclass*)+44) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:50:01.439 F/DEBUG   (20990):       #11 pc 000000000116daf8  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (juce::getAppContext()+224) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:50:01.439 F/DEBUG   (20990):       #12 pc 0000000001244268  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (juce::JuceActivityWatcher::JuceActivityWatcher()+132) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:50:01.439 F/DEBUG   (20990):       #13 pc 0000000001173b9c  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (juce::JuceActivityWatcher::getInstance()+88) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:50:01.439 F/DEBUG   (20990):       #14 pc 0000000001173aa4  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (juce::Thread::initialiseJUCE(void*, void*)+508) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:50:01.439 F/DEBUG   (20990):       #15 pc 0000000000fc4128  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (main+204) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:50:01.439 F/DEBUG   (20990):       #16 pc 0000000001cac4d8  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (android_main+88) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:50:01.439 F/DEBUG   (20990):       #17 pc 0000000001c966e8  /data/app/~~h9ByzvYuXowcchzDKbPVtA==/com.quadracollision.blacklang-ziFkkRQczKzs6BLj7d6OUg==/base.apk!libblacklang.so (offset 0x649000) (BuildId: 61469b949b9c3930c165410ff8402c4211c994ef)
+01-08 21:50:01.439 F/DEBUG   (20990):       #18 pc 0000000000080fa4  /apex/com.android.runtime/lib64/bionic/libc.so (__pthread_start(void*)+184) (BuildId: e59f6db702cf4b200d6a6f0e384072ab)
+01-08 21:50:01.439 F/DEBUG   (20990):       #19 pc 0000000000073760  /apex/com.android.runtime/lib64/bionic/libc.so (__start_thread+68) (BuildId: e59f6db702cf4b200d6a6f0e384072ab)
+01-08 21:51:51.962 I/raylib  (21787): Initializing raylib 5.0
+01-08 21:51:51.962 I/raylib  (21787): Platform backend: ANDROID
+01-08 21:51:51.962 I/raylib  (21787): Supported raylib modules:
+01-08 21:51:51.962 I/raylib  (21787):     > rcore:..... loaded (mandatory)
+01-08 21:51:51.962 I/raylib  (21787):     > rlgl:...... loaded (mandatory)
+01-08 21:51:51.962 I/raylib  (21787):     > rshapes:... loaded (optional)
+01-08 21:51:51.962 I/raylib  (21787):     > rtextures:. loaded (optional)
+01-08 21:51:51.962 I/raylib  (21787):     > rtext:..... loaded (optional)
+01-08 21:51:51.962 I/raylib  (21787):     > rmodels:... loaded (optional)
+01-08 21:51:51.962 I/raylib  (21787):     > raudio:.... loaded (optional)
+01-08 21:51:51.962 I/raylib  (21787): ANDROID: Window orientation set as landscape
+01-08 21:51:51.962 W/raylib  (21787): ANDROID: Window orientation changed to landscape
+01-08 21:51:51.962 I/raylib  (21787): PLATFORM: ANDROID: Initialized successfully
+01-08 21:51:52.019 I/raylib  (21787): DISPLAY: Upscaling required: Screen size (1000x700) smaller than display size (2259x1080)
+01-08 21:51:52.025 I/raylib  (21787): DISPLAY: Device initialized successfully
+01-08 21:51:52.025 I/raylib  (21787):     > Display size: 2259 x 1080
+01-08 21:51:52.025 I/raylib  (21787):     > Screen size:  1000 x 700
+01-08 21:51:52.025 I/raylib  (21787):     > Render size:  1000 x 700
+01-08 21:51:52.025 I/raylib  (21787):     > Viewport offsets: 464, 0
+01-08 21:51:52.025 I/raylib  (21787): GL: Supported extensions count: 104
+01-08 21:51:52.026 I/raylib  (21787): GL: OpenGL device information:
+01-08 21:51:52.026 I/raylib  (21787):     > Vendor:   Qualcomm
+01-08 21:51:52.026 I/raylib  (21787):     > Renderer: Adreno (TM) 730
+01-08 21:51:52.026 I/raylib  (21787):     > Version:  OpenGL ES 3.2 V@0615.98 (GIT@0c393b63cf, I94e2bd5684, 1746191168) (Date:05/02/25)
+01-08 21:51:52.026 I/raylib  (21787):     > GLSL:     OpenGL ES GLSL ES 3.20
+01-08 21:51:52.026 I/raylib  (21787): GL: VAO extension detected, VAO functions loaded successfully
+01-08 21:51:52.026 I/raylib  (21787): GL: NPOT textures extension detected, full NPOT textures supported
+01-08 21:51:52.026 I/raylib  (21787): GL: ETC1 compressed textures supported
+01-08 21:51:52.026 I/raylib  (21787): GL: ASTC compressed textures supported
+01-08 21:51:52.029 I/raylib  (21787): TEXTURE: [ID 1] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+01-08 21:51:52.029 I/raylib  (21787): TEXTURE: [ID 1] Default texture loaded successfully
+01-08 21:51:52.037 I/raylib  (21787): SHADER: [ID 1] Vertex shader compiled successfully
+01-08 21:51:52.038 I/raylib  (21787): SHADER: [ID 2] Fragment shader compiled successfully
+01-08 21:51:52.055 I/raylib  (21787): SHADER: [ID 3] Program shader loaded successfully
+01-08 21:51:52.055 I/raylib  (21787): SHADER: [ID 3] Default shader loaded successfully
+01-08 21:51:52.055 I/raylib  (21787): RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+01-08 21:51:52.056 I/raylib  (21787): RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+01-08 21:51:52.056 I/raylib  (21787): RLGL: Default OpenGL state initialized successfully
+01-08 21:51:52.062 I/raylib  (21787): TEXTURE: [ID 2] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+01-08 21:51:52.063 I/raylib  (21787): FONT: Default font loaded successfully (224 glyphs)
+01-08 21:51:52.063 I/raylib  (21787): TEXTURE: [ID 3] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+01-08 21:51:52.063 I/raylib  (21787): TEXTURE: [ID 3] Default texture loaded successfully
+01-08 21:51:52.063 I/raylib  (21787): SHADER: [ID 4] Vertex shader compiled successfully
+01-08 21:51:52.063 I/raylib  (21787): SHADER: [ID 5] Fragment shader compiled successfully
+01-08 21:51:52.064 I/raylib  (21787): SHADER: [ID 6] Program shader loaded successfully
+01-08 21:51:52.064 I/raylib  (21787): SHADER: [ID 6] Default shader loaded successfully
+01-08 21:51:52.072 I/raylib  (21787): RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+01-08 21:51:52.072 I/raylib  (21787): RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+01-08 21:51:52.072 I/raylib  (21787): RLGL: Default OpenGL state initialized successfully
+01-08 21:51:52.072 I/raylib  (21787): TEXTURE: [ID 4] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+01-08 21:51:52.072 I/raylib  (21787): FONT: Default font loaded successfully (224 glyphs)
+01-08 21:51:52.072 I/raylib  (21787): TIMER: Target time per frame: 16.667 milliseconds
+01-08 21:51:52.846 F/DEBUG   (21861): *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+01-08 21:51:52.846 F/DEBUG   (21861): Build fingerprint: 'samsung/r0qsqw/r0q:16/BP2A.250605.031.A3/S901USQS8GYL1:user/release-keys'
+01-08 21:51:52.846 F/DEBUG   (21861): Revision: '14'
+01-08 21:51:52.846 F/DEBUG   (21861): ABI: 'arm64'
+01-08 21:51:52.846 F/DEBUG   (21861): Processor: '7'
+01-08 21:51:52.846 F/DEBUG   (21861): Timestamp: 2026-01-08 21:51:52.415531431-0500
+01-08 21:51:52.846 F/DEBUG   (21861): Process uptime: 2s
+01-08 21:51:52.846 F/DEBUG   (21861): Cmdline: com.quadracollision.blacklang
+01-08 21:51:52.846 F/DEBUG   (21861): pid: 21787, tid: 21824, name: Thread-2  >>> com.quadracollision.blacklang <<<
+01-08 21:51:52.846 F/DEBUG   (21861): uid: 10404
+01-08 21:51:52.846 F/DEBUG   (21861): tagged_addr_ctrl: 0000000000000001 (PR_TAGGED_ADDR_ENABLE)
+01-08 21:51:52.846 F/DEBUG   (21861): pac_enabled_keys: 000000000000000f (PR_PAC_APIAKEY, PR_PAC_APIBKEY, PR_PAC_APDAKEY, PR_PAC_APDBKEY)
+01-08 21:51:52.846 F/DEBUG   (21861): signal 6 (SIGABRT), code -1 (SI_QUEUE), fault addr --------
+01-08 21:51:52.846 F/DEBUG   (21861): Abort message: 'JNI DETECTED ERROR IN APPLICATION: IsInstanceOf received NULL jclass
+01-08 21:51:52.846 F/DEBUG   (21861):     in call to IsInstanceOf'
+01-08 21:51:52.846 F/DEBUG   (21861):     x0  0000000000000000  x1  0000000000005540  x2  0000000000000006  x3  0000007a5ba719d0
+01-08 21:51:52.846 F/DEBUG   (21861):     x4  5151441f43445342  x5  5151441f43445342  x6  5151441f43445342  x7  7f7f7f7f7f7f7f7f
+01-08 21:51:52.846 F/DEBUG   (21861):     x8  00000000000000f0  x9  2bb6ab124a16985e  x10 000000ff00000020  x11 00000000d3c3b4c0
+01-08 21:51:52.846 F/DEBUG   (21861):     x12 000000000012800c  x13 0000007a5ba707e0  x14 000000000121a6cc  x15 000000d628c693a3
+01-08 21:51:52.846 F/DEBUG   (21861):     x16 0000007d54bc60d8  x17 0000007d54bae780  x18 00000079c3754000  x19 000000000000551b
+01-08 21:51:52.846 F/DEBUG   (21861):     x20 0000000000005540  x21 00000000ffffffff  x22 0000007a6140d000  x23 0000007a6140ee20
+01-08 21:51:52.846 F/DEBUG   (21861):     x24 0000007a5ba73740  x25 0000007a5ba73740  x26 0000000000000000  x27 20c49ba5e353f7cf
+01-08 21:51:52.846 F/DEBUG   (21861):     x28 0000007a6089a8a8  x29 0000007a5ba71a50
+01-08 21:51:52.846 F/DEBUG   (21861):     lr  0000007d54b4a5d8  sp  0000007a5ba719d0  pc  0000007d54b4a5fc  pst 0000000000001000
+01-08 21:51:52.846 F/DEBUG   (21861): 20 total frames
+01-08 21:51:52.846 F/DEBUG   (21861): backtrace:
+01-08 21:51:52.846 F/DEBUG   (21861):       #00 pc 00000000000705fc  /apex/com.android.runtime/lib64/bionic/libc.so (abort+160) (BuildId: e59f6db702cf4b200d6a6f0e384072ab)
+01-08 21:51:52.846 F/DEBUG   (21861):       #01 pc 00000000008a0c74  /apex/com.android.art/lib64/libart.so (art::Runtime::Abort(char const*)+476) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:51:52.846 F/DEBUG   (21861):       #02 pc 0000000000016188  /apex/com.android.art/lib64/libbase.so (android::base::SetAborter(std::__1::function<void (char const*)>&&)::$_0::__invoke(char const*)+80) (BuildId: 8aca1185566f3990ce9d6c61841c18af)
+01-08 21:51:52.846 F/DEBUG   (21861):       #03 pc 0000000000015730  /apex/com.android.art/lib64/libbase.so (android::base::LogMessage::~LogMessage()+544) (BuildId: 8aca1185566f3990ce9d6c61841c18af)
+01-08 21:51:52.846 F/DEBUG   (21861):       #04 pc 00000000004e7114  /apex/com.android.art/lib64/libart.so (art::JavaVMExt::JniAbort(char const*, char const*)+804) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:51:52.846 F/DEBUG   (21861):       #05 pc 00000000004e6da8  /apex/com.android.art/lib64/libart.so (art::JavaVMExt::JniAbortV(char const*, char const*, std::__va_list)+104) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:51:52.846 F/DEBUG   (21861):       #06 pc 000000000035d6bc  /apex/com.android.art/lib64/libart.so (art::(anonymous namespace)::ScopedCheck::AbortF(char const*, ...) (.__uniq.99033978352804627313491551960229047428)+140) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:51:52.847 F/DEBUG   (21861):       #07 pc 00000000003598d0  /apex/com.android.art/lib64/libart.so (art::(anonymous namespace)::ScopedCheck::CheckInstance(art::ScopedObjectAccess&, art::(anonymous namespace)::ScopedCheck::InstanceKind, _jobject*, bool) (.__uniq.99033978352804627313491551960229047428)+1100) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:51:52.847 F/DEBUG   (21861):       #08 pc 000000000035a680  /apex/com.android.art/lib64/libart.so (art::(anonymous namespace)::ScopedCheck::Check(art::ScopedObjectAccess&, bool, char const*, art::(anonymous namespace)::JniValueType*) (.__uniq.99033978352804627313491551960229047428)+1124) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:51:52.847 F/DEBUG   (21861):       #09 pc 000000000061c3b8  /apex/com.android.art/lib64/libart.so (art::(anonymous namespace)::CheckJNI::IsInstanceOf(_JNIEnv*, _jobject*, _jclass*) (.__uniq.99033978352804627313491551960229047428.llvm.14444604947282681502)+208) (BuildId: 80d2ab18f9d259d8e546c1e6bae752b1)
+01-08 21:51:52.847 F/DEBUG   (21861):       #10 pc 0000000001173c28  /data/app/~~zplgGDq_9dZXF15sjmxwPA==/com.quadracollision.blacklang-gJh78Sag-2SeS20rhqcl1w==/base.apk!libblacklang.so (offset 0x649000) (_JNIEnv::IsInstanceOf(_jobject*, _jclass*)+44) (BuildId: cdca29f4e500674182eef8bea84cf67f10f3c461)
+01-08 21:51:52.847 F/DEBUG   (21861):       #11 pc 000000000116daf8  /data/app/~~zplgGDq_9dZXF15sjmxwPA==/com.quadracollision.blacklang-gJh78Sag-2SeS20rhqcl1w==/base.apk!libblacklang.so (offset 0x649000) (juce::getAppContext()+224) (BuildId: cdca29f4e500674182eef8bea84cf67f10f3c461)
+01-08 21:51:52.847 F/DEBUG   (21861):       #12 pc 0000000001244268  /data/app/~~zplgGDq_9dZXF15sjmxwPA==/com.quadracollision.blacklang-gJh78Sag-2SeS20rhqcl1w==/base.apk!libblacklang.so (offset 0x649000) (juce::JuceActivityWatcher::JuceActivityWatcher()+132) (BuildId: cdca29f4e500674182eef8bea84cf67f10f3c461)
+01-08 21:51:52.847 F/DEBUG   (21861):       #13 pc 0000000001173b9c  /data/app/~~zplgGDq_9dZXF15sjmxwPA==/com.quadracollision.blacklang-gJh78Sag-2SeS20rhqcl1w==/base.apk!libblacklang.so (offset 0x649000) (juce::JuceActivityWatcher::getInstance()+88) (BuildId: cdca29f4e500674182eef8bea84cf67f10f3c461)
+01-08 21:51:52.847 F/DEBUG   (21861):       #14 pc 0000000001173aa4  /data/app/~~zplgGDq_9dZXF15sjmxwPA==/com.quadracollision.blacklang-gJh78Sag-2SeS20rhqcl1w==/base.apk!libblacklang.so (offset 0x649000) (juce::Thread::initialiseJUCE(void*, void*)+508) (BuildId: cdca29f4e500674182eef8bea84cf67f10f3c461)
+01-08 21:51:52.847 F/DEBUG   (21861):       #15 pc 0000000000fc4128  /data/app/~~zplgGDq_9dZXF15sjmxwPA==/com.quadracollision.blacklang-gJh78Sag-2SeS20rhqcl1w==/base.apk!libblacklang.so (offset 0x649000) (main+204) (BuildId: cdca29f4e500674182eef8bea84cf67f10f3c461)
+01-08 21:51:52.847 F/DEBUG   (21861):       #16 pc 0000000001cac4d8  /data/app/~~zplgGDq_9dZXF15sjmxwPA==/com.quadracollision.blacklang-gJh78Sag-2SeS20rhqcl1w==/base.apk!libblacklang.so (offset 0x649000) (android_main+88) (BuildId: cdca29f4e500674182eef8bea84cf67f10f3c461)
+01-08 21:51:52.847 F/DEBUG   (21861):       #17 pc 0000000001c966e8  /data/app/~~zplgGDq_9dZXF15sjmxwPA==/com.quadracollision.blacklang-gJh78Sag-2SeS20rhqcl1w==/base.apk!libblacklang.so (offset 0x649000) (BuildId: cdca29f4e500674182eef8bea84cf67f10f3c461)
+01-08 21:51:52.847 F/DEBUG   (21861):       #18 pc 0000000000080fa4  /apex/com.android.runtime/lib64/bionic/libc.so (__pthread_start(void*)+184) (BuildId: e59f6db702cf4b200d6a6f0e384072ab)
+01-08 21:51:52.847 F/DEBUG   (21861):       #19 pc 0000000000073760  /apex/com.android.runtime/lib64/bionic/libc.so (__start_thread+68) (BuildId: e59f6db702cf4b200d6a6f0e384072ab)
+01-08 21:54:45.170 I/raylib  (24453): Initializing raylib 5.0
+01-08 21:54:45.170 I/raylib  (24453): Platform backend: ANDROID
+01-08 21:54:45.170 I/raylib  (24453): Supported raylib modules:
+01-08 21:54:45.170 I/raylib  (24453):     > rcore:..... loaded (mandatory)
+01-08 21:54:45.170 I/raylib  (24453):     > rlgl:...... loaded (mandatory)
+01-08 21:54:45.170 I/raylib  (24453):     > rshapes:... loaded (optional)
+01-08 21:54:45.170 I/raylib  (24453):     > rtextures:. loaded (optional)
+01-08 21:54:45.170 I/raylib  (24453):     > rtext:..... loaded (optional)
+01-08 21:54:45.170 I/raylib  (24453):     > rmodels:... loaded (optional)
+01-08 21:54:45.170 I/raylib  (24453):     > raudio:.... loaded (optional)
+01-08 21:54:45.170 I/raylib  (24453): ANDROID: Window orientation set as landscape
+01-08 21:54:45.170 W/raylib  (24453): ANDROID: Window orientation changed to landscape
+01-08 21:54:45.170 I/raylib  (24453): PLATFORM: ANDROID: Initialized successfully
+01-08 21:54:45.251 I/raylib  (24453): DISPLAY: Upscaling required: Screen size (1000x700) smaller than display size (2259x1080)
+01-08 21:54:45.254 I/raylib  (24453): DISPLAY: Device initialized successfully
+01-08 21:54:45.254 I/raylib  (24453):     > Display size: 2259 x 1080
+01-08 21:54:45.254 I/raylib  (24453):     > Screen size:  1000 x 700
+01-08 21:54:45.254 I/raylib  (24453):     > Render size:  1000 x 700
+01-08 21:54:45.254 I/raylib  (24453):     > Viewport offsets: 464, 0
+01-08 21:54:45.254 I/raylib  (24453): GL: Supported extensions count: 104
+01-08 21:54:45.254 I/raylib  (24453): GL: OpenGL device information:
+01-08 21:54:45.254 I/raylib  (24453):     > Vendor:   Qualcomm
+01-08 21:54:45.254 I/raylib  (24453):     > Renderer: Adreno (TM) 730
+01-08 21:54:45.254 I/raylib  (24453):     > Version:  OpenGL ES 3.2 V@0615.98 (GIT@0c393b63cf, I94e2bd5684, 1746191168) (Date:05/02/25)
+01-08 21:54:45.254 I/raylib  (24453):     > GLSL:     OpenGL ES GLSL ES 3.20
+01-08 21:54:45.254 I/raylib  (24453): GL: VAO extension detected, VAO functions loaded successfully
+01-08 21:54:45.254 I/raylib  (24453): GL: NPOT textures extension detected, full NPOT textures supported
+01-08 21:54:45.254 I/raylib  (24453): GL: ETC1 compressed textures supported
+01-08 21:54:45.254 I/raylib  (24453): GL: ASTC compressed textures supported
+01-08 21:54:45.255 I/raylib  (24453): TEXTURE: [ID 1] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+01-08 21:54:45.255 I/raylib  (24453): TEXTURE: [ID 1] Default texture loaded successfully
+01-08 21:54:45.350 I/raylib  (24453): SHADER: [ID 1] Vertex shader compiled successfully
+01-08 21:54:45.351 I/raylib  (24453): SHADER: [ID 2] Fragment shader compiled successfully
+01-08 21:54:45.375 I/raylib  (24453): SHADER: [ID 3] Program shader loaded successfully
+01-08 21:54:45.375 I/raylib  (24453): SHADER: [ID 3] Default shader loaded successfully
+01-08 21:54:45.376 I/raylib  (24453): RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+01-08 21:54:45.376 I/raylib  (24453): RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+01-08 21:54:45.376 I/raylib  (24453): RLGL: Default OpenGL state initialized successfully
+01-08 21:54:45.380 I/raylib  (24453): TEXTURE: [ID 2] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+01-08 21:54:45.380 I/raylib  (24453): FONT: Default font loaded successfully (224 glyphs)
+01-08 21:54:45.381 I/raylib  (24453): TEXTURE: [ID 3] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+01-08 21:54:45.381 I/raylib  (24453): TEXTURE: [ID 3] Default texture loaded successfully
+01-08 21:54:45.381 I/raylib  (24453): SHADER: [ID 4] Vertex shader compiled successfully
+01-08 21:54:45.381 I/raylib  (24453): SHADER: [ID 5] Fragment shader compiled successfully
+01-08 21:54:45.381 I/raylib  (24453): SHADER: [ID 6] Program shader loaded successfully
+01-08 21:54:45.381 I/raylib  (24453): SHADER: [ID 6] Default shader loaded successfully
+01-08 21:54:45.381 I/raylib  (24453): RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+01-08 21:54:45.385 I/raylib  (24453): RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+01-08 21:54:45.385 I/raylib  (24453): RLGL: Default OpenGL state initialized successfully
+01-08 21:54:45.386 I/raylib  (24453): TEXTURE: [ID 4] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+01-08 21:54:45.386 I/raylib  (24453): FONT: Default font loaded successfully (224 glyphs)
+01-08 21:54:45.386 I/raylib  (24453): TIMER: Target time per frame: 16.667 milliseconds
+01-08 21:54:45.386 I/JUCE    (24453): JUCE Assertion failure in juce_Threads_android.cpp:67
+01-08 21:54:46.211 F/DEBUG   (24502): *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+01-08 21:54:46.211 F/DEBUG   (24502): Build fingerprint: 'samsung/r0qsqw/r0q:16/BP2A.250605.031.A3/S901USQS8GYL1:user/release-keys'
+01-08 21:54:46.211 F/DEBUG   (24502): Revision: '14'
+01-08 21:54:46.211 F/DEBUG   (24502): ABI: 'arm64'
+01-08 21:54:46.211 F/DEBUG   (24502): Processor: '6'
+01-08 21:54:46.211 F/DEBUG   (24502): Timestamp: 2026-01-08 21:54:45.477565427-0500
+01-08 21:54:46.211 F/DEBUG   (24502): Process uptime: 2s
+01-08 21:54:46.211 F/DEBUG   (24502): Cmdline: com.quadracollision.blacklang
+01-08 21:54:46.211 F/DEBUG   (24502): pid: 24453, tid: 24483, name: Thread-2  >>> com.quadracollision.blacklang <<<
+01-08 21:54:46.211 F/DEBUG   (24502): uid: 10404
+01-08 21:54:46.211 F/DEBUG   (24502): tagged_addr_ctrl: 0000000000000001 (PR_TAGGED_ADDR_ENABLE)
+01-08 21:54:46.211 F/DEBUG   (24502): pac_enabled_keys: 000000000000000f (PR_PAC_APIAKEY, PR_PAC_APIBKEY, PR_PAC_APDAKEY, PR_PAC_APDBKEY)
+01-08 21:54:46.211 F/DEBUG   (24502): signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0000000000000000
+01-08 21:54:46.212 F/DEBUG   (24502): Cause: null pointer dereference
+01-08 21:54:46.212 F/DEBUG   (24502):     x0  0000000000000000  x1  000000793bff414f  x2  0000007d54bd9004  x3  0000007a5ba62d98
+01-08 21:54:46.212 F/DEBUG   (24502):     x4  00000000000001c0  x5  0000007c43bfadfc  x6  0000000000000001  x7  7f7f7f7f7f7f7f7f
+01-08 21:54:46.212 F/DEBUG   (24502):     x8  0000000000000000  x9  d7fc0e31790b2e44  x10 0000007d54bd975c  x11 000000001ccfdb67
+01-08 21:54:46.212 F/DEBUG   (24502):     x12 00000000001c000e  x13 0000007d54bd9204  x14 000000000000000b  x15 000000000000c0d8
+01-08 21:54:46.212 F/DEBUG   (24502):     x16 000000793d500008  x17 000000793c7d0930  x18 00000079c2b9c000  x19 0000007a5ba643c0
+01-08 21:54:46.212 F/DEBUG   (24502):     x20 0000007d54bdc000  x21 0000007a5ba643c0  x22 0000000000005f85  x23 0000000000005f85
+01-08 21:54:46.212 F/DEBUG   (24502):     x24 0000007a5ba643c0  x25 0000007a5ba64728  x26 00000000000fc000  x27 0000007a5b96c000
+01-08 21:54:46.212 F/DEBUG   (24502):     x28 0000007a5b96b000  x29 0000007a5ba62f20
+01-08 21:54:46.212 F/DEBUG   (24502):     lr  000000793c7d35a4  sp  0000007a5ba62f10  pc  000000793c7d0948  pst 0000000060001000
+01-08 21:54:46.212 F/DEBUG   (24502): 11 total frames
+01-08 21:54:46.212 F/DEBUG   (24502): backtrace:
+01-08 21:54:46.212 F/DEBUG   (24502):       #00 pc 000000000116a948  /data/app/~~q_GfPeOKXSL20AUhzXkXGw==/com.quadracollision.blacklang-9_gcUJBXG2mcCDOGrQ5Ssw==/base.apk!libblacklang.so (offset 0x649000) (_JNIEnv::FindClass(char const*)+24) (BuildId: 810345c823b44fda35d4eab17cea3b788f938ec9)
+01-08 21:54:46.212 F/DEBUG   (24502):       #01 pc 000000000116d5a0  /data/app/~~q_GfPeOKXSL20AUhzXkXGw==/com.quadracollision.blacklang-9_gcUJBXG2mcCDOGrQ5Ssw==/base.apk!libblacklang.so (offset 0x649000) (BuildId: 810345c823b44fda35d4eab17cea3b788f938ec9)
+01-08 21:54:46.212 F/DEBUG   (24502):       #02 pc 000000000116a58c  /data/app/~~q_GfPeOKXSL20AUhzXkXGw==/com.quadracollision.blacklang-9_gcUJBXG2mcCDOGrQ5Ssw==/base.apk!libblacklang.so (offset 0x649000) (juce::getAndroidSDKVersion()+68) (BuildId: 810345c823b44fda35d4eab17cea3b788f938ec9)
+01-08 21:54:46.212 F/DEBUG   (24502):       #03 pc 0000000001169ab0  /data/app/~~q_GfPeOKXSL20AUhzXkXGw==/com.quadracollision.blacklang-9_gcUJBXG2mcCDOGrQ5Ssw==/base.apk!libblacklang.so (offset 0x649000) (juce::JNIClassBase::initialise(_JNIEnv*, _jobject*)+52) (BuildId: 810345c823b44fda35d4eab17cea3b788f938ec9)
+01-08 21:54:46.212 F/DEBUG   (24502):       #04 pc 000000000116b580  /data/app/~~q_GfPeOKXSL20AUhzXkXGw==/com.quadracollision.blacklang-9_gcUJBXG2mcCDOGrQ5Ssw==/base.apk!libblacklang.so (offset 0x649000) (juce::JNIClassBase::initialiseAllClasses(_JNIEnv*, _jobject*)+92) (BuildId: 810345c823b44fda35d4eab17cea3b788f938ec9)
+01-08 21:54:46.212 F/DEBUG   (24502):       #05 pc 00000000011739c0  /data/app/~~q_GfPeOKXSL20AUhzXkXGw==/com.quadracollision.blacklang-9_gcUJBXG2mcCDOGrQ5Ssw==/base.apk!libblacklang.so (offset 0x649000) (juce::Thread::initialiseJUCE(void*, void*)+280) (BuildId: 810345c823b44fda35d4eab17cea3b788f938ec9)
+01-08 21:54:46.212 F/DEBUG   (24502):       #06 pc 0000000000fc4128  /data/app/~~q_GfPeOKXSL20AUhzXkXGw==/com.quadracollision.blacklang-9_gcUJBXG2mcCDOGrQ5Ssw==/base.apk!libblacklang.so (offset 0x649000) (main+204) (BuildId: 810345c823b44fda35d4eab17cea3b788f938ec9)
+01-08 21:54:46.212 F/DEBUG   (24502):       #07 pc 0000000001cac4e8  /data/app/~~q_GfPeOKXSL20AUhzXkXGw==/com.quadracollision.blacklang-9_gcUJBXG2mcCDOGrQ5Ssw==/base.apk!libblacklang.so (offset 0x649000) (android_main+88) (BuildId: 810345c823b44fda35d4eab17cea3b788f938ec9)
+01-08 21:54:46.212 F/DEBUG   (24502):       #08 pc 0000000001c966f8  /data/app/~~q_GfPeOKXSL20AUhzXkXGw==/com.quadracollision.blacklang-9_gcUJBXG2mcCDOGrQ5Ssw==/base.apk!libblacklang.so (offset 0x649000) (BuildId: 810345c823b44fda35d4eab17cea3b788f938ec9)
+01-08 21:54:46.212 F/DEBUG   (24502):       #09 pc 0000000000080fa4  /apex/com.android.runtime/lib64/bionic/libc.so (__pthread_start(void*)+184) (BuildId: e59f6db702cf4b200d6a6f0e384072ab)
+01-08 21:54:46.212 F/DEBUG   (24502):       #10 pc 0000000000073760  /apex/com.android.runtime/lib64/bionic/libc.so (__start_thread+68) (BuildId: e59f6db702cf4b200d6a6f0e384072ab)
+01-08 21:58:30.486 E/AndroidRuntime(26137): FATAL EXCEPTION: main
+01-08 21:58:30.486 E/AndroidRuntime(26137): Process: com.quadracollision.blacklang, PID: 26137
+01-08 21:58:30.486 E/AndroidRuntime(26137): java.lang.UnsatisfiedLinkError: dlopen failed: library "libjuce_jni.so" not found
+01-08 21:58:30.486 E/AndroidRuntime(26137): 	at java.lang.Runtime.loadLibrary0(Runtime.java:1090)
+01-08 21:58:30.486 E/AndroidRuntime(26137): 	at java.lang.Runtime.loadLibrary0(Runtime.java:1012)
+01-08 21:58:30.486 E/AndroidRuntime(26137): 	at java.lang.System.loadLibrary(System.java:1765)
+01-08 21:58:30.486 E/AndroidRuntime(26137): 	at com.rmsl.juce.Java.<clinit>(Java.java:43)
+01-08 21:58:30.486 E/AndroidRuntime(26137): 	at com.quadracollision.blacklang.BlackLangApplication.onCreate(BlackLangApplication.java:11)
+01-08 21:58:30.486 E/AndroidRuntime(26137): 	at android.app.Instrumentation.callApplicationOnCreate(Instrumentation.java:1384)
+01-08 21:58:30.486 E/AndroidRuntime(26137): 	at android.app.ActivityThread.handleBindApplication(ActivityThread.java:8750)
+01-08 21:58:30.486 E/AndroidRuntime(26137): 	at android.app.ActivityThread.-$$Nest$mhandleBindApplication(Unknown Source:0)
+01-08 21:58:30.486 E/AndroidRuntime(26137): 	at android.app.ActivityThread$H.handleMessage(ActivityThread.java:2873)
+01-08 21:58:30.486 E/AndroidRuntime(26137): 	at android.os.Handler.dispatchMessage(Handler.java:110)
+01-08 21:58:30.486 E/AndroidRuntime(26137): 	at android.os.Looper.loopOnce(Looper.java:273)
+01-08 21:58:30.486 E/AndroidRuntime(26137): 	at android.os.Looper.loop(Looper.java:363)
+01-08 21:58:30.486 E/AndroidRuntime(26137): 	at android.app.ActivityThread.main(ActivityThread.java:10060)
+01-08 21:58:30.486 E/AndroidRuntime(26137): 	at java.lang.reflect.Method.invoke(Native Method)
+01-08 21:58:30.486 E/AndroidRuntime(26137): 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:632)
+01-08 21:58:30.486 E/AndroidRuntime(26137): 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:975)
+01-08 21:59:49.879 I/raylib  (26793): Initializing raylib 5.0
+01-08 21:59:49.879 I/raylib  (26793): Platform backend: ANDROID
+01-08 21:59:49.879 I/raylib  (26793): Supported raylib modules:
+01-08 21:59:49.879 I/raylib  (26793):     > rcore:..... loaded (mandatory)
+01-08 21:59:49.879 I/raylib  (26793):     > rlgl:...... loaded (mandatory)
+01-08 21:59:49.879 I/raylib  (26793):     > rshapes:... loaded (optional)
+01-08 21:59:49.879 I/raylib  (26793):     > rtextures:. loaded (optional)
+01-08 21:59:49.879 I/raylib  (26793):     > rtext:..... loaded (optional)
+01-08 21:59:49.880 I/raylib  (26793):     > rmodels:... loaded (optional)
+01-08 21:59:49.880 I/raylib  (26793):     > raudio:.... loaded (optional)
+01-08 21:59:49.880 I/raylib  (26793): ANDROID: Window orientation set as landscape
+01-08 21:59:49.880 W/raylib  (26793): ANDROID: Window orientation changed to landscape
+01-08 21:59:49.880 I/raylib  (26793): PLATFORM: ANDROID: Initialized successfully
+01-08 21:59:49.936 I/raylib  (26793): DISPLAY: Upscaling required: Screen size (1000x700) smaller than display size (2259x1080)
+01-08 21:59:49.937 I/raylib  (26793): DISPLAY: Device initialized successfully
+01-08 21:59:49.937 I/raylib  (26793):     > Display size: 2259 x 1080
+01-08 21:59:49.937 I/raylib  (26793):     > Screen size:  1000 x 700
+01-08 21:59:49.937 I/raylib  (26793):     > Render size:  1000 x 700
+01-08 21:59:49.937 I/raylib  (26793):     > Viewport offsets: 464, 0
+01-08 21:59:49.937 I/raylib  (26793): GL: Supported extensions count: 104
+01-08 21:59:49.948 I/raylib  (26793): GL: OpenGL device information:
+01-08 21:59:49.948 I/raylib  (26793):     > Vendor:   Qualcomm
+01-08 21:59:49.948 I/raylib  (26793):     > Renderer: Adreno (TM) 730
+01-08 21:59:49.948 I/raylib  (26793):     > Version:  OpenGL ES 3.2 V@0615.98 (GIT@0c393b63cf, I94e2bd5684, 1746191168) (Date:05/02/25)
+01-08 21:59:49.948 I/raylib  (26793):     > GLSL:     OpenGL ES GLSL ES 3.20
+01-08 21:59:49.948 I/raylib  (26793): GL: VAO extension detected, VAO functions loaded successfully
+01-08 21:59:49.948 I/raylib  (26793): GL: NPOT textures extension detected, full NPOT textures supported
+01-08 21:59:49.948 I/raylib  (26793): GL: ETC1 compressed textures supported
+01-08 21:59:49.948 I/raylib  (26793): GL: ASTC compressed textures supported
+01-08 21:59:49.948 I/raylib  (26793): TEXTURE: [ID 1] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+01-08 21:59:49.948 I/raylib  (26793): TEXTURE: [ID 1] Default texture loaded successfully
+01-08 21:59:49.955 I/raylib  (26793): SHADER: [ID 1] Vertex shader compiled successfully
+01-08 21:59:49.956 I/raylib  (26793): SHADER: [ID 2] Fragment shader compiled successfully
+01-08 21:59:49.964 I/raylib  (26793): SHADER: [ID 3] Program shader loaded successfully
+01-08 21:59:49.964 I/raylib  (26793): SHADER: [ID 3] Default shader loaded successfully
+01-08 21:59:49.964 I/raylib  (26793): RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+01-08 21:59:49.964 I/raylib  (26793): RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+01-08 21:59:49.964 I/raylib  (26793): RLGL: Default OpenGL state initialized successfully
+01-08 21:59:49.971 I/raylib  (26793): TEXTURE: [ID 2] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+01-08 21:59:49.971 I/raylib  (26793): FONT: Default font loaded successfully (224 glyphs)
+01-08 21:59:49.971 I/raylib  (26793): TEXTURE: [ID 3] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+01-08 21:59:49.971 I/raylib  (26793): TEXTURE: [ID 3] Default texture loaded successfully
+01-08 21:59:49.971 I/raylib  (26793): SHADER: [ID 4] Vertex shader compiled successfully
+01-08 21:59:49.972 I/raylib  (26793): SHADER: [ID 5] Fragment shader compiled successfully
+01-08 21:59:49.973 I/raylib  (26793): SHADER: [ID 6] Program shader loaded successfully
+01-08 21:59:49.973 I/raylib  (26793): SHADER: [ID 6] Default shader loaded successfully
+01-08 21:59:49.974 I/raylib  (26793): RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+01-08 21:59:49.974 I/raylib  (26793): RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+01-08 21:59:49.975 I/raylib  (26793): RLGL: Default OpenGL state initialized successfully
+01-08 21:59:49.975 I/raylib  (26793): TEXTURE: [ID 4] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+01-08 21:59:49.976 I/raylib  (26793): FONT: Default font loaded successfully (224 glyphs)
+01-08 21:59:49.976 I/raylib  (26793): TIMER: Target time per frame: 16.667 milliseconds
+01-08 21:59:49.985 I/JUCE    (26793): JUCE Assertion failure in juce_MidiDevices.cpp:48
+01-08 21:59:50.039 I/JUCE    (26793): -----InputDevices:
+01-08 21:59:50.039 I/JUCE    (26793): name = System Default (Input)
+01-08 21:59:50.039 I/JUCE    (26793): id = 0
+01-08 21:59:50.039 I/JUCE    (26793): sample rates size = 9
+01-08 21:59:50.039 I/JUCE    (26793): num channels = 1
+01-08 21:59:50.039 I/JUCE    (26793): name = SM-S901U built-in microphone
+01-08 21:59:50.039 I/JUCE    (26793): id = 22
+01-08 21:59:50.039 I/JUCE    (26793): sample rates size = 9
+01-08 21:59:50.039 I/JUCE    (26793): num channels = 2
+01-08 21:59:50.039 I/JUCE    (26793): name = SM-S901U telephony
+01-08 21:59:50.039 I/JUCE    (26793): id = 23
+01-08 21:59:50.039 I/JUCE    (26793): sample rates size = 9
+01-08 21:59:50.039 I/JUCE    (26793): num channels = 2
+01-08 21:59:50.040 I/JUCE    (26793): name = SM-S901U built-in microphone
+01-08 21:59:50.040 I/JUCE    (26793): id = 24
+01-08 21:59:50.040 I/JUCE    (26793): sample rates size = 9
+01-08 21:59:50.040 I/JUCE    (26793): num channels = 2
+01-08 21:59:50.040 I/JUCE    (26793): name = SM-S901U remote submix
+01-08 21:59:50.040 I/JUCE    (26793): id = 28
+01-08 21:59:50.040 I/JUCE    (26793): sample rates size = 1
+01-08 21:59:50.040 I/JUCE    (26793): num channels = 2
+01-08 21:59:50.040 I/JUCE    (26793): -----OutputDevices:
+01-08 21:59:50.040 I/JUCE    (26793): name = System Default (Output)
+01-08 21:59:50.040 I/JUCE    (26793): id = 0
+01-08 21:59:50.040 I/JUCE    (26793): sample rates size = 9
+01-08 21:59:50.040 I/JUCE    (26793): num channels = 2
+01-08 21:59:50.040 I/JUCE    (26793): name = SM-S901U built-in earphone speaker
+01-08 21:59:50.040 I/JUCE    (26793): id = 2
+01-08 21:59:50.040 I/JUCE    (26793): sample rates size = 1
+01-08 21:59:50.040 I/JUCE    (26793): num channels = 1
+01-08 21:59:50.040 I/JUCE    (26793): name = SM-S901U built-in speaker
+01-08 21:59:50.040 I/JUCE    (26793): id = 3
+01-08 21:59:50.040 I/JUCE    (26793): sample rates size = 1
+01-08 21:59:50.040 I/JUCE    (26793): num channels = 2
+01-08 21:59:50.040 I/JUCE    (26793): name = SM-S901U telephony
+01-08 21:59:50.040 I/JUCE    (26793): id = 15
+01-08 21:59:50.040 I/JUCE    (26793): sample rates size = 2
+01-08 21:59:50.040 I/JUCE    (26793): num channels = 2
+01-08 21:59:50.047 I/JUCE    (26793): Preparing Oboe stream with params:
+01-08 21:59:50.047 I/JUCE    (26793): AAudio supported = 1
+01-08 21:59:50.047 I/JUCE    (26793): API = Unspecified
+01-08 21:59:50.047 I/JUCE    (26793): DeviceId = 0
+01-08 21:59:50.047 I/JUCE    (26793): Direction = Output
+01-08 21:59:50.047 I/JUCE    (26793): SharingMode = Exclusive
+01-08 21:59:50.047 I/JUCE    (26793): ChannelCount = 2
+01-08 21:59:50.047 I/JUCE    (26793): Format = Float
+01-08 21:59:50.047 I/JUCE    (26793): SampleRate = 48000
+01-08 21:59:50.047 I/JUCE    (26793): PerformanceMode = LowLatency
+01-08 21:59:50.141 I/JUCE    (26793): Building Oboe stream with result: OK
+01-08 21:59:50.141 I/JUCE    (26793): Stream state = Open
+01-08 21:59:50.141 I/JUCE    (26793): Setting the bufferSizeInFrames to 192
+01-08 21:59:50.141 I/JUCE    (26793): Stream details:
+01-08 21:59:50.141 I/JUCE    (26793): Uses AAudio = 1
+01-08 21:59:50.141 I/JUCE    (26793): DeviceId = 3
+01-08 21:59:50.141 I/JUCE    (26793): Direction = Output
+01-08 21:59:50.141 I/JUCE    (26793): SharingMode = Exclusive
+01-08 21:59:50.141 I/JUCE    (26793): ChannelCount = 2
+01-08 21:59:50.141 I/JUCE    (26793): Format = Float
+01-08 21:59:50.141 I/JUCE    (26793): SampleRate = 48000
+01-08 21:59:50.141 I/JUCE    (26793): BufferSizeInFrames = 192
+01-08 21:59:50.141 I/JUCE    (26793): BufferCapacityInFrames = 3072
+01-08 21:59:50.141 I/JUCE    (26793): FramesPerBurst = 96
+01-08 21:59:50.141 I/JUCE    (26793): FramesPerCallback = 0
+01-08 21:59:50.141 I/JUCE    (26793): BytesPerFrame = 8
+01-08 21:59:50.141 I/JUCE    (26793): BytesPerSample = 4
+01-08 21:59:50.141 I/JUCE    (26793): PerformanceMode = LowLatency
+01-08 21:59:50.275 I/JUCE    (26793): Requested Oboe stream close with result: OK
+01-08 21:59:50.278 I/JUCE    (26793): Preparing Oboe stream with params:
+01-08 21:59:50.278 I/JUCE    (26793): AAudio supported = 1
+01-08 21:59:50.278 I/JUCE    (26793): API = Unspecified
+01-08 21:59:50.278 I/JUCE    (26793): DeviceId = 0
+01-08 21:59:50.278 I/JUCE    (26793): Direction = Output
+01-08 21:59:50.278 I/JUCE    (26793): SharingMode = Exclusive
+01-08 21:59:50.278 I/JUCE    (26793): ChannelCount = 2
+01-08 21:59:50.278 I/JUCE    (26793): Format = Float
+01-08 21:59:50.278 I/JUCE    (26793): SampleRate = 48000
+01-08 21:59:50.278 I/JUCE    (26793): PerformanceMode = LowLatency
+01-08 21:59:50.346 I/JUCE    (26793): Building Oboe stream with result: OK
+01-08 21:59:50.346 I/JUCE    (26793): Stream state = Open
+01-08 21:59:50.346 I/JUCE    (26793): Setting the bufferSizeInFrames to 1920
+01-08 21:59:50.346 I/JUCE    (26793): Stream details:
+01-08 21:59:50.346 I/JUCE    (26793): Uses AAudio = 1
+01-08 21:59:50.346 I/JUCE    (26793): DeviceId = 3
+01-08 21:59:50.346 I/JUCE    (26793): Direction = Output
+01-08 21:59:50.346 I/JUCE    (26793): SharingMode = Exclusive
+01-08 21:59:50.346 I/JUCE    (26793): ChannelCount = 2
+01-08 21:59:50.346 I/JUCE    (26793): Format = Float
+01-08 21:59:50.346 I/JUCE    (26793): SampleRate = 48000
+01-08 21:59:50.346 I/JUCE    (26793): BufferSizeInFrames = 1920
+01-08 21:59:50.346 I/JUCE    (26793): BufferCapacityInFrames = 3072
+01-08 21:59:50.346 I/JUCE    (26793): FramesPerBurst = 96
+01-08 21:59:50.346 I/JUCE    (26793): FramesPerCallback = 0
+01-08 21:59:50.346 I/JUCE    (26793): BytesPerFrame = 8
+01-08 21:59:50.346 I/JUCE    (26793): BytesPerSample = 4
+01-08 21:59:50.346 I/JUCE    (26793): PerformanceMode = LowLatency
+01-08 21:59:50.533 I/JUCE    (26793): Requested Oboe stream start with result: OK
+01-08 21:59:50.533 I/JUCE    (26793): Starting Oboe stream with result: OK
+01-08 22:02:46.718 I/JUCE    (26793): JUCE Assertion failure in juce_File.cpp:219
+01-08 22:02:46.721 I/JUCE    (26793): Illegal absolute path: recordings/recording.wav
+01-08 22:04:30.066 I/raylib  (30262): Initializing raylib 5.0
+01-08 22:04:30.066 I/raylib  (30262): Platform backend: ANDROID
+01-08 22:04:30.066 I/raylib  (30262): Supported raylib modules:
+01-08 22:04:30.066 I/raylib  (30262):     > rcore:..... loaded (mandatory)
+01-08 22:04:30.066 I/raylib  (30262):     > rlgl:...... loaded (mandatory)
+01-08 22:04:30.066 I/raylib  (30262):     > rshapes:... loaded (optional)
+01-08 22:04:30.066 I/raylib  (30262):     > rtextures:. loaded (optional)
+01-08 22:04:30.066 I/raylib  (30262):     > rtext:..... loaded (optional)
+01-08 22:04:30.066 I/raylib  (30262):     > rmodels:... loaded (optional)
+01-08 22:04:30.066 I/raylib  (30262):     > raudio:.... loaded (optional)
+01-08 22:04:30.066 I/raylib  (30262): ANDROID: Window orientation set as landscape
+01-08 22:04:30.066 W/raylib  (30262): ANDROID: Window orientation changed to portrait
+01-08 22:04:30.066 I/raylib  (30262): PLATFORM: ANDROID: Initialized successfully
+01-08 22:04:30.123 I/raylib  (30262): DISPLAY: Upscaling required: Screen size (0x0) smaller than display size (2259x1080)
+01-08 22:04:30.134 I/raylib  (30262): DISPLAY: Device initialized successfully
+01-08 22:04:30.134 I/raylib  (30262):     > Display size: 2259 x 1080
+01-08 22:04:30.134 I/raylib  (30262):     > Screen size:  2259 x 1080
+01-08 22:04:30.134 I/raylib  (30262):     > Render size:  2259 x 1080
+01-08 22:04:30.134 I/raylib  (30262):     > Viewport offsets: 0, 0
+01-08 22:04:30.134 I/raylib  (30262): GL: Supported extensions count: 104
+01-08 22:04:30.134 I/raylib  (30262): GL: OpenGL device information:
+01-08 22:04:30.134 I/raylib  (30262):     > Vendor:   Qualcomm
+01-08 22:04:30.134 I/raylib  (30262):     > Renderer: Adreno (TM) 730
+01-08 22:04:30.134 I/raylib  (30262):     > Version:  OpenGL ES 3.2 V@0615.98 (GIT@0c393b63cf, I94e2bd5684, 1746191168) (Date:05/02/25)
+01-08 22:04:30.134 I/raylib  (30262):     > GLSL:     OpenGL ES GLSL ES 3.20
+01-08 22:04:30.134 I/raylib  (30262): GL: VAO extension detected, VAO functions loaded successfully
+01-08 22:04:30.134 I/raylib  (30262): GL: NPOT textures extension detected, full NPOT textures supported
+01-08 22:04:30.134 I/raylib  (30262): GL: ETC1 compressed textures supported
+01-08 22:04:30.134 I/raylib  (30262): GL: ASTC compressed textures supported
+01-08 22:04:30.134 I/raylib  (30262): TEXTURE: [ID 1] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+01-08 22:04:30.134 I/raylib  (30262): TEXTURE: [ID 1] Default texture loaded successfully
+01-08 22:04:30.137 I/raylib  (30262): SHADER: [ID 1] Vertex shader compiled successfully
+01-08 22:04:30.137 I/raylib  (30262): SHADER: [ID 2] Fragment shader compiled successfully
+01-08 22:04:30.138 I/raylib  (30262): SHADER: [ID 3] Program shader loaded successfully
+01-08 22:04:30.138 I/raylib  (30262): SHADER: [ID 3] Default shader loaded successfully
+01-08 22:04:30.139 I/raylib  (30262): RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+01-08 22:04:30.139 I/raylib  (30262): RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+01-08 22:04:30.139 I/raylib  (30262): RLGL: Default OpenGL state initialized successfully
+01-08 22:04:30.146 I/raylib  (30262): TEXTURE: [ID 2] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+01-08 22:04:30.148 I/raylib  (30262): FONT: Default font loaded successfully (224 glyphs)
+01-08 22:04:30.148 I/raylib  (30262): TEXTURE: [ID 3] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+01-08 22:04:30.148 I/raylib  (30262): TEXTURE: [ID 3] Default texture loaded successfully
+01-08 22:04:30.148 I/raylib  (30262): SHADER: [ID 4] Vertex shader compiled successfully
+01-08 22:04:30.148 I/raylib  (30262): SHADER: [ID 5] Fragment shader compiled successfully
+01-08 22:04:30.149 I/raylib  (30262): SHADER: [ID 6] Program shader loaded successfully
+01-08 22:04:30.149 I/raylib  (30262): SHADER: [ID 6] Default shader loaded successfully
+01-08 22:04:30.150 I/raylib  (30262): RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+01-08 22:04:30.150 I/raylib  (30262): RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+01-08 22:04:30.150 I/raylib  (30262): RLGL: Default OpenGL state initialized successfully
+01-08 22:04:30.150 I/raylib  (30262): TEXTURE: [ID 4] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+01-08 22:04:30.150 I/raylib  (30262): FONT: Default font loaded successfully (224 glyphs)
+01-08 22:04:30.150 I/raylib  (30262): TIMER: Target time per frame: 16.667 milliseconds
+01-08 22:04:30.163 I/JUCE    (30262): JUCE Assertion failure in juce_MidiDevices.cpp:48
+01-08 22:04:30.229 I/JUCE    (30262): -----InputDevices:
+01-08 22:04:30.229 I/JUCE    (30262): name = System Default (Input)
+01-08 22:04:30.229 I/JUCE    (30262): id = 0
+01-08 22:04:30.229 I/JUCE    (30262): sample rates size = 9
+01-08 22:04:30.229 I/JUCE    (30262): num channels = 1
+01-08 22:04:30.229 I/JUCE    (30262): name = SM-S901U built-in microphone
+01-08 22:04:30.229 I/JUCE    (30262): id = 22
+01-08 22:04:30.229 I/JUCE    (30262): sample rates size = 9
+01-08 22:04:30.229 I/JUCE    (30262): num channels = 2
+01-08 22:04:30.229 I/JUCE    (30262): name = SM-S901U telephony
+01-08 22:04:30.229 I/JUCE    (30262): id = 23
+01-08 22:04:30.229 I/JUCE    (30262): sample rates size = 9
+01-08 22:04:30.229 I/JUCE    (30262): num channels = 2
+01-08 22:04:30.229 I/JUCE    (30262): name = SM-S901U built-in microphone
+01-08 22:04:30.229 I/JUCE    (30262): id = 24
+01-08 22:04:30.229 I/JUCE    (30262): sample rates size = 9
+01-08 22:04:30.229 I/JUCE    (30262): num channels = 2
+01-08 22:04:30.229 I/JUCE    (30262): name = SM-S901U remote submix
+01-08 22:04:30.229 I/JUCE    (30262): id = 28
+01-08 22:04:30.229 I/JUCE    (30262): sample rates size = 1
+01-08 22:04:30.229 I/JUCE    (30262): num channels = 2
+01-08 22:04:30.229 I/JUCE    (30262): -----OutputDevices:
+01-08 22:04:30.229 I/JUCE    (30262): name = System Default (Output)
+01-08 22:04:30.229 I/JUCE    (30262): id = 0
+01-08 22:04:30.229 I/JUCE    (30262): sample rates size = 9
+01-08 22:04:30.229 I/JUCE    (30262): num channels = 2
+01-08 22:04:30.234 I/JUCE    (30262): name = SM-S901U built-in earphone speaker
+01-08 22:04:30.234 I/JUCE    (30262): id = 2
+01-08 22:04:30.234 I/JUCE    (30262): sample rates size = 1
+01-08 22:04:30.234 I/JUCE    (30262): num channels = 1
+01-08 22:04:30.234 I/JUCE    (30262): name = SM-S901U built-in speaker
+01-08 22:04:30.234 I/JUCE    (30262): id = 3
+01-08 22:04:30.234 I/JUCE    (30262): sample rates size = 1
+01-08 22:04:30.234 I/JUCE    (30262): num channels = 2
+01-08 22:04:30.234 I/JUCE    (30262): name = SM-S901U telephony
+01-08 22:04:30.234 I/JUCE    (30262): id = 15
+01-08 22:04:30.234 I/JUCE    (30262): sample rates size = 2
+01-08 22:04:30.234 I/JUCE    (30262): num channels = 2
+01-08 22:04:30.261 I/JUCE    (30262): Preparing Oboe stream with params:
+01-08 22:04:30.261 I/JUCE    (30262): AAudio supported = 1
+01-08 22:04:30.261 I/JUCE    (30262): API = Unspecified
+01-08 22:04:30.261 I/JUCE    (30262): DeviceId = 0
+01-08 22:04:30.261 I/JUCE    (30262): Direction = Output
+01-08 22:04:30.261 I/JUCE    (30262): SharingMode = Exclusive
+01-08 22:04:30.261 I/JUCE    (30262): ChannelCount = 2
+01-08 22:04:30.261 I/JUCE    (30262): Format = Float
+01-08 22:04:30.261 I/JUCE    (30262): SampleRate = 48000
+01-08 22:04:30.261 I/JUCE    (30262): PerformanceMode = LowLatency
+01-08 22:04:30.380 I/JUCE    (30262): Building Oboe stream with result: OK
+01-08 22:04:30.380 I/JUCE    (30262): Stream state = Open
+01-08 22:04:30.380 I/JUCE    (30262): Setting the bufferSizeInFrames to 192
+01-08 22:04:30.381 I/JUCE    (30262): Stream details:
+01-08 22:04:30.381 I/JUCE    (30262): Uses AAudio = 1
+01-08 22:04:30.381 I/JUCE    (30262): DeviceId = 3
+01-08 22:04:30.381 I/JUCE    (30262): Direction = Output
+01-08 22:04:30.381 I/JUCE    (30262): SharingMode = Exclusive
+01-08 22:04:30.381 I/JUCE    (30262): ChannelCount = 2
+01-08 22:04:30.381 I/JUCE    (30262): Format = Float
+01-08 22:04:30.381 I/JUCE    (30262): SampleRate = 48000
+01-08 22:04:30.381 I/JUCE    (30262): BufferSizeInFrames = 192
+01-08 22:04:30.381 I/JUCE    (30262): BufferCapacityInFrames = 3072
+01-08 22:04:30.381 I/JUCE    (30262): FramesPerBurst = 96
+01-08 22:04:30.381 I/JUCE    (30262): FramesPerCallback = 0
+01-08 22:04:30.381 I/JUCE    (30262): BytesPerFrame = 8
+01-08 22:04:30.381 I/JUCE    (30262): BytesPerSample = 4
+01-08 22:04:30.381 I/JUCE    (30262): PerformanceMode = LowLatency
+01-08 22:04:30.499 I/JUCE    (30262): Requested Oboe stream close with result: OK
+01-08 22:04:30.504 I/JUCE    (30262): Preparing Oboe stream with params:
+01-08 22:04:30.504 I/JUCE    (30262): AAudio supported = 1
+01-08 22:04:30.504 I/JUCE    (30262): API = Unspecified
+01-08 22:04:30.504 I/JUCE    (30262): DeviceId = 0
+01-08 22:04:30.504 I/JUCE    (30262): Direction = Output
+01-08 22:04:30.504 I/JUCE    (30262): SharingMode = Exclusive
+01-08 22:04:30.504 I/JUCE    (30262): ChannelCount = 2
+01-08 22:04:30.504 I/JUCE    (30262): Format = Float
+01-08 22:04:30.504 I/JUCE    (30262): SampleRate = 48000
+01-08 22:04:30.504 I/JUCE    (30262): PerformanceMode = LowLatency
+01-08 22:04:30.596 I/JUCE    (30262): Building Oboe stream with result: OK
+01-08 22:04:30.596 I/JUCE    (30262): Stream state = Open
+01-08 22:04:30.596 I/JUCE    (30262): Setting the bufferSizeInFrames to 1920
+01-08 22:04:30.596 I/JUCE    (30262): Stream details:
+01-08 22:04:30.596 I/JUCE    (30262): Uses AAudio = 1
+01-08 22:04:30.596 I/JUCE    (30262): DeviceId = 3
+01-08 22:04:30.596 I/JUCE    (30262): Direction = Output
+01-08 22:04:30.596 I/JUCE    (30262): SharingMode = Exclusive
+01-08 22:04:30.596 I/JUCE    (30262): ChannelCount = 2
+01-08 22:04:30.596 I/JUCE    (30262): Format = Float
+01-08 22:04:30.596 I/JUCE    (30262): SampleRate = 48000
+01-08 22:04:30.596 I/JUCE    (30262): BufferSizeInFrames = 1920
+01-08 22:04:30.596 I/JUCE    (30262): BufferCapacityInFrames = 3072
+01-08 22:04:30.596 I/JUCE    (30262): FramesPerBurst = 96
+01-08 22:04:30.596 I/JUCE    (30262): FramesPerCallback = 0
+01-08 22:04:30.596 I/JUCE    (30262): BytesPerFrame = 8
+01-08 22:04:30.596 I/JUCE    (30262): BytesPerSample = 4
+01-08 22:04:30.596 I/JUCE    (30262): PerformanceMode = LowLatency
+01-08 22:04:30.675 I/JUCE    (30262): Requested Oboe stream start with result: OK
+01-08 22:04:30.675 I/JUCE    (30262): Starting Oboe stream with result: OK
+01-08 22:04:32.638 I/raylib  (30364): Initializing raylib 5.0
+01-08 22:04:32.638 I/raylib  (30364): Platform backend: ANDROID
+01-08 22:04:32.638 I/raylib  (30364): Supported raylib modules:
+01-08 22:04:32.638 I/raylib  (30364):     > rcore:..... loaded (mandatory)
+01-08 22:04:32.638 I/raylib  (30364):     > rlgl:...... loaded (mandatory)
+01-08 22:04:32.638 I/raylib  (30364):     > rshapes:... loaded (optional)
+01-08 22:04:32.638 I/raylib  (30364):     > rtextures:. loaded (optional)
+01-08 22:04:32.638 I/raylib  (30364):     > rtext:..... loaded (optional)
+01-08 22:04:32.638 I/raylib  (30364):     > rmodels:... loaded (optional)
+01-08 22:04:32.638 I/raylib  (30364):     > raudio:.... loaded (optional)
+01-08 22:04:32.638 I/raylib  (30364): ANDROID: Window orientation set as landscape
+01-08 22:04:32.638 W/raylib  (30364): ANDROID: Window orientation changed to portrait
+01-08 22:04:32.638 I/raylib  (30364): PLATFORM: ANDROID: Initialized successfully
+01-08 22:04:32.680 I/raylib  (30364): DISPLAY: Upscaling required: Screen size (0x0) smaller than display size (2259x1080)
+01-08 22:04:32.680 I/raylib  (30364): DISPLAY: Device initialized successfully
+01-08 22:04:32.680 I/raylib  (30364):     > Display size: 2259 x 1080
+01-08 22:04:32.680 I/raylib  (30364):     > Screen size:  2259 x 1080
+01-08 22:04:32.680 I/raylib  (30364):     > Render size:  2259 x 1080
+01-08 22:04:32.680 I/raylib  (30364):     > Viewport offsets: 0, 0
+01-08 22:04:32.680 I/raylib  (30364): GL: Supported extensions count: 104
+01-08 22:04:32.680 I/raylib  (30364): GL: OpenGL device information:
+01-08 22:04:32.680 I/raylib  (30364):     > Vendor:   Qualcomm
+01-08 22:04:32.680 I/raylib  (30364):     > Renderer: Adreno (TM) 730
+01-08 22:04:32.680 I/raylib  (30364):     > Version:  OpenGL ES 3.2 V@0615.98 (GIT@0c393b63cf, I94e2bd5684, 1746191168) (Date:05/02/25)
+01-08 22:04:32.680 I/raylib  (30364):     > GLSL:     OpenGL ES GLSL ES 3.20
+01-08 22:04:32.680 I/raylib  (30364): GL: VAO extension detected, VAO functions loaded successfully
+01-08 22:04:32.680 I/raylib  (30364): GL: NPOT textures extension detected, full NPOT textures supported
+01-08 22:04:32.680 I/raylib  (30364): GL: ETC1 compressed textures supported
+01-08 22:04:32.680 I/raylib  (30364): GL: ASTC compressed textures supported
+01-08 22:04:32.680 I/raylib  (30364): TEXTURE: [ID 1] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+01-08 22:04:32.680 I/raylib  (30364): TEXTURE: [ID 1] Default texture loaded successfully
+01-08 22:04:32.681 I/raylib  (30364): SHADER: [ID 1] Vertex shader compiled successfully
+01-08 22:04:32.681 I/raylib  (30364): SHADER: [ID 2] Fragment shader compiled successfully
+01-08 22:04:32.682 I/raylib  (30364): SHADER: [ID 3] Program shader loaded successfully
+01-08 22:04:32.682 I/raylib  (30364): SHADER: [ID 3] Default shader loaded successfully
+01-08 22:04:32.682 I/raylib  (30364): RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+01-08 22:04:32.683 I/raylib  (30364): RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+01-08 22:04:32.683 I/raylib  (30364): RLGL: Default OpenGL state initialized successfully
+01-08 22:04:32.684 I/raylib  (30364): TEXTURE: [ID 2] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+01-08 22:04:32.684 I/raylib  (30364): FONT: Default font loaded successfully (224 glyphs)
+01-08 22:04:32.684 I/raylib  (30364): TEXTURE: [ID 3] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+01-08 22:04:32.684 I/raylib  (30364): TEXTURE: [ID 3] Default texture loaded successfully
+01-08 22:04:32.684 I/raylib  (30364): SHADER: [ID 4] Vertex shader compiled successfully
+01-08 22:04:32.684 I/raylib  (30364): SHADER: [ID 5] Fragment shader compiled successfully
+01-08 22:04:32.684 I/raylib  (30364): SHADER: [ID 6] Program shader loaded successfully
+01-08 22:04:32.684 I/raylib  (30364): SHADER: [ID 6] Default shader loaded successfully
+01-08 22:04:32.685 I/raylib  (30364): RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+01-08 22:04:32.685 I/raylib  (30364): RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+01-08 22:04:32.685 I/raylib  (30364): RLGL: Default OpenGL state initialized successfully
+01-08 22:04:32.685 I/raylib  (30364): TEXTURE: [ID 4] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+01-08 22:04:32.686 I/raylib  (30364): FONT: Default font loaded successfully (224 glyphs)
+01-08 22:04:32.686 I/raylib  (30364): TIMER: Target time per frame: 16.667 milliseconds
+01-08 22:04:32.689 I/JUCE    (30364): JUCE Assertion failure in juce_MidiDevices.cpp:48
+01-08 22:04:32.738 I/JUCE    (30364): -----InputDevices:
+01-08 22:04:32.738 I/JUCE    (30364): name = System Default (Input)
+01-08 22:04:32.738 I/JUCE    (30364): id = 0
+01-08 22:04:32.738 I/JUCE    (30364): sample rates size = 9
+01-08 22:04:32.738 I/JUCE    (30364): num channels = 1
+01-08 22:04:32.738 I/JUCE    (30364): name = SM-S901U built-in microphone
+01-08 22:04:32.738 I/JUCE    (30364): id = 22
+01-08 22:04:32.738 I/JUCE    (30364): sample rates size = 9
+01-08 22:04:32.738 I/JUCE    (30364): num channels = 2
+01-08 22:04:32.738 I/JUCE    (30364): name = SM-S901U telephony
+01-08 22:04:32.738 I/JUCE    (30364): id = 23
+01-08 22:04:32.738 I/JUCE    (30364): sample rates size = 9
+01-08 22:04:32.738 I/JUCE    (30364): num channels = 2
+01-08 22:04:32.738 I/JUCE    (30364): name = SM-S901U built-in microphone
+01-08 22:04:32.738 I/JUCE    (30364): id = 24
+01-08 22:04:32.738 I/JUCE    (30364): sample rates size = 9
+01-08 22:04:32.738 I/JUCE    (30364): num channels = 2
+01-08 22:04:32.738 I/JUCE    (30364): name = SM-S901U remote submix
+01-08 22:04:32.738 I/JUCE    (30364): id = 28
+01-08 22:04:32.738 I/JUCE    (30364): sample rates size = 1
+01-08 22:04:32.738 I/JUCE    (30364): num channels = 2
+01-08 22:04:32.738 I/JUCE    (30364): -----OutputDevices:
+01-08 22:04:32.738 I/JUCE    (30364): name = System Default (Output)
+01-08 22:04:32.738 I/JUCE    (30364): id = 0
+01-08 22:04:32.738 I/JUCE    (30364): sample rates size = 9
+01-08 22:04:32.738 I/JUCE    (30364): num channels = 2
+01-08 22:04:32.738 I/JUCE    (30364): name = SM-S901U built-in earphone speaker
+01-08 22:04:32.738 I/JUCE    (30364): id = 2
+01-08 22:04:32.738 I/JUCE    (30364): sample rates size = 1
+01-08 22:04:32.738 I/JUCE    (30364): num channels = 1
+01-08 22:04:32.738 I/JUCE    (30364): name = SM-S901U built-in speaker
+01-08 22:04:32.738 I/JUCE    (30364): id = 3
+01-08 22:04:32.738 I/JUCE    (30364): sample rates size = 1
+01-08 22:04:32.738 I/JUCE    (30364): num channels = 2
+01-08 22:04:32.738 I/JUCE    (30364): name = SM-S901U telephony
+01-08 22:04:32.738 I/JUCE    (30364): id = 15
+01-08 22:04:32.739 I/JUCE    (30364): sample rates size = 2
+01-08 22:04:32.739 I/JUCE    (30364): num channels = 2
+01-08 22:04:32.741 I/JUCE    (30364): Preparing Oboe stream with params:
+01-08 22:04:32.741 I/JUCE    (30364): AAudio supported = 1
+01-08 22:04:32.741 I/JUCE    (30364): API = Unspecified
+01-08 22:04:32.741 I/JUCE    (30364): DeviceId = 0
+01-08 22:04:32.741 I/JUCE    (30364): Direction = Output
+01-08 22:04:32.741 I/JUCE    (30364): SharingMode = Exclusive
+01-08 22:04:32.741 I/JUCE    (30364): ChannelCount = 2
+01-08 22:04:32.741 I/JUCE    (30364): Format = Float
+01-08 22:04:32.741 I/JUCE    (30364): SampleRate = 48000
+01-08 22:04:32.741 I/JUCE    (30364): PerformanceMode = LowLatency
+01-08 22:04:32.831 I/JUCE    (30364): Building Oboe stream with result: OK
+01-08 22:04:32.831 I/JUCE    (30364): Stream state = Open
+01-08 22:04:32.831 I/JUCE    (30364): Setting the bufferSizeInFrames to 192
+01-08 22:04:32.831 I/JUCE    (30364): Stream details:
+01-08 22:04:32.831 I/JUCE    (30364): Uses AAudio = 1
+01-08 22:04:32.831 I/JUCE    (30364): DeviceId = 3
+01-08 22:04:32.831 I/JUCE    (30364): Direction = Output
+01-08 22:04:32.831 I/JUCE    (30364): SharingMode = Exclusive
+01-08 22:04:32.831 I/JUCE    (30364): ChannelCount = 2
+01-08 22:04:32.831 I/JUCE    (30364): Format = Float
+01-08 22:04:32.831 I/JUCE    (30364): SampleRate = 48000
+01-08 22:04:32.831 I/JUCE    (30364): BufferSizeInFrames = 192
+01-08 22:04:32.831 I/JUCE    (30364): BufferCapacityInFrames = 3072
+01-08 22:04:32.831 I/JUCE    (30364): FramesPerBurst = 96
+01-08 22:04:32.831 I/JUCE    (30364): FramesPerCallback = 0
+01-08 22:04:32.831 I/JUCE    (30364): BytesPerFrame = 8
+01-08 22:04:32.831 I/JUCE    (30364): BytesPerSample = 4
+01-08 22:04:32.831 I/JUCE    (30364): PerformanceMode = LowLatency
+01-08 22:04:32.945 I/JUCE    (30364): Requested Oboe stream close with result: OK
+01-08 22:04:32.950 I/JUCE    (30364): Preparing Oboe stream with params:
+01-08 22:04:32.950 I/JUCE    (30364): AAudio supported = 1
+01-08 22:04:32.950 I/JUCE    (30364): API = Unspecified
+01-08 22:04:32.950 I/JUCE    (30364): DeviceId = 0
+01-08 22:04:32.950 I/JUCE    (30364): Direction = Output
+01-08 22:04:32.950 I/JUCE    (30364): SharingMode = Exclusive
+01-08 22:04:32.950 I/JUCE    (30364): ChannelCount = 2
+01-08 22:04:32.950 I/JUCE    (30364): Format = Float
+01-08 22:04:32.950 I/JUCE    (30364): SampleRate = 48000
+01-08 22:04:32.950 I/JUCE    (30364): PerformanceMode = LowLatency
+01-08 22:04:33.019 I/JUCE    (30364): Building Oboe stream with result: OK
+01-08 22:04:33.019 I/JUCE    (30364): Stream state = Open
+01-08 22:04:33.019 I/JUCE    (30364): Setting the bufferSizeInFrames to 1920
+01-08 22:04:33.019 I/JUCE    (30364): Stream details:
+01-08 22:04:33.019 I/JUCE    (30364): Uses AAudio = 1
+01-08 22:04:33.019 I/JUCE    (30364): DeviceId = 3
+01-08 22:04:33.019 I/JUCE    (30364): Direction = Output
+01-08 22:04:33.019 I/JUCE    (30364): SharingMode = Exclusive
+01-08 22:04:33.019 I/JUCE    (30364): ChannelCount = 2
+01-08 22:04:33.019 I/JUCE    (30364): Format = Float
+01-08 22:04:33.019 I/JUCE    (30364): SampleRate = 48000
+01-08 22:04:33.019 I/JUCE    (30364): BufferSizeInFrames = 1920
+01-08 22:04:33.019 I/JUCE    (30364): BufferCapacityInFrames = 3072
+01-08 22:04:33.019 I/JUCE    (30364): FramesPerBurst = 96
+01-08 22:04:33.019 I/JUCE    (30364): FramesPerCallback = 0
+01-08 22:04:33.019 I/JUCE    (30364): BytesPerFrame = 8
+01-08 22:04:33.019 I/JUCE    (30364): BytesPerSample = 4
+01-08 22:04:33.019 I/JUCE    (30364): PerformanceMode = LowLatency
+01-08 22:04:33.089 I/JUCE    (30364): Requested Oboe stream start with result: OK
+01-08 22:04:33.089 I/JUCE    (30364): Starting Oboe stream with result: OK
+01-08 22:09:29.774 I/raylib  (  537): Initializing raylib 5.0
+01-08 22:09:29.774 I/raylib  (  537): Platform backend: ANDROID
+01-08 22:09:29.774 I/raylib  (  537): Supported raylib modules:
+01-08 22:09:29.774 I/raylib  (  537):     > rcore:..... loaded (mandatory)
+01-08 22:09:29.774 I/raylib  (  537):     > rlgl:...... loaded (mandatory)
+01-08 22:09:29.774 I/raylib  (  537):     > rshapes:... loaded (optional)
+01-08 22:09:29.774 I/raylib  (  537):     > rtextures:. loaded (optional)
+01-08 22:09:29.774 I/raylib  (  537):     > rtext:..... loaded (optional)
+01-08 22:09:29.774 I/raylib  (  537):     > rmodels:... loaded (optional)
+01-08 22:09:29.774 I/raylib  (  537):     > raudio:.... loaded (optional)
+01-08 22:09:29.774 I/raylib  (  537): ANDROID: Window orientation set as landscape
+01-08 22:09:29.774 W/raylib  (  537): ANDROID: Window orientation changed to portrait
+01-08 22:09:29.774 I/raylib  (  537): PLATFORM: ANDROID: Initialized successfully
+01-08 22:09:29.833 I/raylib  (  537): DISPLAY: Upscaling required: Screen size (0x0) smaller than display size (2259x1080)
+01-08 22:09:29.835 I/raylib  (  537): DISPLAY: Device initialized successfully
+01-08 22:09:29.835 I/raylib  (  537):     > Display size: 2259 x 1080
+01-08 22:09:29.835 I/raylib  (  537):     > Screen size:  2259 x 1080
+01-08 22:09:29.835 I/raylib  (  537):     > Render size:  2259 x 1080
+01-08 22:09:29.835 I/raylib  (  537):     > Viewport offsets: 0, 0
+01-08 22:09:29.835 I/raylib  (  537): GL: Supported extensions count: 104
+01-08 22:09:29.835 I/raylib  (  537): GL: OpenGL device information:
+01-08 22:09:29.835 I/raylib  (  537):     > Vendor:   Qualcomm
+01-08 22:09:29.835 I/raylib  (  537):     > Renderer: Adreno (TM) 730
+01-08 22:09:29.835 I/raylib  (  537):     > Version:  OpenGL ES 3.2 V@0615.98 (GIT@0c393b63cf, I94e2bd5684, 1746191168) (Date:05/02/25)
+01-08 22:09:29.835 I/raylib  (  537):     > GLSL:     OpenGL ES GLSL ES 3.20
+01-08 22:09:29.835 I/raylib  (  537): GL: VAO extension detected, VAO functions loaded successfully
+01-08 22:09:29.835 I/raylib  (  537): GL: NPOT textures extension detected, full NPOT textures supported
+01-08 22:09:29.835 I/raylib  (  537): GL: ETC1 compressed textures supported
+01-08 22:09:29.835 I/raylib  (  537): GL: ASTC compressed textures supported
+01-08 22:09:29.836 I/raylib  (  537): TEXTURE: [ID 1] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+01-08 22:09:29.836 I/raylib  (  537): TEXTURE: [ID 1] Default texture loaded successfully
+01-08 22:09:29.837 I/raylib  (  537): SHADER: [ID 1] Vertex shader compiled successfully
+01-08 22:09:29.837 I/raylib  (  537): SHADER: [ID 2] Fragment shader compiled successfully
+01-08 22:09:29.837 I/raylib  (  537): SHADER: [ID 3] Program shader loaded successfully
+01-08 22:09:29.837 I/raylib  (  537): SHADER: [ID 3] Default shader loaded successfully
+01-08 22:09:29.839 I/raylib  (  537): RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+01-08 22:09:29.839 I/raylib  (  537): RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+01-08 22:09:29.839 I/raylib  (  537): RLGL: Default OpenGL state initialized successfully
+01-08 22:09:29.843 I/raylib  (  537): TEXTURE: [ID 2] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+01-08 22:09:29.844 I/raylib  (  537): FONT: Default font loaded successfully (224 glyphs)
+01-08 22:09:29.844 I/raylib  (  537): TEXTURE: [ID 3] Texture loaded successfully (1x1 | R8G8B8A8 | 1 mipmaps)
+01-08 22:09:29.844 I/raylib  (  537): TEXTURE: [ID 3] Default texture loaded successfully
+01-08 22:09:29.844 I/raylib  (  537): SHADER: [ID 4] Vertex shader compiled successfully
+01-08 22:09:29.844 I/raylib  (  537): SHADER: [ID 5] Fragment shader compiled successfully
+01-08 22:09:29.844 I/raylib  (  537): SHADER: [ID 6] Program shader loaded successfully
+01-08 22:09:29.844 I/raylib  (  537): SHADER: [ID 6] Default shader loaded successfully
+01-08 22:09:29.844 I/raylib  (  537): RLGL: Render batch vertex buffers loaded successfully in RAM (CPU)
+01-08 22:09:29.844 I/raylib  (  537): RLGL: Render batch vertex buffers loaded successfully in VRAM (GPU)
+01-08 22:09:29.844 I/raylib  (  537): RLGL: Default OpenGL state initialized successfully
+01-08 22:09:29.845 I/raylib  (  537): TEXTURE: [ID 4] Texture loaded successfully (128x128 | GRAY_ALPHA | 1 mipmaps)
+01-08 22:09:29.845 I/raylib  (  537): FONT: Default font loaded successfully (224 glyphs)
+01-08 22:09:29.845 I/raylib  (  537): TIMER: Target time per frame: 16.667 milliseconds
+01-08 22:09:29.845 I/raylib  (  537): TEXTURE: [ID 5] Texture loaded successfully (960x540 | R8G8B8A8 | 1 mipmaps)
+01-08 22:09:29.845 I/raylib  (  537): TEXTURE: [ID 1] Depth renderbuffer loaded successfully (24 bits)
+01-08 22:09:29.845 I/raylib  (  537): FBO: [ID 1] Framebuffer object created successfully
+01-08 22:09:29.849 I/JUCE    (  537): JUCE Assertion failure in juce_MidiDevices.cpp:48
+01-08 22:09:29.900 I/JUCE    (  537): -----InputDevices:
+01-08 22:09:29.900 I/JUCE    (  537): name = System Default (Input)
+01-08 22:09:29.900 I/JUCE    (  537): id = 0
+01-08 22:09:29.900 I/JUCE    (  537): sample rates size = 9
+01-08 22:09:29.900 I/JUCE    (  537): num channels = 1
+01-08 22:09:29.900 I/JUCE    (  537): name = SM-S901U built-in microphone
+01-08 22:09:29.900 I/JUCE    (  537): id = 22
+01-08 22:09:29.900 I/JUCE    (  537): sample rates size = 9
+01-08 22:09:29.900 I/JUCE    (  537): num channels = 2
+01-08 22:09:29.900 I/JUCE    (  537): name = SM-S901U telephony
+01-08 22:09:29.900 I/JUCE    (  537): id = 23
+01-08 22:09:29.900 I/JUCE    (  537): sample rates size = 9
+01-08 22:09:29.900 I/JUCE    (  537): num channels = 2
+01-08 22:09:29.900 I/JUCE    (  537): name = SM-S901U built-in microphone
+01-08 22:09:29.900 I/JUCE    (  537): id = 24
+01-08 22:09:29.900 I/JUCE    (  537): sample rates size = 9
+01-08 22:09:29.900 I/JUCE    (  537): num channels = 2
+01-08 22:09:29.900 I/JUCE    (  537): name = SM-S901U remote submix
+01-08 22:09:29.900 I/JUCE    (  537): id = 28
+01-08 22:09:29.900 I/JUCE    (  537): sample rates size = 1
+01-08 22:09:29.900 I/JUCE    (  537): num channels = 2
+01-08 22:09:29.900 I/JUCE    (  537): -----OutputDevices:
+01-08 22:09:29.900 I/JUCE    (  537): name = System Default (Output)
+01-08 22:09:29.900 I/JUCE    (  537): id = 0
+01-08 22:09:29.900 I/JUCE    (  537): sample rates size = 9
+01-08 22:09:29.900 I/JUCE    (  537): num channels = 2
+01-08 22:09:29.900 I/JUCE    (  537): name = SM-S901U built-in earphone speaker
+01-08 22:09:29.900 I/JUCE    (  537): id = 2
+01-08 22:09:29.900 I/JUCE    (  537): sample rates size = 1
+01-08 22:09:29.900 I/JUCE    (  537): num channels = 1
+01-08 22:09:29.900 I/JUCE    (  537): name = SM-S901U built-in speaker
+01-08 22:09:29.900 I/JUCE    (  537): id = 3
+01-08 22:09:29.900 I/JUCE    (  537): sample rates size = 1
+01-08 22:09:29.900 I/JUCE    (  537): num channels = 2
+01-08 22:09:29.900 I/JUCE    (  537): name = SM-S901U telephony
+01-08 22:09:29.900 I/JUCE    (  537): id = 15
+01-08 22:09:29.900 I/JUCE    (  537): sample rates size = 2
+01-08 22:09:29.900 I/JUCE    (  537): num channels = 2
+01-08 22:09:29.908 I/JUCE    (  537): Preparing Oboe stream with params:
+01-08 22:09:29.908 I/JUCE    (  537): AAudio supported = 1
+01-08 22:09:29.908 I/JUCE    (  537): API = Unspecified
+01-08 22:09:29.908 I/JUCE    (  537): DeviceId = 0
+01-08 22:09:29.908 I/JUCE    (  537): Direction = Output
+01-08 22:09:29.908 I/JUCE    (  537): SharingMode = Exclusive
+01-08 22:09:29.908 I/JUCE    (  537): ChannelCount = 2
+01-08 22:09:29.908 I/JUCE    (  537): Format = Float
+01-08 22:09:29.908 I/JUCE    (  537): SampleRate = 48000
+01-08 22:09:29.908 I/JUCE    (  537): PerformanceMode = LowLatency
+01-08 22:09:30.050 I/JUCE    (  537): Building Oboe stream with result: OK
+01-08 22:09:30.050 I/JUCE    (  537): Stream state = Open
+01-08 22:09:30.050 I/JUCE    (  537): Setting the bufferSizeInFrames to 192
+01-08 22:09:30.050 I/JUCE    (  537): Stream details:
+01-08 22:09:30.050 I/JUCE    (  537): Uses AAudio = 1
+01-08 22:09:30.050 I/JUCE    (  537): DeviceId = 3
+01-08 22:09:30.050 I/JUCE    (  537): Direction = Output
+01-08 22:09:30.050 I/JUCE    (  537): SharingMode = Exclusive
+01-08 22:09:30.050 I/JUCE    (  537): ChannelCount = 2
+01-08 22:09:30.050 I/JUCE    (  537): Format = Float
+01-08 22:09:30.050 I/JUCE    (  537): SampleRate = 48000
+01-08 22:09:30.050 I/JUCE    (  537): BufferSizeInFrames = 192
+01-08 22:09:30.050 I/JUCE    (  537): BufferCapacityInFrames = 3072
+01-08 22:09:30.050 I/JUCE    (  537): FramesPerBurst = 96
+01-08 22:09:30.050 I/JUCE    (  537): FramesPerCallback = 0
+01-08 22:09:30.050 I/JUCE    (  537): BytesPerFrame = 8
+01-08 22:09:30.050 I/JUCE    (  537): BytesPerSample = 4
+01-08 22:09:30.050 I/JUCE    (  537): PerformanceMode = LowLatency
+01-08 22:09:30.164 I/JUCE    (  537): Requested Oboe stream close with result: OK
+01-08 22:09:30.167 I/JUCE    (  537): Preparing Oboe stream with params:
+01-08 22:09:30.167 I/JUCE    (  537): AAudio supported = 1
+01-08 22:09:30.167 I/JUCE    (  537): API = Unspecified
+01-08 22:09:30.167 I/JUCE    (  537): DeviceId = 0
+01-08 22:09:30.167 I/JUCE    (  537): Direction = Output
+01-08 22:09:30.167 I/JUCE    (  537): SharingMode = Exclusive
+01-08 22:09:30.167 I/JUCE    (  537): ChannelCount = 2
+01-08 22:09:30.167 I/JUCE    (  537): Format = Float
+01-08 22:09:30.167 I/JUCE    (  537): SampleRate = 48000
+01-08 22:09:30.167 I/JUCE    (  537): PerformanceMode = LowLatency
+01-08 22:09:30.219 I/JUCE    (  537): Building Oboe stream with result: OK
+01-08 22:09:30.219 I/JUCE    (  537): Stream state = Open
+01-08 22:09:30.219 I/JUCE    (  537): Setting the bufferSizeInFrames to 1920
+01-08 22:09:30.219 I/JUCE    (  537): Stream details:
+01-08 22:09:30.219 I/JUCE    (  537): Uses AAudio = 1
+01-08 22:09:30.219 I/JUCE    (  537): DeviceId = 3
+01-08 22:09:30.219 I/JUCE    (  537): Direction = Output
+01-08 22:09:30.219 I/JUCE    (  537): SharingMode = Exclusive
+01-08 22:09:30.219 I/JUCE    (  537): ChannelCount = 2
+01-08 22:09:30.219 I/JUCE    (  537): Format = Float
+01-08 22:09:30.219 I/JUCE    (  537): SampleRate = 48000
+01-08 22:09:30.219 I/JUCE    (  537): BufferSizeInFrames = 1920
+01-08 22:09:30.219 I/JUCE    (  537): BufferCapacityInFrames = 3072
+01-08 22:09:30.219 I/JUCE    (  537): FramesPerBurst = 96
+01-08 22:09:30.219 I/JUCE    (  537): FramesPerCallback = 0
+01-08 22:09:30.219 I/JUCE    (  537): BytesPerFrame = 8
+01-08 22:09:30.219 I/JUCE    (  537): BytesPerSample = 4
+01-08 22:09:30.219 I/JUCE    (  537): PerformanceMode = LowLatency
+01-08 22:09:30.269 I/JUCE    (  537): Requested Oboe stream start with result: OK
+01-08 22:09:30.269 I/JUCE    (  537): Starting Oboe stream with result: OK
