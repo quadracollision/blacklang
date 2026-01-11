@@ -183,18 +183,20 @@ public class BlackLangApplication extends Application {
                             if (selfChange)
                                 return;
 
-                            if (count > before) {
-                                // Characters added
+                            // 1. Handle Deletions (Backspaces)
+                            // "before" is the number of characters replaced/deleted
+                            for (int i = 0; i < before; i++) {
+                                nativeOnInput(259, 0); // Backspace
+                            }
+
+                            // 2. Handle Additions
+                            // "count" is the number of new characters added
+                            if (count > 0) {
                                 for (int i = 0; i < count; i++) {
                                     char c = s.charAt(start + i);
                                     if (c != GHOST) { // Don't send ghost char
                                         nativeOnInput(0, (int) c);
                                     }
-                                }
-                            } else if (before > count) {
-                                // Characters deleted (backspace)
-                                for (int i = 0; i < (before - count); i++) {
-                                    nativeOnInput(259, 0); // Backspace
                                 }
                             }
                         }
