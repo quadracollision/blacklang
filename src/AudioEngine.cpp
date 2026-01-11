@@ -2,9 +2,18 @@
 #include "fx/FXProcessor.h"
 #include <iostream>
 #include <cmath>
+#include <set>
+
+// Debug logging disabled - sync feature removed for rewrite
+#define SYNC_LOG(...) ((void)0)
 
 AudioEngine::AudioEngine() {
     formatManager.registerBasicFormats();
+    formatManager.registerFormat(new juce::OggVorbisAudioFormat(), false);
+#if JUCE_USE_MP3AUDIOFORMAT
+    formatManager.registerFormat(new juce::MP3AudioFormat(), false);
+#endif
+    formatManager.registerFormat(new juce::FlacAudioFormat(), false);
 }
 
 AudioEngine::~AudioEngine() {
@@ -12,7 +21,16 @@ AudioEngine::~AudioEngine() {
 }
 
 bool AudioEngine::initialize() {
+#if defined(JUCE_ANDROID)
+    juce::AudioDeviceManager::AudioDeviceSetup setup;
+    setup.bufferSize = 1024; // Larger buffer for stability on Android
+    setup.sampleRate = 48000.0;
+    
+    auto result = deviceManager.initialise(0, 2, nullptr, true, "", &setup);
+#else
     auto result = deviceManager.initialiseWithDefaultDevices(0, 2);
+#endif
+
     if (result.isNotEmpty()) {
         std::cerr << "Audio init error: " << result.toStdString() << std::endl;
         return false;
@@ -140,29 +158,15 @@ Pattern* AudioEngine::getPattern(const std::string& name) {
 }
 
 void AudioEngine::playPattern(const std::string& name) {
-    std::lock_guard<std::mutex> lock(patternMutex);
     if (patterns.find(name) == patterns.end()) {
         std::cerr << "Pattern not found: " << name << std::endl;
         return;
     }
     
     currentPatternName = name;
-    activePatternNames.clear(); // CRITICAL FIX: Ensure we exit multi-pattern mode
-    currentChain.clear();
-    chainIndex = 0;
-    currentStep = 0;
-    
-    // FIX: Initialize to negative duration so first step triggers immediately
-    double dur = 0.0;
-    if (patterns.find(name) != patterns.end()) {
-        dur = patterns[name].getStepDurationSamples(globalBpm.load());
-    }
-    stepStartSample = -(int64_t)dur;
-    samplePosition = 0;
-
-    samplePlaybackPosition = 0;
-    sampleIsPlaying = false;
-    playing.store(true);
+    // Unified path: use multi-pattern logic even for single pattern
+    // This ensures consistent timing/sync behavior and uses the optimized loop
+    playMultiplePatterns({name});
 }
 
 void AudioEngine::playChain(const PatternChain& chain) {
@@ -180,7 +184,7 @@ void AudioEngine::playChain(const PatternChain& chain) {
     // FIX: Initialize to negative duration so first step triggers immediately
     double dur = 0.0;
     if (patterns.find(currentPatternName) != patterns.end()) {
-        dur = patterns[currentPatternName].getStepDurationSamples(globalBpm.load());
+        dur = patterns[currentPatternName].getStepDurationSamples(globalBpm.load(), sampleRate);
     }
     stepStartSample = -(int64_t)dur;
     samplePosition = 0;
@@ -208,7 +212,7 @@ void AudioEngine::playMultiplePatterns(const std::vector<std::string>& names) {
             PatternPlayState state;
             // FIX: Initialize to ensure Step 1 triggers immediately
             state.currentStep = 0; 
-            double dur = patterns[name].getStepDurationSamples(globalBpm.load());
+            double dur = patterns[name].getStepDurationSamples(globalBpm.load(), sampleRate);
             state.stepStartSample = -(int64_t)dur;
             state.samplePosition = 0;
             patternStates[name] = state;
@@ -235,34 +239,50 @@ void AudioEngine::pause() {
     }
 }
 
-void AudioEngine::updateActivePatterns(const std::vector<std::string>& names) {
-    if (names.empty()) {
+void AudioEngine::updateActivePatterns(const std::vector<std::pair<std::string, std::string>>& patternsWithTracks) {
+    if (patternsWithTracks.empty()) {
         stop();
         return;
     }
     
     std::lock_guard<std::mutex> lock(patternMutex);
+
+    // Update track assignments
+    std::vector<std::string> names;
+    names.reserve(patternsWithTracks.size());
+    for (const auto& pair : patternsWithTracks) {
+        names.push_back(pair.first);
+        if (!pair.second.empty()) {
+            patternToTrack[pair.first] = pair.second;
+        }
+    }
     
-    activePatternNames = names;
+    // Build set of requested patterns
+    std::set<std::string> newActiveSet(names.begin(), names.end());
     
-    // Initialize new pattern states - each pattern runs independently with its own timing
+    // Initialize new patterns, keep existing ones running
     for (const auto& name : names) {
         if (patternStates.find(name) == patternStates.end()) {
             PatternPlayState newState;
-            newState.currentStep = 1; // Start at step 1
-            newState.samplePosition = 0;
+            newState.currentStep = 1;
             newState.stepStartSample = 0;
-            // Each pattern uses its own syncBase for timing - no global sync
+            newState.samplePosition = 0;
             patternStates[name] = newState;
         }
+    }
+    
+    // Rebuild activePatternNames
+    activePatternNames.clear();
+    for (const auto& name : newActiveSet) {
+        activePatternNames.push_back(name);
     }
     
     // Cleanup old states
     std::vector<std::string> toRemove;
     for (auto& pair : patternStates) {
-        bool found = false;
-        for (const auto& n : names) if (n == pair.first) found = true;
-        if (!found) toRemove.push_back(pair.first);
+        if (newActiveSet.find(pair.first) == newActiveSet.end()) {
+            toRemove.push_back(pair.first);
+        }
     }
     for (const auto& r : toRemove) patternStates.erase(r);
     
@@ -270,6 +290,36 @@ void AudioEngine::updateActivePatterns(const std::vector<std::string>& names) {
         playing.store(true);
         paused.store(false);
     }
+}
+
+void AudioEngine::queuePatternSwitch(const std::string& trackName, const std::string& newPatternName) {
+    std::lock_guard<std::mutex> lock(patternMutex);
+    
+    // Find currently playing pattern on this track
+    std::string currentPattern = "";
+    for (const auto& pair : patternStates) {
+        if (patternToTrack.count(pair.first) && patternToTrack[pair.first] == trackName) {
+            currentPattern = pair.first;
+            break;
+        }
+    }
+    
+    if (currentPattern.empty()) {
+        // No pattern playing on this track - shouldn't happen but handle gracefully
+        return;
+    }
+    
+    // Queue the new pattern
+    {
+        std::lock_guard<std::mutex> qLock(queueMutex);
+        pendingPatternQueues[trackName] = newPatternName;
+    }
+    
+    // Mark current pattern to stop at end
+    patternStates[currentPattern].stopAtEnd = true;
+    
+    // Make sure the new pattern has track assignment
+    patternToTrack[newPatternName] = trackName;
 }
 
 int AudioEngine::getPatternProgress(const std::string& name) {
@@ -365,61 +415,127 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
         busManager.prepareBuffers(numSamples);
         busManager.clearAllBuffers();
         
-        // Process each sample
+        // ---------------------------------------------------------
+        // OPTIMIZATION: Hoist map lookups out of the hot loop
+        // ---------------------------------------------------------
+        struct PatternContext {
+            Pattern* pattern;
+            PatternPlayState* state;
+            AudioBus* trackBus;
+            std::string patternName;
+        };
+        
+        // Stack allocation for contexts (limit to reasonable max, e.g., 64 patterns)
+        // Or use a reusable vector member to avoid allocations, but stack is fast enough for small N
+        PatternContext contexts[64]; 
+        int activeContextCount = 0;
+        
+        for (const auto& patName : activePatternNames) {
+            auto patIt = patterns.find(patName);
+            if (patIt != patterns.end()) {
+                // Determine track and bus ONCE
+                std::string trackName = patternToTrack.count(patName) ? patternToTrack.at(patName) : "";
+                AudioBus* bus = busManager.getOrCreateTrack(trackName);
+                
+                if (bus && activeContextCount < 64) {
+                    contexts[activeContextCount].pattern = &patIt->second;
+                    contexts[activeContextCount].state = &patternStates[patName];
+                    contexts[activeContextCount].trackBus = bus;
+                    contexts[activeContextCount].patternName = patName;
+                    activeContextCount++;
+                }
+            }
+        }
+
+        // ---------------------------------------------------------
+        // Sample Processing Loop
+        // ---------------------------------------------------------
         for (int i = 0; i < numSamples; ++i) {
-            for (const auto& patName : activePatternNames) {
-                auto patIt = patterns.find(patName);
-                if (patIt == patterns.end()) continue;
+            for (int k = 0; k < activeContextCount; ++k) {
+                PatternContext& ctx = contexts[k];
+                Pattern& pattern = *ctx.pattern;
+                PatternPlayState& state = *ctx.state;
+                AudioBus* trackBus = ctx.trackBus; // Direct pointer access
                 
-                Pattern& pattern = patIt->second;
-                auto& state = patternStates[patName];
-                
-                // Get the track bus this pattern belongs to
-                std::string trackName = getTrackForPattern(patName);
-                AudioBus* trackBus = busManager.getOrCreateTrack(trackName);
-                if (!trackBus) continue;
+
                 
                 // Check if we need to advance to next step
-                double stepDuration = pattern.getStepDurationSamples(globalBpm.load());
+                double stepDuration = pattern.getStepDurationSamples(globalBpm.load(), sampleRate);
                 if (state.samplePosition >= state.stepStartSample + (int64_t)stepDuration) {
                     state.currentStep++;
                     state.stepStartSample = state.samplePosition;
                     
+                    // SYNC_LOG("Pattern %s advanced to step %d (total %d)", ctx.patternName.c_str(), state.currentStep, pattern.steps);
+                    
                     if (state.currentStep > pattern.steps) {
+                        // Check for queued pattern switch (per-slot sync)
+                        if (state.stopAtEnd) {
+                            std::string trackName = patternToTrack.count(ctx.patternName) ? patternToTrack[ctx.patternName] : "";
+                            std::string nextPat = "";
+                            
+                            {
+                                std::lock_guard<std::mutex> qLock(queueMutex);
+                                if (!trackName.empty() && pendingPatternQueues.count(trackName)) {
+                                    nextPat = pendingPatternQueues[trackName];
+                                    pendingPatternQueues.erase(trackName);
+                                }
+                            }
+                            
+                            if (!nextPat.empty() && patterns.count(nextPat)) {
+                                // Execute the swap
+                                std::string oldPatternName = ctx.patternName; // Save for cleanup
+                                state.sampleIsPlaying = false;
+                                state.stopAtEnd = false;
+                                
+                                // Initialize state for new pattern
+                                PatternPlayState newState;
+                                newState.currentStep = 1;
+                                newState.stepStartSample = 0;
+                                newState.samplePosition = 0;
+                                patternStates[nextPat] = newState;
+                                patternToTrack[nextPat] = trackName;
+                                
+                                // Update active pattern names
+                                for (size_t idx = 0; idx < activePatternNames.size(); ++idx) {
+                                    if (activePatternNames[idx] == oldPatternName) {
+                                        activePatternNames[idx] = nextPat;
+                                        break;
+                                    }
+                                }
+                                
+                                // Remove old pattern from patternStates so next swap finds correct current pattern
+                                patternStates.erase(oldPatternName);
+                                
+                                // Update context for remainder of this audio block
+                                ctx.patternName = nextPat;
+                                ctx.pattern = &patterns[nextPat];
+                                ctx.state = &patternStates[nextPat];
+                                
+                                // Trigger step 1 of new pattern
+                                Pattern& newPattern = *ctx.pattern;
+                                PatternPlayState& newStateRef = *ctx.state;
+                                if (newPattern.shouldTriggerAt(1)) {
+                                    triggerStep(newStateRef, newPattern);
+                                }
+                                
+                                k--;
+                                continue;
+                            }
+                            state.stopAtEnd = false;
+                        }
+                        
+                        // Pattern cycle - reset to step 1
                         state.currentStep = 1;
-                        state.stepStartSample = 0;
-                        state.samplePosition = 0;
+                        state.stepStartSample = state.samplePosition;
+
+                        // QUEUED SYNC CHECK (Legacy)
+                        if (pendingResync.load()) {
+                            resyncAllPatternsInternal();
+                        }
                     }
                     
                     if (pattern.shouldTriggerAt(state.currentStep)) {
-                        state.samplePlaybackPosition = 0.0;
-                        state.sampleIsPlaying = true;
-                        state.fadeInSamplesRemaining = 88; // 2ms fade-in
-                        state.isStuttering = false; // Reset start of step
-                        state.stutterIntervalSamples = 0;
-                        
-                        // Calculate Pitch
-                        int semitones = 0;
-                        if (pattern.stepPitches.count(state.currentStep)) {
-                            semitones = pattern.stepPitches[state.currentStep];
-                        }
-                        state.currentSpeedRatio = std::pow(2.0, semitones / 12.0);
-                        
-                        // Calculate Velocity
-                        state.currentVelocity = 1.0f;
-                        if (pattern.stepVelocities.count(state.currentStep)) {
-                            state.currentVelocity = pattern.stepVelocities[state.currentStep];
-                        }
-                        
-                        // Apply Stutter Speed if present
-                        if (pattern.stepFXParams.count(state.currentStep) &&
-                            pattern.stepFXParams.at(state.currentStep).count(Pattern::PAR_STUTTER_SPEED)) {
-                             float speedMult = pattern.stepFXParams.at(state.currentStep).at(Pattern::PAR_STUTTER_SPEED);
-                             if (speedMult > 0.0f) state.currentSpeedRatio *= speedMult;
-                        }
-
-                        // FX Processing (Modular)
-                        fxProcessor.processStepFX(state, pattern, state.currentStep, globalBpm.load());
+                        triggerStep(state, pattern);
                     }
                 }
                 
@@ -437,15 +553,7 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                         if (samplesInStep > 0 && samplesInStep % state.stutterIntervalSamples == 0) {
                             // Re-trigger
                             if (state.isReverse) {
-                                // For reverse, re-trigger from 'start' (which is the high end) ??
-                                // Or simpler: just reset to initial position for this step
-                                // Implementation complexity: we need to store initial trigger pos.
-                                // Fallback: just standard retrigger logic might look weird in reverse.
-                                // Let's just reset to whatever 'start' means.
-                                // Current implementation of stutter overrides playback pos.
                                 state.samplePlaybackPosition = (double)pattern.sampleBuffer.getNumSamples(); // Default
-                                // If specific slice/reverse logic was processed, this might break it.
-                                // Ideally we re-run processStepFX? OR just ignore stutter on reverse for now to be safe.
                             } else {
                                 state.samplePlaybackPosition = 0.0; 
                             }
@@ -518,8 +626,9 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                 } // Close if sampleIsPlaying
                 
                 state.samplePosition++;
-            } // Close for patName
-        } // Close for i
+            } // Close for loop over contexts (patterns)
+        } // Close for loop over samples
+
     
     // Mix all tracks to master and apply master processing
     busManager.mixTracksToMaster();
@@ -575,115 +684,40 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
         }
     }
     
-    return;
+}
 }
     
-    // Single pattern / chain mode (legacy)
-    Pattern* pattern = nullptr;
-    auto it = patterns.find(currentPatternName);
-    if (it != patterns.end()) {
-        pattern = &it->second;
-    }
-    
-    if (!pattern || pattern->sampleBuffer.getNumSamples() == 0) return;
-    
-    // Process audio
-    for (int i = 0; i < numSamples; ++i) {
-        // Check if we need to advance to next step
-        double stepDuration = pattern->getStepDurationSamples(globalBpm.load());
-        if (samplePosition >= stepStartSample + (int64_t)stepDuration) {
-            currentStep++;
-            stepStartSample = samplePosition;
-            
-            if (currentStep > pattern->steps) {
-                currentStep = 1;
-                stepStartSample = 0;
-                samplePosition = 0;
-                
-                // Advance chain if playing chain
-                if (!currentChain.isEmpty()) {
-                    chainIndex++;
-                    if (chainIndex >= (int)currentChain.size()) {
-                        chainIndex = 0;
-                    }
-                    currentPatternName = currentChain.getPatterns()[chainIndex];
-                    it = patterns.find(currentPatternName);
-                    if (it != patterns.end()) {
-                        pattern = &it->second;
-                    }
-                }
-            }
-            
-            // Check if this step triggers the sample
-            if (pattern->shouldTriggerAt(currentStep)) {
-                triggerSample(*pattern, currentStep);
-            }
-        }
-        
-        // Mix sample if playing
-        if (sampleIsPlaying && samplePlaybackPosition < pattern->sampleBuffer.getNumSamples() && samplePlaybackPosition < samplePlaybackEnd) {
-            // --- ANTI-CLICK ENVELOPE (1-2ms fade-in/out) ---
-            const int fadeInSamples = 88;
-            const int fadeOutSamples = 88;
-            int totalSamples = pattern->sampleBuffer.getNumSamples();
-            int sampleIdx = (int)samplePlaybackPosition;
-            float envelope = 1.0f;
-            
-            if (sampleIdx < fadeInSamples) {
-                envelope = (float)sampleIdx / (float)fadeInSamples;
-            }
-            else if (sampleIdx >= totalSamples - fadeOutSamples) {
-                int samplesRemaining = totalSamples - sampleIdx;
-                envelope = (float)samplesRemaining / (float)fadeOutSamples;
-            }
-            
-            // Calculate Gain based on Volume and Pan
-            float vol = pattern->volume;
-            float pan = pattern->pan;
-            
-            // Stereo Panning (Simple Linear)
-            float leftGain = vol * (1.0f - pan) * 2.0f; // *2 to maintain power at center roughly
-            float rightGain = vol * pan * 2.0f;
-            
-            // Allow over 1.0 slightly if needed, but clamp pan
-            if (pan < 0.0f) pan = 0.0f;
-            if (pan > 1.0f) pan = 1.0f;
-            
-            for (int ch = 0; ch < numOutputChannels; ++ch) {
-                // Determine gain for this channel
-                float gain = 1.0f;
-                if (numOutputChannels >= 2) {
-                    if (ch == 0) gain = leftGain;
-                    else if (ch == 1) gain = rightGain;
-                    else gain = vol; // Aux channels get mono mix
-                } else {
-                    gain = vol; // Mixing down
-                }
-                
-                // Mix
-                int srcCh = std::min(ch, pattern->sampleBuffer.getNumChannels() - 1);
-                outputChannelData[ch][i] += pattern->sampleBuffer.getSample(srcCh, sampleIdx) * envelope * gain;
-            }
-            
-            if (sampleIsReverse) {
-                samplePlaybackPosition--;
-                if (samplePlaybackPosition < 0 || (samplePlaybackEnd > 0 && samplePlaybackPosition <= samplePlaybackEnd)) {
-                    sampleIsPlaying = false; // Stop
-                }
-            } else {
-                samplePlaybackPosition++;
-                // Check stop
-                if (samplePlaybackPosition >= pattern->sampleBuffer.getNumSamples() || samplePlaybackPosition >= samplePlaybackEnd) {
-                    sampleIsPlaying = false;
-                }
-            }
-        }
-        
-        samplePosition++;
-    }
-    
 
 
+void AudioEngine::triggerStep(PatternPlayState& state, Pattern& pattern) {
+    state.samplePlaybackPosition = 0.0;
+    state.sampleIsPlaying = true;
+    state.fadeInSamplesRemaining = 88; // 2ms fade-in
+    state.isStuttering = false; // Reset start of step
+    state.stutterIntervalSamples = 0;
+    
+    // Calculate Pitch
+    int semitones = 0;
+    if (pattern.stepPitches.count(state.currentStep)) {
+        semitones = pattern.stepPitches[state.currentStep];
+    }
+    state.currentSpeedRatio = std::pow(2.0, semitones / 12.0);
+    
+    // Calculate Velocity
+    state.currentVelocity = 1.0f;
+    if (pattern.stepVelocities.count(state.currentStep)) {
+        state.currentVelocity = pattern.stepVelocities[state.currentStep];
+    }
+    
+    // Apply Stutter Speed if present
+    if (pattern.stepFXParams.count(state.currentStep) &&
+        pattern.stepFXParams.at(state.currentStep).count(Pattern::PAR_STUTTER_SPEED)) {
+            float speedMult = pattern.stepFXParams.at(state.currentStep).at(Pattern::PAR_STUTTER_SPEED);
+            if (speedMult > 0.0f) state.currentSpeedRatio *= speedMult;
+    }
+
+    // FX Processing (Modular)
+    fxProcessor.processStepFX(state, pattern, state.currentStep, globalBpm.load(), sampleRate);
 }
 
 void AudioEngine::previewSlice(Pattern& pattern, int sliceIndex, bool playToEnd) {
@@ -718,91 +752,7 @@ void AudioEngine::previewSlice(Pattern& pattern, int sliceIndex, bool playToEnd)
     }
 }
 
-void AudioEngine::triggerSample(Pattern& pattern, int step) {
-    samplePlaybackPosition = 0;
-    
-    // Default to full sample
-    int64_t totalSamples = pattern.sampleBuffer.getNumSamples();
-    int64_t endPos = totalSamples;
-    int64_t startPos = 0;
-    
-    // Check for Nudge FX (Bipolar)
-    // 0.5 = Center (Full Length)
-    // > 0.5 = Offset Start (Cut Attack)
-    // < 0.5 = Offset End (Cut Tail / Gate)
-    
 
-    if (pattern.stepFX.count(step)) {
-        for (int fxId : pattern.stepFX[step]) {
-            if (fxId == Pattern::FX_NUDGE) {
-                 if (pattern.stepFXParams[step].count(Pattern::PAR_NUDGE_OFFSET)) {
-                     float val = pattern.stepFXParams[step][Pattern::PAR_NUDGE_OFFSET];
-                     
-                     if (val > 0.5f) {
-                         // Right Side: Adjust Start
-                         float norm = (val - 0.5f) * 2.0f; // 0.0 to 1.0
-                         startPos = (int64_t)(norm * totalSamples);
-                     } else if (val < 0.5f) {
-                         // Left Side: Adjust End
-                         float norm = val * 2.0f; // 0.0 to 1.0
-                         endPos = (int64_t)(norm * totalSamples);
-                     }
-                 }
-            }
-
-            else if (fxId == Pattern::FX_REVERSE) {
-                sampleIsReverse = true;
-                // Start from end (default)
-                startPos = totalSamples;
-                endPos = 0; // Play backwards to 0 
-                
-                // Note: Slice logic will override this below if both are present
-            }
-            else if (fxId == Pattern::FX_SLICE) {
-                 if (pattern.stepFXParams[step].count(Pattern::PAR_SLICE_INDEX)) {
-                     int sliceIdx = (int)pattern.stepFXParams[step][Pattern::PAR_SLICE_INDEX];
-                     
-                     // Safety Bounds Check
-                     if (sliceIdx >= 0 && sliceIdx < (int)pattern.sliceMarkers.size()) {
-                         // Normal Slice
-                         int64_t sStart = pattern.sliceMarkers[sliceIdx];
-                         int64_t sEnd = totalSamples;
-                         if (sliceIdx + 1 < (int)pattern.sliceMarkers.size()) {
-                             sEnd = pattern.sliceMarkers[sliceIdx + 1];
-                         }
-                         
-                         // Determine end pos (next marker or end)
-                         // Handle cutoff
-                         bool cutoff = false;
-                         if (pattern.stepFXParams[step].count(Pattern::PAR_SLICE_CUTOFF)) {
-                             cutoff = (pattern.stepFXParams[step][Pattern::PAR_SLICE_CUTOFF] > 0.5f);
-                         }
-                         if (!cutoff) {
-                             sEnd = totalSamples; // Only if not reverse?
-                         }
-                         
-                         if (sampleIsReverse) {
-                             startPos = sEnd;
-                             endPos = sStart;
-                         } else {
-                             startPos = sStart;
-                             endPos = sEnd;
-                         }
-                     }
-                 }
-            }
-        }
-    }
-    
-    // Set Playback State - Add robust checks
-    if (startPos >= 0 && startPos < totalSamples && endPos > startPos && endPos <= totalSamples) {
-        samplePlaybackPosition = startPos;
-        samplePlaybackEnd = endPos;
-        sampleIsPlaying = true;
-    } else {
-        sampleIsPlaying = false; // Fallback to silence if invalid
-    }
-}
 
 void AudioEngine::startRecording(const std::string& filename, bool stems) {
     std::lock_guard<std::mutex> lock(recordingMutex);
@@ -868,10 +818,12 @@ bool AudioEngine::isRecording() {
 // ============================================================================
 
 void AudioEngine::assignPatternToTrack(const std::string& patternName, const std::string& trackName) {
+    std::lock_guard<std::mutex> lock(patternMutex);
     patternToTrack[patternName] = trackName;
 }
 
 std::string AudioEngine::getTrackForPattern(const std::string& patternName) const {
+    std::lock_guard<std::mutex> lock(patternMutex);
     auto it = patternToTrack.find(patternName);
     if (it != patternToTrack.end()) {
         return it->second;
@@ -880,7 +832,83 @@ std::string AudioEngine::getTrackForPattern(const std::string& patternName) cons
     return "Track_0";
 }
 
+
 AudioBus* AudioEngine::getTrackBus(const std::string& trackName) {
     return busManager.getOrCreateTrack(trackName);
+}
+
+void AudioEngine::scheduleResync() {
+    pendingResync.store(true);
+}
+
+void AudioEngine::resyncAllPatternsInternal() {
+    // Mutex is already locked by caller (audioDeviceIOCallbackWithContext or resyncAllPatterns)
+    
+    // Clear flag
+    pendingResync.store(false);
+    
+    // Calculate global time
+    double currentBpm = globalBpm.load();
+    
+    for (auto& pair : patternStates) {
+        std::string name = pair.first;
+        PatternPlayState& state = pair.second;
+        
+        if (patterns.find(name) == patterns.end()) continue;
+        Pattern& pattern = patterns[name];
+        
+        // Calculate step duration for this pattern
+        double stepDuration = pattern.getStepDurationSamples(currentBpm, sampleRate);
+        
+        if (stepDuration <= 0.001) continue;
+        
+        // Calculate exact step including fractional part
+        double totalSteps = (double)audioFrameCount.load() / stepDuration;
+        int64_t fullSteps = (int64_t)totalSteps;
+        double phase = totalSteps - (double)fullSteps;
+        
+        // Wrap to pattern length
+        int stepIndex = (fullSteps % pattern.steps); 
+        
+        int oldStep = state.currentStep;
+        
+        state.currentStep = stepIndex + 1; // 1-based
+        
+        // Reset sample position to be aligned with the step phase
+        state.samplePosition = 0;
+        state.stepStartSample = -(int64_t)(phase * stepDuration);
+        
+        // Reset sub-step state (force fresh start if we jumped)
+        state.sampleIsPlaying = false; 
+        state.isStuttering = false;
+        state.isSliding = false;
+        
+        // CRITICAL FIX: If we landed on a note, TRIGGER IT!
+        // But only if we are at the very start (phase is small) or we jumped to a new step.
+        // Actually, trigger it regardless, but we need to respect the offset.
+        // However, `triggerStep` assumes samplePosition=0.
+        // We set samplePosition=0 above, but stepStartSample is negative to account for delay.
+        // So effectively we are at `(phase * stepDuration)` into the step.
+        
+        if (pattern.shouldTriggerAt(state.currentStep)) {
+             // We manually trigger it
+             triggerStep(state, pattern);
+             
+             // Adjust playback position to account for the phase
+             if (state.sampleIsPlaying) {
+                 double samplesIntoStep = phase * stepDuration;
+                 state.samplePlaybackPosition += samplesIntoStep * state.currentSpeedRatio;
+                 
+                 // Fade-in adjustment? Maybe skip it if we are far in.
+                 if (samplesIntoStep > 100) state.fadeInSamplesRemaining = 0;
+             }
+        }
+    }
+}
+
+// Legacy/Immediate (calls internal directly)
+void AudioEngine::resyncAllPatterns() {
+    std::lock_guard<std::mutex> lock(patternMutex);
+    resyncAllPatternsInternal();
 }
 

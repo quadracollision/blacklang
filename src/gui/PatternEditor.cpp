@@ -104,6 +104,8 @@ void PatternEditor::Draw() {
     DrawText("Sync:", labelX, startY + 8, labelSize, WHITE);
     DrawTextInput({fieldX, startY, 100, (float)fieldH}, state.editor.syncBaseBuffer, 4, 4, state.editor.focusedFieldId, state.getMousePosition());
     
+    // Always Sync moved to footer for better touch access
+    
     // Velocity Knob - larger for touch
     float knobX = fieldX + 200;
     float knobY = startY + 20;
@@ -124,6 +126,7 @@ void PatternEditor::Draw() {
     // Start drag
     if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), knobRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.editor.isDraggingVelocity = true;
+        state.editor.scrollConsumed = true; // Prevent scroll while dragging
     }
     
     // Stop drag
@@ -133,6 +136,7 @@ void PatternEditor::Draw() {
     
     // Process Drag
     if (state.editor.isDraggingVelocity) {
+         state.editor.scrollConsumed = true; // Keep blocking scroll during entire drag
          float delta = GetMouseDelta().y;
          state.editor.currentVelocity -= delta * 0.02f; // Sensitivity
          
@@ -651,6 +655,14 @@ void PatternEditor::Draw() {
         startY += keyHeight + 10;
     }
 
+    // Draw File Browser (Modal)
+    bool browserBusy = false;
+    if (state.editor.showFileBrowser) {
+        browserBusy = DrawFileBrowser(winRect);
+    }
+
+    if (browserBusy) return; // Block input to pattern editor!
+
     // FX Controls (Modular)
     if (state.editor.showFxControls) {
         Rectangle fxArea = {winRect.x + 20, startY, winRect.width - 40, 0};
@@ -1030,8 +1042,63 @@ void PatternEditor::Draw() {
         if (p.syncBase <= 0) p.syncBase = p.steps;
         engine.addPattern(p);
         
+        // Ensure track assignment matches the column this pattern belongs to
+        for (const auto& col : state.columns) {
+            bool found = false;
+            for (const auto& pn : col.patternNames) {
+                if (pn == p.name) {
+                    engine.assignPatternToTrack(p.name, col.trackName);
+                    found = true;
+                    break;
+                }
+            }
+            if (found) break;
+        }
+        
         // Play just this pattern
         engine.playPattern(p.name);
+    }
+
+    // Per-Slot Sync Toggle - in footer for easy touch access
+    // Find which slot this pattern is in and toggle that slot's sync
+    Rectangle syncRect = {winRect.x + 400, winRect.y + winRect.height - 45, 80, 40};
+    
+    // Find slot for current pattern
+    int foundCol = -1, foundSlot = -1;
+    for (size_t c = 0; c < state.columns.size() && foundCol < 0; c++) {
+        for (size_t s = 0; s < state.columns[c].patternNames.size(); s++) {
+            if (state.columns[c].patternNames[s] == p.name) {
+                foundCol = (int)c;
+                foundSlot = (int)s;
+                break;
+            }
+        }
+    }
+    
+    bool slotSyncEnabled = false;
+    if (foundCol >= 0 && foundSlot >= 0) {
+        PatternColumn& pc = state.columns[(size_t)foundCol];
+        // Ensure slotSyncEnabled vector is large enough
+        while (pc.slotSyncEnabled.size() < pc.patternNames.size()) {
+            pc.slotSyncEnabled.push_back(false);
+        }
+        if (foundSlot < (int)pc.slotSyncEnabled.size()) {
+            slotSyncEnabled = pc.slotSyncEnabled[(size_t)foundSlot];
+        }
+    }
+    
+    DrawRectangleRec(syncRect, slotSyncEnabled ? Color{0, 180, 0, 255} : DARKGRAY);
+    DrawText("Sync", syncRect.x + 18, syncRect.y + 10, 20, WHITE);
+    
+    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), syncRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (foundCol >= 0 && foundSlot >= 0) {
+            PatternColumn& pc = state.columns[(size_t)foundCol];
+            // Ensure vector is large enough
+            while (pc.slotSyncEnabled.size() < pc.patternNames.size()) {
+                pc.slotSyncEnabled.push_back(false);
+            }
+            pc.slotSyncEnabled[(size_t)foundSlot] = !pc.slotSyncEnabled[(size_t)foundSlot];
+        }
     }
 
     // Save Button (Fixed at Bottom Footer) - larger for touch
@@ -1085,12 +1152,13 @@ void PatternEditor::Draw() {
             }
             
             // Update engine with new active patterns
-            std::vector<std::string> allActive;
+            // Update engine with new active patterns
+            std::vector<std::pair<std::string, std::string>> allActive;
             for (auto& pair : state.activePatternSlots) {
                 int c = pair.first;
                 int s = pair.second;
                 if (c >= 0 && c < (int)state.columns.size() && s >= 0 && s < (int)state.columns[c].patternNames.size()) {
-                    allActive.push_back(state.columns[c].patternNames[s]);
+                    allActive.push_back({state.columns[c].patternNames[s], state.columns[c].trackName});
                 }
             }
             engine.updateActivePatterns(allActive);
@@ -1195,9 +1263,10 @@ void PatternEditor::Draw() {
     // Clamp scroll
     if (state.editor.scrollOffsetY < 0) state.editor.scrollOffsetY = 0;
     if (state.editor.scrollOffsetY > maxScroll) state.editor.scrollOffsetY = maxScroll;
-    
-    // Draw File Browser Overlay (if active)
-    FileBrowser::Draw(state, engine);
+}
+
+bool PatternEditor::DrawFileBrowser(Rectangle winRect) {
+    return FileBrowser::Draw(state, engine);
 }
 
 

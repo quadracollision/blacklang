@@ -33,7 +33,9 @@ public:
     void playPattern(const std::string& name);
     void playChain(const PatternChain& chain);
     void playMultiplePatterns(const std::vector<std::string>& names);
-    void updateActivePatterns(const std::vector<std::string>& names); // Live switching
+
+    void updateActivePatterns(const std::vector<std::pair<std::string, std::string>>& patternsWithTracks); // Live switching with explicit tracks
+    void queuePatternSwitch(const std::string& trackName, const std::string& newPatternName); // Per-slot sync: queue pattern to switch at end of current
     int getPatternProgress(const std::string& name); // Visual feedback
     void stop();
     void pause();
@@ -44,6 +46,10 @@ public:
 
     void setBPM(int newBpm) { globalBpm.store(newBpm); }
     int getBPM() const { return globalBpm.load(); }
+    
+    // Sync
+    void scheduleResync();
+    void resyncAllPatterns(); // Immediate (legacy/force)
     
     // Preview
     void previewSlice(Pattern& pattern, int sliceIndex, bool playToEnd = false);
@@ -82,7 +88,7 @@ private:
     juce::AudioFormatManager formatManager;
     
     std::map<std::string, Pattern> patterns;
-    std::mutex patternMutex;
+    mutable std::mutex patternMutex;
     
     // Playback state
     std::atomic<bool> playing{false};
@@ -94,24 +100,31 @@ private:
     
     // Multi-pattern playback
     std::vector<std::string> activePatternNames;
-    std::map<std::string, PatternPlayState> patternStates;
     
     // Sequencer state
     double sampleRate = 44100.0;
+    std::atomic<int> globalBpm{120};
+
+    // Global/Legacy Sequencer state (for single-pattern mode)
     int64_t samplePosition = 0;
     int currentStep = 0;
     int64_t stepStartSample = 0;
-    std::atomic<int> globalBpm{120};
     
-    // Sample playback
+    // Global Sample playback
     int64_t samplePlaybackPosition = 0;
     int64_t samplePlaybackEnd = 0;
     bool sampleIsPlaying = false;
     bool sampleIsReverse = false;
     
+    std::map<std::string, PatternPlayState> patternStates;
+
     void advanceSequencer(int numSamples);
-    void triggerSample(Pattern& pattern, int step);
+    // Refactored helper to trigger notes (pitch, velocity, FX)
+    void triggerStep(PatternPlayState& state, Pattern& pattern);
     
+    // Sync internals
+    void resyncAllPatternsInternal();
+    std::atomic<bool> pendingResync{false};
     // Preview Logic
     struct PreviewState {
         int64_t position = 0;
@@ -135,6 +148,10 @@ private:
     
     // Device switching
     std::atomic<bool> deviceSwitching{false};
+
+    // Per-Slot Sync Queueing
+    std::map<std::string, std::string> pendingPatternQueues; // TrackName -> Queued PatternName
+    std::mutex queueMutex;
 
     // Internal method to process a sample block
     // ...

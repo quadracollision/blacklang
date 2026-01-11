@@ -50,6 +50,8 @@ void TrackView::Draw() {
                     } else {
                         state.drag.scrollDirection = 1;  // Vertical
                     }
+                    // Cancel holding since we are now definitely scrolling
+                    state.drag.isHolding = false;
                 }
             }
             
@@ -143,6 +145,8 @@ void TrackView::Draw() {
                                 // Execute Move
                                 if (col.patternNames[(size_t)slotIdx].empty()) {
                                     col.patternNames[(size_t)slotIdx] = draggedName;
+                                    // FIX: Update track assignment
+                                    engine.assignPatternToTrack(draggedName, col.title);
                                     
                                     // Safety check for source (it might have changed?)
                                     if (srcCol >= 0 && srcCol < (int)state.columns.size()) {
@@ -154,9 +158,14 @@ void TrackView::Draw() {
                                     // Swap
                                     std::string targetName = col.patternNames[(size_t)slotIdx];
                                     col.patternNames[(size_t)slotIdx] = draggedName;
+                                    // FIX: Update track for dragged pattern
+                                    engine.assignPatternToTrack(draggedName, col.title);
+                                    
                                      if (srcCol >= 0 && srcCol < (int)state.columns.size()) {
                                         if (srcSlot >= 0 && srcSlot < (int)state.columns[(size_t)srcCol].patternNames.size()) {
                                             state.columns[(size_t)srcCol].patternNames[(size_t)srcSlot] = targetName;
+                                            // FIX: Update track for swapped target
+                                            engine.assignPatternToTrack(targetName, state.columns[(size_t)srcCol].title);
                                         }
                                     }
                                 }
@@ -283,7 +292,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
             state.drag.sourceSlotIndex == (int)i) {
             // Beind dragged source
             DrawRectangleLinesEx(cellRect, 2.0f, DARKGRAY);
-        } else if (!overlapsButton) {
+        } else if (!overlapsButton && !state.editor.isOpen) { // BLOCKED IF EDITOR IS OPEN
             if (col.patternNames[i].empty()) {
                 // Empty Cell
                 DrawRectangleRec(cellRect, Color{30, 30, 30, 255});
@@ -301,6 +310,15 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
                 int currentStep = engine.getPatternProgress(col.patternNames[i]);
                 
                 DrawPatternBox(col.patternNames[i], cellRect, isSelected, currentStep);
+                
+                // Draw sync indicator badge if slot has sync enabled
+                if (i < col.slotSyncEnabled.size() && col.slotSyncEnabled[i]) {
+                    float badgeSize = 16;
+                    Rectangle syncBadge = {cellRect.x + cellRect.width - badgeSize - 2, cellRect.y + 2, badgeSize, badgeSize};
+                    DrawRectangleRec(syncBadge, Color{0, 180, 0, 255});
+                    DrawText("S", (int)(syncBadge.x + 4), (int)(syncBadge.y + 1), 12, WHITE);
+                }
+
                 
                 // Draw mini step grid inside the pattern box
                 Pattern* pat = engine.getPattern(col.patternNames[i]);
@@ -329,7 +347,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
         }
         
         // NEW WORKFLOW HIGHLIGHTING: Source Selection
-        if (state.trackClipboard.isSelectingSource && !overlapsButton) {
+        if (state.trackClipboard.isSelectingSource && !overlapsButton && !state.editor.isOpen) {
              // Highlight pattern to be copied (must be occupied)
              if (!col.patternNames[i].empty() && CheckCollisionPointRec(state.getMousePosition(), cellRect)) {
                  DrawRectangleLinesEx(cellRect, 2, ORANGE);
@@ -338,7 +356,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
         }
 
         // PASTE MODE HIGHLIGHTING & INTERACTION
-        if (state.trackClipboard.isPasting && !overlapsButton) {
+        if (state.trackClipboard.isPasting && !overlapsButton && !state.editor.isOpen) {
             // Check if slot is empty
             bool isEmpty = col.patternNames[i].empty();
             
@@ -389,7 +407,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
         Rectangle thumbRect = {barX, thumbY, barW, thumbH};
         
         // Interaction
-        if (state.drag.scrollbarDraggingColumn == index) {
+        if (!state.editor.isOpen && state.drag.scrollbarDraggingColumn == index) {
             // DRAGGING
             if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
                 float mouseY = state.getMousePosition().y;
@@ -523,6 +541,9 @@ void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::strin
                         if (copy.samplePath != "") engine.loadSample(copy);
                         engine.addPattern(copy);
                         
+                        // FIX: Register track assignment
+                        engine.assignPatternToTrack(copy.name, state.columns[(size_t)colIndex].title);
+                        
                         // Assign to slot
                         state.columns[(size_t)colIndex].patternNames[(size_t)slotIndex] = copy.name;
                      }
@@ -600,22 +621,60 @@ void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::strin
             }
             
             // Sync with audio engine
+            // Sync with audio engine
+            // Always update track assignment (critical for Always Sync)
+            if (colIndex >= 0 && colIndex < (int)state.columns.size()) {
+                PatternColumn& pc = state.columns[(size_t)colIndex];
+                if (slotIndex >= 0 && slotIndex < (int)pc.patternNames.size()) {
+                    std::string pname = pc.patternNames[(size_t)slotIndex];
+                    if (!pname.empty()) {
+                         engine.assignPatternToTrack(pname, pc.trackName);
+                    }
+                }
+            }
+
             if (engine.isPlaying()) {
-                std::vector<std::string> allActive;
-                for (auto& pair : state.activePatternSlots) {
-                    int cIdx = pair.first;
-                    int sIdx = pair.second;
-                    if (cIdx >= 0 && cIdx < (int)state.columns.size()) {
-                        PatternColumn& pc = state.columns[(size_t)cIdx];
-                        if (sIdx >= 0 && sIdx < (int)pc.patternNames.size()) {
-                            std::string pname = pc.patternNames[(size_t)sIdx];
+                // Check if clicked slot has sync enabled
+                bool shouldQueue = false;
+                std::string queueTrackName = "";
+                std::string queuePatternName = "";
+                
+                if (colIndex >= 0 && colIndex < (int)state.columns.size()) {
+                    PatternColumn& pc = state.columns[(size_t)colIndex];
+                    if (slotIndex >= 0 && slotIndex < (int)pc.patternNames.size()) {
+                        // Check if this slot has sync enabled
+                        if (slotIndex < (int)pc.slotSyncEnabled.size() && pc.slotSyncEnabled[(size_t)slotIndex]) {
+                            std::string pname = pc.patternNames[(size_t)slotIndex];
                             if (!pname.empty()) {
-                                allActive.push_back(pname);
+                                shouldQueue = true;
+                                queueTrackName = pc.trackName;
+                                queuePatternName = pname;
                             }
                         }
                     }
                 }
-                engine.updateActivePatterns(allActive);
+                
+                if (shouldQueue) {
+                    // Per-slot sync: queue pattern to switch at end of current
+                    engine.queuePatternSwitch(queueTrackName, queuePatternName);
+                } else {
+                    // Immediate switch
+                    std::vector<std::pair<std::string, std::string>> allActive;
+                    for (auto& pair : state.activePatternSlots) {
+                        int cIdx = pair.first;
+                        int sIdx = pair.second;
+                        if (cIdx >= 0 && cIdx < (int)state.columns.size()) {
+                            PatternColumn& pc = state.columns[(size_t)cIdx];
+                            if (sIdx >= 0 && sIdx < (int)pc.patternNames.size()) {
+                                std::string pname = pc.patternNames[(size_t)sIdx];
+                                if (!pname.empty()) {
+                                    allActive.push_back({pname, pc.trackName});
+                                }
+                            }
+                        }
+                    }
+                    engine.updateActivePatterns(allActive);
+                }
             }
             
             // Start hold for drag OR scroll
@@ -671,6 +730,8 @@ void TrackView::HandleAddPattern(int colIndex, PatternColumn& col) {
             p.name = "Pat" + std::to_string(state.patternIdCounter++);
             p.bpm = state.bpm;
             engine.addPattern(p);
+            // FIX: Register track assignment logic
+            engine.assignPatternToTrack(p.name, col.title);
             col.patternNames[(size_t)targetSlot] = p.name;
         }
         // Otherwise, do nothing (user tried to add on occupied slot)

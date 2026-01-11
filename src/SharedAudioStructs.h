@@ -9,7 +9,9 @@ struct PatternPlayState {
     double samplePlaybackPosition = 0.0;
     int64_t sampleEndPosition = 0; // For Nudge/Crop FX
     int64_t sliceEndPosition = -1; // -1 if not slicing or play through
-    bool stopAtSliceEnd = false; 
+    bool stopAtSliceEnd = false;    // Slice flags
+    bool stopAtEnd = false;         // Per-slot sync: stop at pattern end and switch to queued pattern
+    
     int64_t fadeInSamplesRemaining = 0; // For 2ms fade-in (88 samples at 44100Hz)
     bool sampleIsPlaying = false;
     double currentSpeedRatio = 1.0;

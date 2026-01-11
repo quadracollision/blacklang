@@ -9,7 +9,9 @@
 // Simple struct to represent column layout without GUI dependency
 struct SerializedColumn {
     std::string title;
+    std::string trackName;
     std::vector<std::string> patternNames;
+    std::vector<bool> slotSyncEnabled;  // Per-slot sync flags
 };
 
 class ProjectFile {

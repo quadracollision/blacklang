@@ -14,12 +14,21 @@ bool ProjectFile::save(const std::string& filename,
     for (const auto& col : columns) {
         juce::DynamicObject::Ptr cObj = new juce::DynamicObject();
         cObj->setProperty("title", juce::String(col.title));
+        cObj->setProperty("trackName", juce::String(col.trackName));
         
         juce::Array<juce::var> pNames;
         for (const auto& pName : col.patternNames) {
             pNames.add(juce::String(pName));
         }
         cObj->setProperty("patterns", pNames);
+        
+        // Save per-slot sync flags
+        juce::Array<juce::var> syncFlags;
+        for (bool sync : col.slotSyncEnabled) {
+            syncFlags.add(sync);
+        }
+        cObj->setProperty("slotSync", syncFlags);
+        
         colsArray.add(juce::var(cObj.get()));
     }
     root->setProperty("layout", colsArray);
@@ -228,12 +237,32 @@ bool ProjectFile::load(const std::string& filename,
                 SerializedColumn col;
                 col.title = c["title"].toString().toStdString();
                 
+                if (c.hasProperty("trackName")) {
+                    col.trackName = c["trackName"].toString().toStdString();
+                } else {
+                    // Fallback for old projects
+                    col.trackName = "Track_" + std::to_string(i);
+                }
+                
                 juce::var pNames = c["patterns"];
                 if (pNames.isArray()) {
                     for (int j=0; j < pNames.size(); ++j) {
                         col.patternNames.push_back(pNames[j].toString().toStdString());
                     }
                 }
+                
+                // Load per-slot sync flags
+                juce::var syncFlags = c["slotSync"];
+                if (syncFlags.isArray()) {
+                    for (int j=0; j < syncFlags.size(); ++j) {
+                        col.slotSyncEnabled.push_back((bool)syncFlags[j]);
+                    }
+                }
+                // Ensure slotSyncEnabled matches patternNames size
+                while (col.slotSyncEnabled.size() < col.patternNames.size()) {
+                    col.slotSyncEnabled.push_back(false);
+                }
+                
                 columns.push_back(col);
             }
         }

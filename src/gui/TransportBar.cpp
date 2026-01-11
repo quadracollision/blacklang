@@ -16,9 +16,9 @@ void TransportBar::Draw() {
     
     DrawPlayStop();
     DrawRecording();
-    DrawBPM();
     DrawCopyPaste();
     DrawEditShift();
+    DrawSyncButton();
     DrawSettingsButton();
     DrawSettingsPopup();
 }
@@ -26,18 +26,21 @@ void TransportBar::Draw() {
 void TransportBar::DrawRecording() {
     Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
     float centerX = state.getScreenWidth() / 2.0f;
+    float btnH = (float)state.FOOTER_HEIGHT;
+    float btnW = 60;
     
     // Record Button (Beside Stop)
-    Rectangle recBtn = {centerX + 60, rect.y + 10, 40, 40};
+    Rectangle recBtn = {centerX + 80, rect.y, btnW, btnH};
     bool isRecording = state.recorder.isRecording;
     
     if (isRecording) {
-        // Red Circle when recording
-        DrawCircle(recBtn.x + 20, recBtn.y + 20, 18, RED);
+        // Red background when recording
+        DrawRectangleRec(recBtn, Color{200, 50, 50, 255});
+        DrawCircle(recBtn.x + 30, recBtn.y + 30, 18, RED);
     } else {
         // Gray button with Red Dot
         DrawRectangleRec(recBtn, LIGHTGRAY);
-        DrawCircle(recBtn.x + 20, recBtn.y + 20, 10, RED);
+        DrawCircle(recBtn.x + 30, recBtn.y + 30, 12, RED);
     }
     
     if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), recBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -172,60 +175,33 @@ void TransportBar::DrawPlayStop() {
 }
 
 void TransportBar::DrawBPM() {
-    Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
-    
-    // Move to left side, after Edit/Shift (approx 250px)
-    float bpmX = 260.0f; 
-    
-    DrawText("BPM:", bpmX, rect.y + 10, 20, LIGHTGRAY);
-    if (!state.editor.isOpen) {
-        DrawTextInput({bpmX + 50, rect.y + 10, 60, 25}, state.globalBpmBuffer, 5, 999, state.focusedFieldId, state.getMousePosition());
-    } else {
-        DrawRectangleRec({bpmX + 50, rect.y + 10, 60, 25}, LIGHTGRAY);
-        DrawText(state.globalBpmBuffer, bpmX + 55, rect.y + 15, 20, BLACK);
-    }
-
-    int newBpm = atoi(state.globalBpmBuffer);
-    if (newBpm > 20 && newBpm < 300 && newBpm != state.bpm) {
-        state.bpm = newBpm;
-        engine.setBPM(newBpm);
-    }
+    // Moved to header
 }
 
 void TransportBar::DrawCopyPaste() {
     Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
+    float btnH = (float)state.FOOTER_HEIGHT;
+    float btnW = 80;
+    float startX = 0; // Start at left
     
-    // Copy Button (Starts the workflow)
-    Rectangle copyBtn = {20, rect.y + 15, 60, 30};
+    // Copy Button
+    Rectangle copyBtn = {startX, rect.y, btnW, btnH};
     bool isActive = state.trackClipboard.isSelectingSource;
+    if (state.trackClipboard.isPasting) isActive = true;
     
-    // If we are already pasting, maybe the Copy button acts as a cancel or just stays active? 
-    // Let's keep it simple: "Copy" toggles Source Selection.
-    if (state.trackClipboard.isPasting) isActive = true; // Stay active to show we are in "Copy Mode"
-    
-    DrawRectangleRec(copyBtn, isActive ? ORANGE : DARKGRAY);
-    DrawText("Copy", copyBtn.x + 10, copyBtn.y + 8, 14, WHITE);
-    
-    if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), copyBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        // Toggle selection mode
-        if (state.trackClipboard.isPasting) {
-             // If we were pasting, clicking Copy resets everything? Or maybe starts a NEW copy?
-             // Let's say it starts a NEW copy.
-             state.trackClipboard.isPasting = false;
-             state.trackClipboard.isSelectingSource = true;
-        } else {
-             state.trackClipboard.isSelectingSource = !state.trackClipboard.isSelectingSource;
-        }
-    }
-    
-    // Paste Button - Only visible if we are in the workflow
-    // It acts as "Done" or "Stop Pasting"
-    if (state.trackClipboard.isSelectingSource || state.trackClipboard.isPasting) {
-        Rectangle pasteBtn = {90, rect.y + 15, 80, 30}; // Widened for longer text
-        DrawRectangleRec(pasteBtn, RED); // Red for "Exit/Stop" feel
-        DrawText(state.trackClipboard.isPasting ? "Pasting..." : "Cancel", pasteBtn.x + 8, pasteBtn.y + 8, 14, WHITE);
+    // If not active, draw normal button
+    if (!state.trackClipboard.isSelectingSource && !state.trackClipboard.isPasting) {
+        DrawRectangleRec(copyBtn, DARKGRAY);
+        DrawText("Copy", copyBtn.x + 20, copyBtn.y + 20, 18, WHITE);
         
-        if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), pasteBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), copyBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            state.trackClipboard.isSelectingSource = true;
+        }
+    } else {
+        // Active "Copy" State or "Cancel" button
+        DrawRectangleRec(copyBtn, ORANGE); 
+        DrawText("Cancel", copyBtn.x + 15, copyBtn.y + 20, 18, WHITE);
+         if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), copyBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.trackClipboard.isSelectingSource = false;
             state.trackClipboard.isPasting = false;
         }
@@ -234,13 +210,16 @@ void TransportBar::DrawCopyPaste() {
 
 void TransportBar::DrawEditShift() {
     Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
+    float btnH = (float)state.FOOTER_HEIGHT;
+    float btnW = 80;
+    float startX = 85; // After Copy button
     
     if (state.isPlaying && !state.activePatternSlots.empty()) {
-        Rectangle editBtn = {145, rect.y + 15, 45, 30};
+        Rectangle editBtn = {startX, rect.y, btnW, btnH};
         DrawRectangleRec(editBtn, state.isLiveEditMode ? SKYBLUE : DARKGRAY);
-        DrawText("Edit", editBtn.x + 5, editBtn.y + 8, 14, WHITE);
+        DrawText("Edit", editBtn.x + 22, editBtn.y + 20, 18, WHITE);
         
-        if (CheckCollisionPointRec(state.getMousePosition(), editBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), editBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.isLiveEditMode = !state.isLiveEditMode;
             
             if (!state.isLiveEditMode) {
@@ -251,11 +230,11 @@ void TransportBar::DrawEditShift() {
         }
         
         if (state.isLiveEditMode) {
-            Rectangle shiftBtn = {195, rect.y + 15, 45, 30};
+            Rectangle shiftBtn = {startX + btnW + 5, rect.y, btnW, btnH};
             DrawRectangleRec(shiftBtn, state.isShiftMode ? ORANGE : DARKGRAY);
-            DrawText("Shift", shiftBtn.x + 3, shiftBtn.y + 8, 12, WHITE);
+            DrawText("Shift", shiftBtn.x + 20, shiftBtn.y + 20, 18, WHITE);
             
-            if (CheckCollisionPointRec(state.getMousePosition(), shiftBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), shiftBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 state.isShiftMode = !state.isShiftMode;
                 if (!state.isShiftMode) {
                     state.shiftEditingPatternName = "";
@@ -267,15 +246,16 @@ void TransportBar::DrawEditShift() {
 
 void TransportBar::DrawSettingsButton() {
     Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
+    float btnH = (float)state.FOOTER_HEIGHT;
+    float btnW = 60;
     
-    // Move next to BPM (BPM input ends around 260+50+60 = 370)
-    float gearX = 380.0f;
-    Rectangle gearBtn = {gearX, rect.y + 15, 30, 30};
+    // Far right
+    Rectangle gearBtn = {state.getScreenWidth() - btnW, rect.y, btnW, btnH};
     bool isOpen = (state.settings.activePopup != PopupType::None);
     DrawRectangleRec(gearBtn, isOpen ? ORANGE : DARKGRAY);
-    DrawText("*", gearBtn.x + 8, gearBtn.y + 3, 24, WHITE);
+    DrawText("*", gearBtn.x + 22, gearBtn.y + 15, 30, WHITE);
     
-    if (CheckCollisionPointRec(state.getMousePosition(), gearBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), gearBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         if (isOpen) {
             state.settings.activePopup = PopupType::None;
             state.settings.showSettingsMenu = false;
@@ -293,8 +273,8 @@ void TransportBar::DrawSettingsPopup() {
     
     float popW = 350;
     float popH = 200;
-    // Align with new gear button (x=380)
-    float popX = 380.0f;
+    // Align with new gear button (Right side)
+    float popX = state.getScreenWidth() - popW - 10;
     float popY = rect.y - popH - 10;
     
     DrawRectangle(popX, popY, popW, popH, Color{40, 40, 40, 245});
@@ -361,7 +341,7 @@ void TransportBar::DrawSettingsPopup() {
                 // Convert Layout
                 std::vector<SerializedColumn> cols;
                 for (const auto& col : state.columns) {
-                    cols.push_back({col.title, col.patternNames});
+                    cols.push_back({col.title, col.trackName, col.patternNames, col.slotSyncEnabled});
                 }
                 ProjectFile::save(path, engine.getPatterns(), state.activeChain, cols);
                 state.settings.activePopup = PopupType::None; // Close after action
@@ -392,7 +372,7 @@ void TransportBar::DrawSettingsPopup() {
                     
                     if (!loadedCols.empty()) {
                         for (const auto& sCol : loadedCols) {
-                            state.columns.push_back({sCol.title, sCol.patternNames, {0,0,0,0}, 0.0f});
+                            state.columns.push_back({sCol.title, sCol.patternNames, sCol.slotSyncEnabled, {0,0,0,0}, 0.0f, false, sCol.trackName, 1.0f, 0.5f});
                         }
                     } else {
                         state.columns.resize(4);
@@ -452,6 +432,34 @@ void TransportBar::DrawSettingsPopup() {
          if (state.settings.availableOutputDevices.empty()) {
             DrawText("No devices found", popX + 20, listY, 14, GRAY);
         }
+    }
+}
+
+
+
+void TransportBar::DrawSyncButton() {
+    // Placement: After Edit/Shift.
+    // Edit/Shift logic is in DrawEditShift.
+    // Let's place it at a fixed comfortable position or relative.
+    // Right of center (Play/Stop/Rec).
+    // Play/Stop is Center - 60 to Center + 60.
+    // Rec is Center + 80.
+    // Edit/Shift is left aligned? No.
+    // Let's put Sync at Center + 160 (Right of Record)
+    
+    float centerX = state.getScreenWidth() / 2.0f;
+    float x = centerX + 160;
+    float y = (float)state.getScreenHeight() - state.FOOTER_HEIGHT + 10;
+    float w = 60;
+    float h = 40;
+    
+    Rectangle btn = {x, y, w, h};
+    
+    DrawRectangleRec(btn, LIGHTGRAY);
+    DrawText("SYNC", x + 10, y + 12, 16, BLACK);
+    
+    if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), btn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        engine.scheduleResync();
     }
 }
 

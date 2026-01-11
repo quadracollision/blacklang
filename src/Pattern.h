@@ -14,6 +14,8 @@ struct Pattern {
     std::vector<int> activeSteps;  // 1-indexed step positions
     std::vector<int> sliceMarkers; // Sample indices for slice points
     
+
+    
     // Mixer Properties
     float volume = 1.0f;
     float pan = 0.5f; // 0.0=Left, 0.5=Center, 1.0=Right
@@ -50,7 +52,8 @@ struct Pattern {
     }
     
     // Get step duration in samples
-    double getStepDurationSamples(int currentBpm) const {
+    // Get step duration in samples
+    double getStepDurationSamples(int currentBpm, double engineSampleRate) const {
         // Use standard 1/16th note steps mechanism usually?
         // Or "4.0 / steps" implies 1 bar?
         // If 16 steps = 1 bar.
@@ -67,7 +70,7 @@ struct Pattern {
         int baseSteps = (syncBase > 0) ? syncBase : steps;
         double beatsPerStep = 4.0 / baseSteps;
         double secondsPerBeat = 60.0 / currentBpm;
-        return secondsPerBeat * beatsPerStep * sampleRate;
+        return secondsPerBeat * beatsPerStep * engineSampleRate;
     }
     
     // Check if a step should trigger the sample (1-indexed input)

@@ -9,6 +9,7 @@
 struct PatternColumn {
     std::string title;
     std::vector<std::string> patternNames;
+    std::vector<bool> slotSyncEnabled;  // Per-slot sync flag - if true, queues instead of instant switch
     Rectangle bounds;
     float scrollY = 0.0f;
     
@@ -212,9 +213,9 @@ struct GuiState {
     
     void initDemo() {
      // Add some default columns with track names
-        columns.push_back({"Drums", std::vector<std::string>(16, ""), {0, 0, 0, 0}, 0.0f, false, "Track_0", 1.0f, 0.5f});
-        columns.push_back({"Bass", std::vector<std::string>(16, ""), {0, 0, 0, 0}, 0.0f, false, "Track_1", 1.0f, 0.5f});
-        columns.push_back({"Leads", std::vector<std::string>(16, ""), {0, 0, 0, 0}, 0.0f, false, "Track_2", 1.0f, 0.5f});
+        columns.push_back({"Drums", std::vector<std::string>(16, ""), std::vector<bool>(16, false), {0, 0, 0, 0}, 0.0f, false, "Track_0", 1.0f, 0.5f});
+        columns.push_back({"Bass", std::vector<std::string>(16, ""), std::vector<bool>(16, false), {0, 0, 0, 0}, 0.0f, false, "Track_1", 1.0f, 0.5f});
+        columns.push_back({"Leads", std::vector<std::string>(16, ""), std::vector<bool>(16, false), {0, 0, 0, 0}, 0.0f, false, "Track_2", 1.0f, 0.5f});
     }
     
     int patternIdCounter = 1;

@@ -23,6 +23,7 @@ private:
     void DrawBPM();
     void DrawCopyPaste();
     void DrawEditShift();
+    void DrawSyncButton();
     void DrawSettingsButton();
     void DrawSettingsPopup();
     void DrawRecording();

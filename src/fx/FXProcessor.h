@@ -26,7 +26,12 @@ public:
     // pattern: The pattern data
     // step: 1-based step index
     // bpm: Current global BPM
-    void processStepFX(PatternPlayState& state, const Pattern& pattern, int step, double bpm);
+    // Process all FX for a given step
+    // state: Current playback state for the pattern (sample pos, speed, etc)
+    // pattern: The pattern data
+    // step: 1-based step index
+    // bpm: Current global BPM
+    void processStepFX(PatternPlayState& state, const Pattern& pattern, int step, double bpm, double sampleRate);
 
     // Process per-sample FX (like filter)
     // Returns processed sample
@@ -35,8 +40,8 @@ public:
 private:
     // Helpers
     void handleCutoff(PatternPlayState& state);
-    void handleSlide(PatternPlayState& state, const Pattern& pattern, int currentStep, double bpm);
-    void handleStutter(PatternPlayState& state, const Pattern& pattern, int currentStep, double bpm);
+    void handleSlide(PatternPlayState& state, const Pattern& pattern, int currentStep, double bpm, double sampleRate);
+    void handleStutter(PatternPlayState& state, const Pattern& pattern, int currentStep, double bpm, double sampleRate);
     void handleSlice(PatternPlayState& state, const Pattern& pattern, int currentStep);
     void handleNudge(PatternPlayState& state, const Pattern& pattern, int currentStep);
     void handleReverse(PatternPlayState& state, const Pattern& pattern, int currentStep);

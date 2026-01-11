@@ -25,7 +25,8 @@ void DrawTextInput(Rectangle rect, char* buffer, size_t maxLen, int fieldId, int
             DrawLine(rect.x + 5 + textW + 2, rect.y + 5, rect.x + 5 + textW + 2, rect.y + 25, BLACK);
         }
 
-        // Check Android Proxy Input
+#if defined(__ANDROID__)
+        // Android Proxy Input ONLY
         int aKey, aChar;
         while (FilePicker::AndroidGetInput(aKey, aChar)) {
             if (aKey == 259) { // Backspace
@@ -37,7 +38,8 @@ void DrawTextInput(Rectangle rect, char* buffer, size_t maxLen, int fieldId, int
                 buffer[len+1] = '\0';
             }
         }
-
+#else
+        // Desktop / Standard Raylib Input
         int key = GetCharPressed();
         while (key > 0) {
             if ((key >= 32) && (key <= 125) && (strlen(buffer) < maxLen)) {
@@ -52,6 +54,7 @@ void DrawTextInput(Rectangle rect, char* buffer, size_t maxLen, int fieldId, int
             size_t len = strlen(buffer);
             if (len > 0) buffer[len-1] = '\0';
         }
+#endif
     }
 }
 

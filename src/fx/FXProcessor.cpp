@@ -10,7 +10,7 @@ void FXProcessor::reset() {
     // Reset any internal state if needed
 }
 
-void FXProcessor::processStepFX(PatternPlayState& state, const Pattern& pattern, int step, double bpm) {
+void FXProcessor::processStepFX(PatternPlayState& state, const Pattern& pattern, int step, double bpm, double sampleRate) {
     // Check for FX on this step
     if (pattern.stepFX.count(step)) {
         const auto& fxList = pattern.stepFX.at(step);
@@ -20,10 +20,10 @@ void FXProcessor::processStepFX(PatternPlayState& state, const Pattern& pattern,
                     handleCutoff(state);
                     break;
                 case Pattern::FX_SLIDE:
-                    handleSlide(state, pattern, step, bpm);
+                    handleSlide(state, pattern, step, bpm, sampleRate);
                     break;
                 case Pattern::FX_STUTTER:
-                    handleStutter(state, pattern, step, bpm);
+                    handleStutter(state, pattern, step, bpm, sampleRate);
                     break;
                 case Pattern::FX_SLICE:
                     handleSlice(state, pattern, step);
@@ -71,7 +71,7 @@ void FXProcessor::handleCutoff(PatternPlayState& state) {
     state.sampleIsPlaying = false; // Stop playback
 }
 
-void FXProcessor::handleSlide(PatternPlayState& state, const Pattern& pattern, int currentStep, double bpm) {
+void FXProcessor::handleSlide(PatternPlayState& state, const Pattern& pattern, int currentStep, double bpm, double sampleRate) {
     // Look ahead for next active melodic step
     int nextStep = -1;
     for (int s = currentStep + 1; s <= pattern.steps; ++s) {
@@ -87,7 +87,7 @@ void FXProcessor::handleSlide(PatternPlayState& state, const Pattern& pattern, i
         state.slideTargetRatio = std::pow(2.0, nextSemitones / 12.0);
         
         // Calculate duration to next step in samples
-        double stepDur = pattern.getStepDurationSamples(bpm);
+        double stepDur = pattern.getStepDurationSamples(bpm, sampleRate);
         double samplesDist = (nextStep - currentStep) * stepDur;
         
         // Apply Slide Time Parameter
@@ -106,9 +106,9 @@ void FXProcessor::handleSlide(PatternPlayState& state, const Pattern& pattern, i
     }
 }
 
-void FXProcessor::handleStutter(PatternPlayState& state, const Pattern& pattern, int currentStep, double bpm) {
+void FXProcessor::handleStutter(PatternPlayState& state, const Pattern& pattern, int currentStep, double bpm, double sampleRate) {
     state.isStuttering = true;
-    double stepDur = pattern.getStepDurationSamples(bpm);
+    double stepDur = pattern.getStepDurationSamples(bpm, sampleRate);
     
     float rate = 4.0f; // Default
     if (pattern.stepFXParams.count(currentStep) && 
