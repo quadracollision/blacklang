@@ -1,6 +1,7 @@
 #include "GuiRenderer.h"
 #include "gui/Widgets.h"
 #include "gui/DragDrop.h"
+#include "gui/ProjectBrowser.h"
 #include <iostream>
 #include <algorithm>
 #include <cstring>
@@ -114,6 +115,17 @@ void GuiRenderer::Draw() {
     // Use modular pattern editor
     if (state.editor.isOpen) {
         patternEditor.Draw();
+    }
+    
+    // Draw project browser (for save/load project)
+    if (state.projectBrowser.isOpen) {
+        // Initialize on first open
+        static bool wasOpen = false;
+        if (!wasOpen) {
+            ProjectBrowser::Refresh(state);
+        }
+        wasOpen = state.projectBrowser.isOpen;
+        ProjectBrowser::Draw(state, engine);
     }
 }
 

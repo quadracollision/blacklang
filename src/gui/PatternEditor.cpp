@@ -35,17 +35,21 @@ void PatternEditor::Draw() {
     
     Rectangle winRect = {winX, winY, winW, winH};
     DrawRectangleRec(winRect, Color{30, 30, 30, 255});
-    DrawText("Edit Pattern", winRect.x + 20, winRect.y + 15, 24, WHITE);
     
-    // Close Button - touch friendly (50x50)
-    Rectangle closeRect = {winRect.x + winRect.width - 55, winRect.y + 5, 50, 50};
-    DrawRectangleRec(closeRect, RED);
-    DrawText("X", closeRect.x + 18, closeRect.y + 12, 24, WHITE);
-    
-    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), closeRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        state.editor.isOpen = false;
-        state.editor.showFileBrowser = false;
-        state.editor.focusedFieldId = -1;
+    // Only show header and close button when file browser is NOT open
+    if (!state.editor.showFileBrowser) {
+        DrawText("Edit Pattern", winRect.x + 20, winRect.y + 15, 24, WHITE);
+        
+        // Close Button - touch friendly (50x50)
+        Rectangle closeRect = {winRect.x + winRect.width - 55, winRect.y + 5, 50, 50};
+        DrawRectangleRec(closeRect, RED);
+        DrawText("X", closeRect.x + 18, closeRect.y + 12, 24, WHITE);
+        
+        if (CheckCollisionPointRec(state.getMousePosition(), closeRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            state.editor.isOpen = false;
+            state.editor.showFileBrowser = false;
+            state.editor.focusedFieldId = -1;
+        }
     }
 
     // Scroll Logic
@@ -540,6 +544,22 @@ void PatternEditor::Draw() {
                  }
                  engine.addPattern(p); // SYNC
              }
+        }
+    }
+    
+    // Draw beat sync dividers in the pattern editor grid
+    int syncBase = p.syncBase;
+    if (syncBase > 0 && syncBase < stepCount) {
+        for (int i = syncBase; i < stepCount; i += syncBase) {
+            int col = i % cols;
+            int row = i / cols;
+            
+            // Draw at left edge of this step
+            float lineX = gridRect.x + col * cellW;
+            float lineY = gridRect.y + row * (stepSize + verticalGap);
+            
+            // Use teal color, matching step height
+            DrawLineEx({lineX, lineY}, {lineX, lineY + stepSize}, 2.0f, Color{0, 180, 180, 255});
         }
     }
     
@@ -1171,8 +1191,57 @@ void PatternEditor::Draw() {
     
     // Footer BG already drawn above
     // DrawRectangle(winRect.x, winRect.y + winRect.height - 50, winRect.width, 50, Color{30, 30, 30, 255}); // Footer BG
+    
+    // Commit Button (Save without closing)
+    Rectangle commitRect = {winRect.x + winRect.width - 220, winRect.y + winRect.height - 45, 100, 40};
+    DrawRectangleRec(commitRect, Color{0, 150, 0, 255}); // Green
+    DrawText("Commit", commitRect.x + 15, commitRect.y + 10, 18, WHITE);
+    
+    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), commitRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        // Save pattern without closing
+        p.name = state.editor.nameBuffer;
+        
+        std::string sPath = state.editor.samplePathBuffer;
+        if (!sPath.empty() && !fs::exists(sPath)) {
+             std::vector<std::string> prefixes = {"../", "src/", "../src/", "samples/", "../samples/"};
+             for (const auto& pre : prefixes) {
+                 if (fs::exists(pre + sPath)) {
+                     sPath = pre + sPath;
+                     break;
+                 }
+             }
+        }
+        
+        p.samplePath = sPath;
+        p.bpm = state.bpm;
+        p.steps = atoi(state.editor.stepsBuffer);
+        p.syncBase = atoi(state.editor.syncBaseBuffer);
+        
+        p.activeSteps.clear();
+        for (int i=0; i<64; ++i) {
+            if (state.editor.stepStates[i]) {
+                p.activeSteps.push_back(i+1);
+            }
+        }
+        
+        if (p.samplePath != "") engine.loadSample(p);
+        engine.addPattern(p);
+        
+        // Rename in columns if name changed
+        std::string oldName = state.editor.originalName;
+        if (p.name != oldName) {
+            for (auto& col : state.columns) {
+                std::replace(col.patternNames.begin(), col.patternNames.end(), oldName, p.name);
+            }
+            strncpy(state.editor.originalName, p.name.c_str(), sizeof(state.editor.originalName) - 1); // Update original name for next commit
+        }
+        
+        // Don't close - stay in editor
+    }
+    
+    // Save and Exit Button
     DrawRectangleRec(saveRect, BLUE);
-    DrawText("Save", saveRect.x + 20, saveRect.y + 5, 20, WHITE);
+    DrawText("Save+Exit", saveRect.x + 5, saveRect.y + 10, 16, WHITE);
     
     if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), saveRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         // Save back to pattern
@@ -1219,10 +1288,8 @@ void PatternEditor::Draw() {
             // Selection uses slot index now, no need to update names
         }
         
-        // Refresh renderer - only close if NOT playing (live edit stays open)
-        if (!engine.isPlaying()) {
-            state.editor.isOpen = false;
-        }
+        // Always close on Save+Exit
+        state.editor.isOpen = false;
         state.editor.showFileBrowser = false;
         state.editor.focusedFieldId = -1;
     }

@@ -5,6 +5,8 @@
 #include "../ProjectFile.h"
 #include "../tinyfiledialogs.h"
 #include <cstdlib>
+#include <cstring>
+#include <filesystem>
 
 namespace gui {
 
@@ -335,56 +337,36 @@ void TransportBar::DrawSettingsPopup() {
         DrawRectangleRec(saveBtn, DARKGRAY);
         DrawText("Save Project", saveBtn.x + 25, saveBtn.y + 8, 14, WHITE);
         if (CheckCollisionPointRec(state.getMousePosition(), saveBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            const char* filters[] = { "*.json" };
-            const char* path = tinyfd_saveFileDialog("Save Project", "project.json", 1, filters, "JSON Project Files");
-            if (path) {
-                // Convert Layout
-                std::vector<SerializedColumn> cols;
-                for (const auto& col : state.columns) {
-                    cols.push_back({col.title, col.trackName, col.patternNames, col.slotSyncEnabled});
-                }
-                ProjectFile::save(path, engine.getPatterns(), state.activeChain, cols);
-                state.settings.activePopup = PopupType::None; // Close after action
-                state.settings.showSettingsMenu = false;
+            // Open project browser in save mode
+            state.projectBrowser.isOpen = true;
+            state.projectBrowser.isSaveMode = true;
+            if (state.projectBrowser.currentPath.empty()) {
+                state.projectBrowser.currentPath = std::filesystem::current_path().string();
             }
+            state.projectBrowser.fileList.clear();
+            state.projectBrowser.dirList.clear();
+            state.projectBrowser.scrollY = 0;
+            // Refresh will be called on first draw
+            state.settings.activePopup = PopupType::None;
+            state.settings.showSettingsMenu = false;
         }
         
         Rectangle loadBtn = {popX + 170, currentY, 140, 30};
         DrawRectangleRec(loadBtn, DARKGRAY);
         DrawText("Load Project", loadBtn.x + 25, loadBtn.y + 8, 14, WHITE);
         if (CheckCollisionPointRec(state.getMousePosition(), loadBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            const char* filters[] = { "*.json" };
-            const char* path = tinyfd_openFileDialog("Load Project", "", 1, filters, "JSON Project Files", 0);
-            if (path) {
-                std::map<std::string, Pattern> patterns;
-                std::vector<SerializedColumn> loadedCols;
-                
-                if (ProjectFile::load(path, patterns, state.activeChain, loadedCols)) {
-                    engine.stop();
-                    for (auto& [name, pat] : patterns) {
-                        if (!pat.samplePath.empty()) {
-                            engine.loadSample(pat); 
-                        }
-                        engine.addPattern(pat);
-                    }
-                    state.columns.clear();
-                    state.activePatternSlots.clear();
-                    
-                    if (!loadedCols.empty()) {
-                        for (const auto& sCol : loadedCols) {
-                            state.columns.push_back({sCol.title, sCol.patternNames, sCol.slotSyncEnabled, {0,0,0,0}, 0.0f, false, sCol.trackName, 1.0f, 0.5f});
-                        }
-                    } else {
-                        state.columns.resize(4);
-                        int colIdx = 0;
-                        for (const auto& [name, pat] : patterns) {
-                           state.columns[colIdx].patternNames.push_back(name);
-                        }
-                    }
-                    state.settings.activePopup = PopupType::None; // Close after action
-                    state.settings.showSettingsMenu = false;
-                }
+            // Open project browser in load mode
+            state.projectBrowser.isOpen = true;
+            state.projectBrowser.isSaveMode = false;
+            if (state.projectBrowser.currentPath.empty()) {
+                state.projectBrowser.currentPath = std::filesystem::current_path().string();
             }
+            state.projectBrowser.fileList.clear();
+            state.projectBrowser.dirList.clear();
+            state.projectBrowser.scrollY = 0;
+            memset(state.projectBrowser.selectedFile, 0, sizeof(state.projectBrowser.selectedFile));
+            state.settings.activePopup = PopupType::None;
+            state.settings.showSettingsMenu = false;
         }
     }
     else if (state.settings.activePopup == PopupType::Audio) {

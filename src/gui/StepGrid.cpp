@@ -23,15 +23,29 @@ void DrawStepGrid(Rectangle bounds, const Pattern& pattern, int activeStep, GuiS
     int cols = std::min(16, steps);
     int rows = (steps + cols - 1) / cols;
     
-    float cellW = bounds.width / cols;
-    float cellH = bounds.height / rows;
-    float size = std::min(cellW, cellH) * 0.8f;
+    // Calculate uniform step size based on available space
+    float gapRatio = 0.1f; // 10% gap between steps
+    float totalGapW = bounds.width * gapRatio;
+    float totalGapH = bounds.height * gapRatio;
+    float gapW = totalGapW / (cols + 1); // gaps on both sides
+    float gapH = rows > 1 ? totalGapH / (rows + 1) : 0;
+    
+    float stepW = (bounds.width - totalGapW) / cols;
+    float stepH = (bounds.height - totalGapH) / rows;
+    float size = std::min(stepW, stepH); // Keep steps square
+    
+    // Recalculate gaps to center content if size was constrained
+    float actualWidth = cols * size;
+    float actualGapW = (bounds.width - actualWidth) / (cols + 1);
+    
+    float actualHeight = rows * size;
+    float actualGapH = (bounds.height - actualHeight) / (rows + 1);
     
     for (int i = 0; i < steps; ++i) {
         int col = i % cols;
         int row = i / cols;
-        float x = bounds.x + col * cellW + (cellW - size)/2;
-        float y = bounds.y + row * cellH + (cellH - size)/2;
+        float x = bounds.x + actualGapW + col * (size + actualGapW);
+        float y = bounds.y + actualGapH + row * (size + actualGapH);
         
         bool active = pattern.shouldTriggerAt(i + 1);
         Color c = active ? RED : DARKGRAY;
@@ -86,6 +100,22 @@ void DrawStepGrid(Rectangle bounds, const Pattern& pattern, int activeStep, GuiS
                 float nudgeX = x + (size / 2) + (offset - 0.5f) * (size / 2);
                 DrawLine(nudgeX, y, nudgeX, y + size, ORANGE);
             }
+        }
+    }
+    
+    // Draw beat sync dividers if syncBase is set
+    int syncBase = pattern.syncBase;
+    if (syncBase > 0 && syncBase < steps) {
+        for (int i = syncBase; i < steps; i += syncBase) {
+            int col = i % cols;
+            int row = i / cols;
+            
+            // Draw at left edge of this step (in the gap before it)
+            float lineX = bounds.x + actualGapW + col * (size + actualGapW) - actualGapW / 2;
+            float lineY = bounds.y + actualGapH + row * (size + actualGapH);
+            
+            // Use teal color, matching step height
+            DrawLineEx({lineX, lineY}, {lineX, lineY + size}, 2.0f, Color{0, 180, 180, 255});
         }
     }
 }

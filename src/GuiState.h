@@ -163,6 +163,17 @@ struct SettingsState {
     bool isSwitchingDevice = false;  // Indicates device switch in progress
 };
 
+struct ProjectBrowserState {
+    bool isOpen = false;
+    bool isSaveMode = false; // true = save, false = load
+    std::string currentPath;
+    std::vector<std::string> fileList; // .json files
+    std::vector<std::string> dirList;
+    float scrollY = 0.0f;
+    char filenameBuffer[64] = "project"; // For save mode
+    char selectedFile[256] = {0}; // For load mode
+};
+
 struct GuiState {
     std::vector<PatternColumn> columns;
     std::map<int, int> activePatternSlots; // Column Index -> Slot Index (which pattern in that column is selected)
@@ -172,6 +183,7 @@ struct GuiState {
     TrackClipboard trackClipboard; // For copy/paste patterns in track view
     SettingsState settings; // Audio device settings
     RecordingState recorder;
+    ProjectBrowserState projectBrowser; // For project save/load file browser
     
     // Column Renaming
     int renamingColumnIndex = -1;

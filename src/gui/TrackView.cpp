@@ -103,7 +103,19 @@ void TrackView::Draw() {
     
     if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), addColBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
          if (CheckCollisionPointRec(state.getMousePosition(), viewRect)) {
-             state.columns.push_back({"Track " + std::to_string(state.columns.size() + 1), std::vector<std::string>(16, ""), {0, 0, 0, 0}, 0.0f});
+             // FIX: Correctly initialize PatternColumn with all fields
+             std::string newTrackName = "Track_" + std::to_string(state.columns.size());
+             state.columns.push_back({
+                 "Track " + std::to_string(state.columns.size() + 1), // Title
+                 std::vector<std::string>(16, ""),                    // PatternNames
+                 std::vector<bool>(16, false),                        // SlotSyncEnabled
+                 {0, 0, 0, 0},                                        // Bounds
+                 0.0f,                                                // ScrollY
+                 false,                                               // MixerMode
+                 newTrackName,                                        // TrackName
+                 1.0f,                                                // Volume
+                 0.5f                                                 // Pan
+             });
          }
     }
     
