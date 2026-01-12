@@ -572,6 +572,7 @@ void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::strin
                      if (p) {
                          state.editor.currentPattern = *p;
                          state.editor.isOpen = true;
+                         state.editor.justOpened = true;
                          state.editor.showFileBrowser = false;
                          strcpy(state.editor.nameBuffer, p->name.c_str());
                          strcpy(state.editor.originalName, p->name.c_str());
@@ -597,6 +598,7 @@ void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::strin
                     state.shiftEditingPatternName = p->name;
                     state.editor.currentPattern = *p;
                     state.editor.isOpen = true;
+                    state.editor.justOpened = true;
                     strcpy(state.editor.nameBuffer, p->name.c_str());
                     strcpy(state.editor.originalName, p->name.c_str());
                     strcpy(state.editor.samplePathBuffer, p->samplePath.c_str());

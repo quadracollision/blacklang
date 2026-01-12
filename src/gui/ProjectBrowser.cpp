@@ -6,9 +6,35 @@
 #include <algorithm>
 #include <cstring>
 
+#if defined(__ANDROID__)
+#include <android/log.h>
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, "ProjectBrowser", __VA_ARGS__)
+#else
+#define LOGD(...) 
+#endif
+
 namespace fs = std::filesystem;
 
 namespace ProjectBrowser {
+
+// Get the projects folder path (fixed on Android, cwd on desktop)
+static std::string GetProjectsFolder() {
+#if defined(__ANDROID__)
+    // Use a fixed projects folder on Android
+    std::string projectsPath = "/storage/emulated/0/BlackLang/projects";
+    // Create directory if it doesn't exist
+    try {
+        if (!fs::exists(projectsPath)) {
+            fs::create_directories(projectsPath);
+        }
+    } catch (...) {
+        LOGD("Failed to create projects directory");
+    }
+    return projectsPath;
+#else
+    return fs::current_path().string();
+#endif
+}
 
 void Refresh(GuiState& state) {
     state.projectBrowser.fileList.clear();
@@ -20,12 +46,23 @@ void Refresh(GuiState& state) {
     
     try {
         if (!fs::exists(path) || !fs::is_directory(path)) {
-            path = fs::current_path().string();
+            path = GetProjectsFolder();
             state.projectBrowser.currentPath = path;
         }
         
         for (const auto& entry : fs::directory_iterator(path)) {
             try {
+#if defined(__ANDROID__)
+                // On Android, only show files (no directory navigation)
+                if (!entry.is_directory()) {
+                    std::string ext = entry.path().extension().string();
+                    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+                    if (ext == ".json") {
+                        state.projectBrowser.fileList.push_back(entry.path().filename().string());
+                    }
+                }
+#else
+                // On desktop, show directories and files
                 if (entry.is_directory()) {
                     state.projectBrowser.dirList.push_back(entry.path().filename().string());
                 } else {
@@ -35,6 +72,7 @@ void Refresh(GuiState& state) {
                         state.projectBrowser.fileList.push_back(entry.path().filename().string());
                     }
                 }
+#endif
             } catch (...) { continue; }
         }
         
@@ -43,6 +81,7 @@ void Refresh(GuiState& state) {
         
     } catch (const fs::filesystem_error&) {
         // Permission denied or other error
+        LOGD("Filesystem error accessing: %s", path.c_str());
     }
 }
 
@@ -51,24 +90,33 @@ void Init(GuiState& state, bool saveMode) {
     memset(state.projectBrowser.selectedFile, 0, sizeof(state.projectBrowser.selectedFile));
     state.projectBrowser.scrollY = 0;
     
-    if (state.projectBrowser.currentPath.empty()) {
-        state.projectBrowser.currentPath = fs::current_path().string();
-    }
+    // Always use the projects folder
+    state.projectBrowser.currentPath = GetProjectsFolder();
     
     Refresh(state);
 }
 
 void NavigateTo(GuiState& state, const std::string& path) {
+#if defined(__ANDROID__)
+    // On Android, don't allow navigation - stay in projects folder
+    return;
+#else
     state.projectBrowser.currentPath = path;
     Refresh(state);
+#endif
 }
 
 void GoUp(GuiState& state) {
+#if defined(__ANDROID__)
+    // On Android, don't allow navigation - stay in projects folder
+    return;
+#else
     fs::path p(state.projectBrowser.currentPath);
     if (p.has_parent_path()) {
         state.projectBrowser.currentPath = p.parent_path().string();
         Refresh(state);
     }
+#endif
 }
 
 bool Draw(GuiState& state, AudioEngine& engine) {
@@ -111,20 +159,26 @@ bool Draw(GuiState& state, AudioEngine& engine) {
         return true;
     }
     
-    // Up button
+#if !defined(__ANDROID__)
+    // Up button (desktop only)
     if (DrawButton({winX + winW - (btnSize*2) - (padding*2), winY + padding, btnSize, btnSize}, "^", DARKGRAY, WHITE, mousePos)) {
         GoUp(state);
     }
     
-    // Home button
+    // Home button (desktop only)
     if (DrawButton({winX + winW - (btnSize*3) - (padding*3), winY + padding, btnSize, btnSize}, "H", DARKGRAY, WHITE, mousePos)) {
         NavigateTo(state, fs::current_path().string());
     }
+#endif
     
     // Current path display
+#if defined(__ANDROID__)
+    DrawText("Projects", (int)(winX + 15), (int)(winY + headerH + 10), 14, LIGHTGRAY);
+#else
     std::string pathDisplay = state.projectBrowser.currentPath;
     if (pathDisplay.length() > 50) pathDisplay = "..." + pathDisplay.substr(pathDisplay.length() - 47);
     DrawText(pathDisplay.c_str(), (int)(winX + 15), (int)(winY + headerH + 10), 14, LIGHTGRAY);
+#endif
     
     // Filename input for save mode
     float listY = winY + headerH + 35;

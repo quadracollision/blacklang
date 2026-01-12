@@ -22,6 +22,13 @@ struct PatternColumn {
     // These control the bus, not individual patterns
     float volume = 1.0f;
     float pan = 0.5f;
+    
+    // UI State
+    float mixerScrollY = 0.0f;
+    float mixerContentHeight = 0.0f;
+    bool isDragging = false;
+    float dragStartY = 0.0f;
+    float dragStartScroll = 0.0f;
 };
 
 struct DragState {
@@ -70,6 +77,7 @@ struct StepClipboard {
 
 struct PatternEditorState {
     bool isOpen = false;
+    bool justOpened = false; // Set true when opened, cleared after first draw to prevent click-through
     Pattern currentPattern;
     
     StepClipboard clipboard; // Clipboard for step data
@@ -109,6 +117,9 @@ struct PatternEditorState {
     
     // Track which field is being edited
     int focusedFieldId = -1; // 0: Name, 1: Sample, 2: BPM, 3: Steps
+    
+    // Preview playback state
+    bool isPreviewing = false;
 
     // FX Mode State
     bool showFxControls = false;

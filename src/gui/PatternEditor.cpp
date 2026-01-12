@@ -21,8 +21,17 @@ bool PatternEditor::IsOpen() const {
 }
 
 void PatternEditor::Draw() {
-    // Block input when file browser is open
+    // Block input when file browser is open or editor just opened (prevent click-through)
     bool inputBlocked = state.editor.showFileBrowser;
+    
+    // If editor just opened, block this frame's input and clear the flag
+    if (state.editor.justOpened) {
+        inputBlocked = true;
+        // Clear flag when mouse button is released (user has let go of the click that opened editor)
+        if (!IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+            state.editor.justOpened = false;
+        }
+    }
     
     // Overlay
     DrawRectangle(0, 0, state.getScreenWidth(), state.getScreenHeight(), Color{0, 0, 0, 200});
@@ -45,7 +54,9 @@ void PatternEditor::Draw() {
         DrawRectangleRec(closeRect, RED);
         DrawText("X", closeRect.x + 18, closeRect.y + 12, 24, WHITE);
         
-        if (CheckCollisionPointRec(state.getMousePosition(), closeRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), closeRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            if (state.editor.isPreviewing) engine.stop();
+            state.editor.isPreviewing = false;
             state.editor.isOpen = false;
             state.editor.showFileBrowser = false;
             state.editor.focusedFieldId = -1;
@@ -60,6 +71,13 @@ void PatternEditor::Draw() {
     
     // ... drawing ...\
     // Note: Scroll update moved to END of this function to check for consumption
+    
+    // If file browser is open, draw it and return early (don't draw pattern editor content)
+    if (state.editor.showFileBrowser) {
+        EndScissorMode();
+        DrawFileBrowser(winRect);
+        return;
+    }
     
     float startY = winRect.y + 70 - state.editor.scrollOffsetY; // Base Y with Scroll
     float rowHeight = 50; // Touch-friendly row spacing
@@ -675,14 +693,6 @@ void PatternEditor::Draw() {
         startY += keyHeight + 10;
     }
 
-    // Draw File Browser (Modal)
-    bool browserBusy = false;
-    if (state.editor.showFileBrowser) {
-        browserBusy = DrawFileBrowser(winRect);
-    }
-
-    if (browserBusy) return; // Block input to pattern editor!
-
     // FX Controls (Modular)
     if (state.editor.showFxControls) {
         Rectangle fxArea = {winRect.x + 20, startY, winRect.width - 40, 0};
@@ -1049,34 +1059,47 @@ void PatternEditor::Draw() {
         state.editor.clipboard.isPasteMode = false;
     }
 
-    // Preview Button - plays just this pattern
+    // Preview/Stop Button - plays just this pattern or stops it
     Rectangle previewRect = {winRect.x + 290, winRect.y + winRect.height - 45, 100, 40};
-    DrawRectangleRec(previewRect, LIME);
-    DrawText("Preview", previewRect.x + 12, previewRect.y + 10, 20, BLACK);
+    
+    if (state.editor.isPreviewing) {
+        DrawRectangleRec(previewRect, RED);
+        DrawText("Stop", previewRect.x + 28, previewRect.y + 10, 20, WHITE);
+    } else {
+        DrawRectangleRec(previewRect, LIME);
+        DrawText("Preview", previewRect.x + 12, previewRect.y + 10, 20, BLACK);
+    }
     
     if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), previewRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        // Save current pattern state first
-        p.name = state.editor.nameBuffer;
-        p.steps = atoi(state.editor.stepsBuffer);
-        p.syncBase = atoi(state.editor.syncBaseBuffer);
-        if (p.syncBase <= 0) p.syncBase = p.steps;
-        engine.addPattern(p);
-        
-        // Ensure track assignment matches the column this pattern belongs to
-        for (const auto& col : state.columns) {
-            bool found = false;
-            for (const auto& pn : col.patternNames) {
-                if (pn == p.name) {
-                    engine.assignPatternToTrack(p.name, col.trackName);
-                    found = true;
-                    break;
+        if (state.editor.isPreviewing) {
+            // Stop preview
+            engine.stop();
+            state.editor.isPreviewing = false;
+        } else {
+            // Save current pattern state first
+            p.name = state.editor.nameBuffer;
+            p.steps = atoi(state.editor.stepsBuffer);
+            p.syncBase = atoi(state.editor.syncBaseBuffer);
+            if (p.syncBase <= 0) p.syncBase = p.steps;
+            engine.addPattern(p);
+            
+            // Ensure track assignment matches the column this pattern belongs to
+            for (const auto& col : state.columns) {
+                bool found = false;
+                for (const auto& pn : col.patternNames) {
+                    if (pn == p.name) {
+                        engine.assignPatternToTrack(p.name, col.trackName);
+                        found = true;
+                        break;
+                    }
                 }
+                if (found) break;
             }
-            if (found) break;
+            
+            // Play just this pattern
+            engine.playPattern(p.name);
+            state.editor.isPreviewing = true;
         }
-        
-        // Play just this pattern
-        engine.playPattern(p.name);
     }
 
     // Per-Slot Sync Toggle - in footer for easy touch access
@@ -1289,6 +1312,8 @@ void PatternEditor::Draw() {
         }
         
         // Always close on Save+Exit
+        if (state.editor.isPreviewing) engine.stop();
+        state.editor.isPreviewing = false;
         state.editor.isOpen = false;
         state.editor.showFileBrowser = false;
         state.editor.focusedFieldId = -1;
