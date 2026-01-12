@@ -70,10 +70,6 @@ void TrackView::Draw() {
             }
             
             state.drag.lastMousePos = mouse;
-        } else {
-            state.drag.isScrolling = false;
-            state.drag.scrollColumnIndex = -1;
-            state.drag.scrollDirection = 0;
         }
     }
 
@@ -198,6 +194,12 @@ void TrackView::Draw() {
             state.drag.isDragging = false;
             state.drag.isHolding = false;
         }
+    }
+    // 4. Cleanup Scroll State (Post-processing to ensure click events see drag state)
+    if (!IsMouseButtonDown(MOUSE_LEFT_BUTTON) && state.drag.isScrolling) {
+        state.drag.isScrolling = false;
+        state.drag.scrollColumnIndex = -1;
+        state.drag.scrollDirection = 0;
     }
 }
 
@@ -531,166 +533,174 @@ void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::strin
         static double lastPatternClickTime = 0;
         static std::string lastPatternClickName = "";
 
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            // NEW WORKFLOW: Source Selection (Priority over everything else)
-            if (state.trackClipboard.isSelectingSource) {
-                state.trackClipboard.patternName = patternName;
-                state.trackClipboard.hasData = true;
-                state.trackClipboard.isSelectingSource = false;
-                state.trackClipboard.isPasting = true; // Enter paste mode immediately
-                return;
-            }
-            
-            // NEW WORKFLOW: Pasting (Priority over selection/edit)
-            if (state.trackClipboard.isPasting && state.trackClipboard.hasData) {
-                // Check if target slot is empty
-                if (state.columns[(size_t)colIndex].patternNames[(size_t)slotIndex].empty()) {
-                    // Perform Paste
-                     Pattern* origPat = engine.getPattern(state.trackClipboard.patternName);
-                     if (origPat) {
-                        Pattern copy = *origPat;
-                        copy.name = origPat->name + "_" + std::to_string(state.patternIdCounter++);
-                        if (copy.samplePath != "") engine.loadSample(copy);
-                        engine.addPattern(copy);
-                        
-                        // FIX: Register track assignment
-                        engine.assignPatternToTrack(copy.name, state.columns[(size_t)colIndex].title);
-                        
-                        // Assign to slot
-                        state.columns[(size_t)colIndex].patternNames[(size_t)slotIndex] = copy.name;
-                     }
-                }
-                return;
-            }
-            
-            // Header Click Logic (Single Click to Edit)
-            // Replaces double-click logic. Only applies to occupied patterns.
-            if (!patternName.empty()) {
-                Rectangle headerRect = {cellRect.x, cellRect.y, cellRect.width, 22};
-                if (CheckCollisionPointRec(state.getMousePosition(), headerRect)) {
-                     Pattern* p = engine.getPattern(patternName);
-                     if (p) {
-                         state.editor.currentPattern = *p;
-                         state.editor.isOpen = true;
-                         state.editor.justOpened = true;
-                         state.editor.showFileBrowser = false;
-                         strcpy(state.editor.nameBuffer, p->name.c_str());
-                         strcpy(state.editor.originalName, p->name.c_str());
-                         strcpy(state.editor.samplePathBuffer, p->samplePath.c_str());
-                         sprintf(state.editor.bpmBuffer, "%d", p->bpm);
-                         sprintf(state.editor.stepsBuffer, "%d", p->steps);
-                         sprintf(state.editor.syncBaseBuffer, "%d", p->syncBase);
-                         for (int s = 0; s < 64; ++s) state.editor.stepStates[s] = p->shouldTriggerAt(s+1);
-                     }
-                     return; // Create separation: Header = Edit, Body = Select
-                }
-            }
-            
-            // Double Click check removed (superseded by header click)
-            double now = GetTime();
-            lastPatternClickTime = now;
-            lastPatternClickName = patternName;
+        // 1. Handle Release (Selection, Edit, Paste) - Only if NOT dragging/scrolling
+        if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+            bool wasDragging = state.drag.isDragging || state.drag.scrollDirection != 0;
 
-            // Shift mode - edit without changing selection
-            if (state.isShiftMode && state.isLiveEditMode) {
-                Pattern* p = engine.getPattern(patternName);
-                if (p) {
-                    state.shiftEditingPatternName = p->name;
-                    state.editor.currentPattern = *p;
-                    state.editor.isOpen = true;
-                    state.editor.justOpened = true;
-                    strcpy(state.editor.nameBuffer, p->name.c_str());
-                    strcpy(state.editor.originalName, p->name.c_str());
-                    strcpy(state.editor.samplePathBuffer, p->samplePath.c_str());
-                    sprintf(state.editor.bpmBuffer, "%d", p->bpm);
-                    sprintf(state.editor.stepsBuffer, "%d", p->steps);
-                    sprintf(state.editor.syncBaseBuffer, "%d", p->syncBase);
-                    for (int s = 0; s < 64; ++s) state.editor.stepStates[s] = p->shouldTriggerAt(s+1);
+            if (!wasDragging) {
+                // NEW WORKFLOW: Source Selection (Priority over everything else)
+                if (state.trackClipboard.isSelectingSource) {
+                    state.trackClipboard.patternName = patternName;
+                    state.trackClipboard.hasData = true;
+                    state.trackClipboard.isSelectingSource = false;
+                    state.trackClipboard.isPasting = true; // Enter paste mode immediately
+                    return;
                 }
-                return;
-            }
-            
-            // Selection Logic - Allow one pattern per column by default
-            bool isMulti = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT) || IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL);
-            
-            // Check if this pattern is already selected in this column
-            bool wasSelected = (state.activePatternSlots.count(colIndex) && state.activePatternSlots[colIndex] == slotIndex);
-            
-            if (!isMulti) {
-                // Normal click: toggle selection in this column
-                if (wasSelected) {
-                    // Deselect if clicking the same pattern again
-                    state.activePatternSlots.erase(colIndex);
-                } else {
-                    // Select this pattern (keeps selections in other columns)
-                    state.activePatternSlots[colIndex] = slotIndex;
+                
+                // NEW WORKFLOW: Pasting (Priority over selection/edit)
+                if (state.trackClipboard.isPasting && state.trackClipboard.hasData) {
+                    // Check if target slot is empty
+                    if (state.columns[(size_t)colIndex].patternNames[(size_t)slotIndex].empty()) {
+                        // Perform Paste
+                            Pattern* origPat = engine.getPattern(state.trackClipboard.patternName);
+                            if (origPat) {
+                            Pattern copy = *origPat;
+                            copy.name = origPat->name + "_" + std::to_string(state.patternIdCounter++);
+                            if (copy.samplePath != "") engine.loadSample(copy);
+                            engine.addPattern(copy);
+                            
+                            // FIX: Register track assignment
+                            engine.assignPatternToTrack(copy.name, state.columns[(size_t)colIndex].title);
+                            
+                            // Assign to slot
+                            state.columns[(size_t)colIndex].patternNames[(size_t)slotIndex] = copy.name;
+                            }
+                    }
+                    return;
                 }
-            } else {
-                // Shift/Ctrl: Toggle behavior for multi-select within same column
-                if (wasSelected) {
-                    state.activePatternSlots.erase(colIndex);
-                } else {
-                    state.activePatternSlots[colIndex] = slotIndex;
-                }
-            }
-            
-            // Sync with audio engine
-            // Sync with audio engine
-            // Always update track assignment (critical for Always Sync)
-            if (colIndex >= 0 && colIndex < (int)state.columns.size()) {
-                PatternColumn& pc = state.columns[(size_t)colIndex];
-                if (slotIndex >= 0 && slotIndex < (int)pc.patternNames.size()) {
-                    std::string pname = pc.patternNames[(size_t)slotIndex];
-                    if (!pname.empty()) {
-                         engine.assignPatternToTrack(pname, pc.trackName);
+                
+                // Header Click Logic (Single Click to Edit)
+                // Replaces double-click logic. Only applies to occupied patterns.
+                if (!patternName.empty()) {
+                    Rectangle headerRect = {cellRect.x, cellRect.y, cellRect.width, 22};
+                    if (CheckCollisionPointRec(state.getMousePosition(), headerRect)) {
+                            Pattern* p = engine.getPattern(patternName);
+                            if (p) {
+                                state.editor.currentPattern = *p;
+                                state.editor.isOpen = true;
+                                state.editor.justOpened = true;
+                                state.editor.showFileBrowser = false;
+                                strcpy(state.editor.nameBuffer, p->name.c_str());
+                                strcpy(state.editor.originalName, p->name.c_str());
+                                strcpy(state.editor.samplePathBuffer, p->samplePath.c_str());
+                                sprintf(state.editor.bpmBuffer, "%d", p->bpm);
+                                sprintf(state.editor.stepsBuffer, "%d", p->steps);
+                                sprintf(state.editor.syncBaseBuffer, "%d", p->syncBase);
+                                for (int s = 0; s < 64; ++s) state.editor.stepStates[s] = p->shouldTriggerAt(s+1);
+                            }
+                            return; // Create separation: Header = Edit, Body = Select
                     }
                 }
-            }
-
-            if (engine.isPlaying()) {
-                // Check if clicked slot has sync enabled
-                bool shouldQueue = false;
-                std::string queueTrackName = "";
-                std::string queuePatternName = "";
                 
+                // Double Click check removed (superseded by header click)
+                double now = GetTime();
+                lastPatternClickTime = now;
+                lastPatternClickName = patternName;
+
+                // Shift mode - edit without changing selection
+                if (state.isShiftMode && state.isLiveEditMode) {
+                    Pattern* p = engine.getPattern(patternName);
+                    if (p) {
+                        state.shiftEditingPatternName = p->name;
+                        state.editor.currentPattern = *p;
+                        state.editor.isOpen = true;
+                        state.editor.justOpened = true;
+                        strcpy(state.editor.nameBuffer, p->name.c_str());
+                        strcpy(state.editor.originalName, p->name.c_str());
+                        strcpy(state.editor.samplePathBuffer, p->samplePath.c_str());
+                        sprintf(state.editor.bpmBuffer, "%d", p->bpm);
+                        sprintf(state.editor.stepsBuffer, "%d", p->steps);
+                        sprintf(state.editor.syncBaseBuffer, "%d", p->syncBase);
+                        for (int s = 0; s < 64; ++s) state.editor.stepStates[s] = p->shouldTriggerAt(s+1);
+                    }
+                    return;
+                }
+                
+                // Selection Logic - Allow one pattern per column by default
+                bool isMulti = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT) || IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL);
+                
+                // Check if this pattern is already selected in this column
+                bool wasSelected = (state.activePatternSlots.count(colIndex) && state.activePatternSlots[colIndex] == slotIndex);
+                
+                if (!isMulti) {
+                    // Normal click: toggle selection in this column
+                    if (wasSelected) {
+                        // Deselect if clicking the same pattern again
+                        state.activePatternSlots.erase(colIndex);
+                    } else {
+                        // Select this pattern (keeps selections in other columns)
+                        state.activePatternSlots[colIndex] = slotIndex;
+                    }
+                } else {
+                    // Shift/Ctrl: Toggle behavior for multi-select within same column
+                    if (wasSelected) {
+                        state.activePatternSlots.erase(colIndex);
+                    } else {
+                        state.activePatternSlots[colIndex] = slotIndex;
+                    }
+                }
+                
+                // Sync with audio engine
+                // Sync with audio engine
+                // Always update track assignment (critical for Always Sync)
                 if (colIndex >= 0 && colIndex < (int)state.columns.size()) {
                     PatternColumn& pc = state.columns[(size_t)colIndex];
                     if (slotIndex >= 0 && slotIndex < (int)pc.patternNames.size()) {
-                        // Check if this slot has sync enabled
-                        if (slotIndex < (int)pc.slotSyncEnabled.size() && pc.slotSyncEnabled[(size_t)slotIndex]) {
-                            std::string pname = pc.patternNames[(size_t)slotIndex];
-                            if (!pname.empty()) {
-                                shouldQueue = true;
-                                queueTrackName = pc.trackName;
-                                queuePatternName = pname;
-                            }
+                        std::string pname = pc.patternNames[(size_t)slotIndex];
+                        if (!pname.empty()) {
+                                engine.assignPatternToTrack(pname, pc.trackName);
                         }
                     }
                 }
-                
-                if (shouldQueue) {
-                    // Per-slot sync: queue pattern to switch at end of current
-                    engine.queuePatternSwitch(queueTrackName, queuePatternName);
-                } else {
-                    // Immediate switch
-                    std::vector<std::pair<std::string, std::string>> allActive;
-                    for (auto& pair : state.activePatternSlots) {
-                        int cIdx = pair.first;
-                        int sIdx = pair.second;
-                        if (cIdx >= 0 && cIdx < (int)state.columns.size()) {
-                            PatternColumn& pc = state.columns[(size_t)cIdx];
-                            if (sIdx >= 0 && sIdx < (int)pc.patternNames.size()) {
-                                std::string pname = pc.patternNames[(size_t)sIdx];
+
+                if (engine.isPlaying()) {
+                    // Check if clicked slot has sync enabled
+                    bool shouldQueue = false;
+                    std::string queueTrackName = "";
+                    std::string queuePatternName = "";
+                    
+                    if (colIndex >= 0 && colIndex < (int)state.columns.size()) {
+                        PatternColumn& pc = state.columns[(size_t)colIndex];
+                        if (slotIndex >= 0 && slotIndex < (int)pc.patternNames.size()) {
+                            // Check if this slot has sync enabled
+                            if (slotIndex < (int)pc.slotSyncEnabled.size() && pc.slotSyncEnabled[(size_t)slotIndex]) {
+                                std::string pname = pc.patternNames[(size_t)slotIndex];
                                 if (!pname.empty()) {
-                                    allActive.push_back({pname, pc.trackName});
+                                    shouldQueue = true;
+                                    queueTrackName = pc.trackName;
+                                    queuePatternName = pname;
                                 }
                             }
                         }
                     }
-                    engine.updateActivePatterns(allActive);
+                    
+                    if (shouldQueue) {
+                        // Per-slot sync: queue pattern to switch at end of current
+                        engine.queuePatternSwitch(queueTrackName, queuePatternName);
+                    } else {
+                        // Immediate switch
+                        std::vector<std::pair<std::string, std::string>> allActive;
+                        for (auto& pair : state.activePatternSlots) {
+                            int cIdx = pair.first;
+                            int sIdx = pair.second;
+                            if (cIdx >= 0 && cIdx < (int)state.columns.size()) {
+                                PatternColumn& pc = state.columns[(size_t)cIdx];
+                                if (sIdx >= 0 && sIdx < (int)pc.patternNames.size()) {
+                                    std::string pname = pc.patternNames[(size_t)sIdx];
+                                    if (!pname.empty()) {
+                                        allActive.push_back({pname, pc.trackName});
+                                    }
+                                }
+                            }
+                        }
+                        engine.updateActivePatterns(allActive);
+                    }
                 }
             }
-            
+        }
+
+        // 2. Initialize Drag/Scroll on Press
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             // Start hold for drag OR scroll
             if (!patternName.empty()) {
                 state.drag.isDragging = false;
