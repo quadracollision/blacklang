@@ -29,91 +29,36 @@ void TransportBar::DrawRecording() {
     Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
     float centerX = state.getScreenWidth() / 2.0f;
     float btnH = (float)state.FOOTER_HEIGHT;
-    float btnW = 60;
     
-    // Record Button (Beside Stop)
-    Rectangle recBtn = {centerX + 80, rect.y, btnW, btnH};
-    bool isRecording = state.recorder.isRecording;
-    
-    if (isRecording) {
-        // Red background when recording
-        DrawRectangleRec(recBtn, Color{200, 50, 50, 255});
-        DrawCircle(recBtn.x + 30, recBtn.y + 30, 18, RED);
-    } else {
-        // Gray button with Red Dot
-        DrawRectangleRec(recBtn, LIGHTGRAY);
-        DrawCircle(recBtn.x + 30, recBtn.y + 30, 12, RED);
-    }
-    
-    if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), recBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        if (state.recorder.isRecording) {
-            // Stop Recording
-            state.recorder.isRecording = false;
-            state.recorder.showControls = false;
-            engine.stopRecording();
-        } else {
-            // Open Controls
-            state.recorder.showControls = !state.recorder.showControls;
-        }
-    }
-    
-    // Recording Controls (Stems/Whole, Name)
-    if (state.recorder.showControls && !state.recorder.isRecording) {
-        float panelX = recBtn.x + 50;
-        float panelY = rect.y + 10;
-        float panelW = 340;
-        float panelH = 40;
-        
-        // Panel Background
-        DrawRectangle(panelX, panelY, panelW, panelH, DARKGRAY);
-        DrawRectangleLines(panelX, panelY, panelW, panelH, LIGHTGRAY);
-        
-        // Name Input
-        DrawText("Name:", panelX + 10, panelY + 12, 14, WHITE);
-        
-        Rectangle nameBox = {panelX + 60, panelY + 8, 100, 24};
-        DrawTextInput(nameBox, state.recorder.filenameBuffer, 63, 500, state.focusedFieldId, state.getMousePosition());
+    // Position for the REC button (Beside Stop: Center + 80)
+    float x = centerX + 80;
+    float y = rect.y;
+    float height = btnH;
 
-        // Switch: "Stems" or "Whole"
-        Rectangle switchRect = {panelX + 170, panelY + 8, 100, 24};
-        
-        // Draw Switch (Toggle Look)
-        // [ Whole | Stems ]
-        DrawRectangleRec(switchRect, GRAY);
-        
-        Rectangle wholeRect = {switchRect.x, switchRect.y, 50, 24};
-        Rectangle stemsRect = {switchRect.x + 50, switchRect.y, 50, 24};
-        
-        if (!state.recorder.recordStems) {
-            DrawRectangleRec(wholeRect, WHITE);
-            DrawText("Whole", wholeRect.x + 5, wholeRect.y + 5, 12, BLACK);
-            DrawText("Stems", stemsRect.x + 5, stemsRect.y + 5, 12, WHITE);
+    // Determine button color based on state
+    Color btnColor = state.recorder.isRecording ? RED : DARKGRAY;
+    if (state.recorder.showDialog) btnColor = Color{80, 80, 80, 255}; // Open state
+    
+    // Draw simple Rec Button
+    Rectangle recBtn = {x, y, 60.0f, height};
+    if (DrawButton(recBtn, "REC", btnColor, WHITE, state.getMousePosition())) {
+        if (state.recorder.isRecording) {
+            // Stop Recording from here
+            engine.stopRecording();
+            state.recorder.isRecording = false;
+            state.recorder.finished = true;
+            state.recorder.showDialog = true; // Show dialog to export
         } else {
-            DrawRectangleRec(stemsRect, WHITE);
-            DrawText("Whole", wholeRect.x + 5, wholeRect.y + 5, 12, WHITE);
-            DrawText("Stems", stemsRect.x + 5, stemsRect.y + 5, 12, BLACK);
+            state.recorder.showDialog = !state.recorder.showDialog;
         }
-        
-        if (CheckCollisionPointRec(state.getMousePosition(), wholeRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            state.recorder.recordStems = false;
-        }
-        if (CheckCollisionPointRec(state.getMousePosition(), stemsRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            state.recorder.recordStems = true;
-        }
-        
-        // Save Button
-        Rectangle saveBtn = {panelX + 280, panelY + 8, 50, 24};
-        DrawRectangleRec(saveBtn, GREEN);
-        DrawText("Save", saveBtn.x + 10, saveBtn.y + 5, 14, BLACK);
-        
-        if (CheckCollisionPointRec(state.getMousePosition(), saveBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            // Start Recording
-            state.recorder.isRecording = true;
-            state.recorder.showControls = false;
-            
-            // Call Engine
-            engine.startRecording(state.recorder.filenameBuffer, state.recorder.recordStems);
-        }
+    }
+    
+    // Timer display if recording (compact)
+    if (state.recorder.isRecording) {
+        double duration = GetTime() - state.recorder.recordingStartTime;
+        int minutes = (int)duration / 60;
+        int seconds = (int)duration % 60;
+        DrawText(TextFormat("%02d:%02d", minutes, seconds), x + 65, y + 10, 20, RED);
     }
 }
 

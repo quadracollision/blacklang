@@ -135,6 +135,31 @@ void requestPermissions() {
     app->activity->vm->DetachCurrentThread();
 }
 
+std::string getWritablePath() {
+    struct android_app* app = GetAndroidApp();
+    if (!app || !app->activity) return "";
+    return std::string(app->activity->internalDataPath) + "/";
+}
+
+void exportFile(const std::string& sourcePath, const std::string& targetName) {
+    if (!g_blackLangAppClass) return;
+    struct android_app* app = GetAndroidApp();
+    if (!app || !app->activity || !app->activity->vm) return;
+    
+    JNIEnv* env = nullptr;
+    app->activity->vm->AttachCurrentThread(&env, nullptr);
+    if (!env) return;
+    
+    jmethodID method = env->GetStaticMethodID(g_blackLangAppClass, "exportFile", "(Ljava/lang/String;)V");
+    if (method) {
+        jstring jPath = env->NewStringUTF(sourcePath.c_str());
+        env->CallStaticVoidMethod(g_blackLangAppClass, method, jPath);
+        env->DeleteLocalRef(jPath);
+    }
+    
+    app->activity->vm->DetachCurrentThread();
+}
+
 bool hasPermissions() { return true; }
 
 void showKeyboard() {
@@ -226,6 +251,7 @@ Java_com_quadracollision_blacklang_BlackLangApplication_nativeOnFilePicked(
 #else // Desktop implementation
 
 #include "tinyfiledialogs.h"
+#include <filesystem>
 
 namespace FilePicker {
 
@@ -252,6 +278,35 @@ std::string saveProjectFile() {
     const char* filters[1] = {"*.json"};
     const char* path = tinyfd_saveFileDialog("Save Project", "project.json", 1, filters, "JSON Project Files");
     return path ? path : "";
+}
+
+std::string getWritablePath() {
+    // Current directory + recordings
+    if (!std::filesystem::exists("recordings")) {
+        std::filesystem::create_directory("recordings");
+    }
+    return "recordings/";
+}
+
+void exportFile(const std::string& sourcePath, const std::string& targetName) {
+    // On Desktop, "Export" effectively means "Save As" / Move
+    // Or just open the folder :)
+    // Let's implement a Save As dialog to move the file
+    
+    std::string defaultName = targetName.empty() ? "recording.wav" : targetName;
+    const char* filters[1] = {"*.wav"};
+    const char* destPath = tinyfd_saveFileDialog("Save Recording", defaultName.c_str(), 1, filters, "WAV Files");
+    
+    if (destPath) {
+        try {
+            if (std::filesystem::exists(destPath)) {
+                std::filesystem::remove(destPath);
+            }
+            std::filesystem::copy_file(sourcePath, destPath);
+        } catch (std::exception& e) {
+            // log error
+        }
+    }
 }
 
 void requestPermissions() {}

@@ -18,7 +18,10 @@ public:
     ~AudioEngine() override;
     
     // Initialize audio
-    bool initialize();
+    bool initialize(); 
+    void initializeAsync(); // Non-blocking
+    bool isInitialized() const { return initialized.load(); }
+    bool hasInitFailed() const { return initFailed.load(); }
     void shutdown();
     
     // Sample loading
@@ -67,7 +70,7 @@ public:
     bool isDeviceSwitching() const { return deviceSwitching.load(); }
 
     // Recording
-    void startRecording(const std::string& filename, bool stems);
+    void startRecording(const std::string& filename, bool recordMix, bool recordStems);
     void stopRecording();
     bool isRecording();
     
@@ -148,6 +151,10 @@ private:
     
     // Device switching
     std::atomic<bool> deviceSwitching{false};
+    
+    // Initialization State
+    std::atomic<bool> initialized{false};
+    std::atomic<bool> initFailed{false};
 
     // Per-Slot Sync Queueing
     std::map<std::string, std::string> pendingPatternQueues; // TrackName -> Queued PatternName

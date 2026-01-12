@@ -41,6 +41,7 @@ if (ANDROID)
         src/FilePicker.cpp
         src/gui/FileBrowser.cpp
         src/gui/ProjectBrowser.cpp
+        src/gui/RecordingDialog.cpp
 
         src/AudioEngine.cpp
         src/AudioRecorder.cpp
@@ -99,6 +100,7 @@ else()
         src/FilePicker.cpp
         src/gui/FileBrowser.cpp
         src/gui/ProjectBrowser.cpp
+        src/gui/RecordingDialog.cpp
 
         src/AudioEngine.cpp
         src/AudioRecorder.cpp

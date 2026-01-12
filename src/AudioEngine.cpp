@@ -40,6 +40,16 @@ bool AudioEngine::initialize() {
     return true;
 }
 
+void AudioEngine::initializeAsync() {
+    std::thread([this]() {
+        if (initialize()) {
+            initialized.store(true);
+        } else {
+            initFailed.store(true);
+        }
+    }).detach();
+}
+
 void AudioEngine::shutdown() {
     stop();
     deviceManager.removeAudioCallback(this);
@@ -765,20 +775,20 @@ void AudioEngine::previewSlice(Pattern& pattern, int sliceIndex, bool playToEnd)
 
 
 
-void AudioEngine::startRecording(const std::string& filename, bool stems) {
+void AudioEngine::startRecording(const std::string& filename, bool recordMix, bool stems) {
     std::lock_guard<std::mutex> lock(recordingMutex);
     recordingStems = stems;
     
+    // Ensure "recordings" dir exists (on Desktop)
+    // On Android, filename should probably be an absolute path to internal/external cache
+    // For now we assume filename passed is valid or relative to CWD
+    
     if (stems) {
         // Record individual track buses as stems
-        // Get all active track buses
         std::vector<std::string> trackNames;
         
-        // Collect all track names from the bus manager
-        // We'll record all non-empty tracks
         for (const auto& pair : patternToTrack) {
             const std::string& trackName = pair.second;
-            // Check if this track name is already in our list
             bool found = false;
             for (const auto& name : trackNames) {
                 if (name == trackName) {
@@ -791,19 +801,20 @@ void AudioEngine::startRecording(const std::string& filename, bool stems) {
             }
         }
         
-        // Start a recorder for each track
         for (const auto& trackName : trackNames) {
-            std::string stemPath = "recordings/" + filename + "_" + trackName + ".wav";
+            std::string stemPath = filename + "_" + trackName + ".wav";
             stemRecorders[trackName].start(stemPath, sampleRate, 2);
         }
+    }
+    
+    if (recordMix) {
+        // Record master bus
+        std::string path = filename + "_master.wav";
+        // If only recording mix, maybe just keep original filename? 
+        // User asked for "recording to stems by track AND as the whole mix"
+        // If stems is false, we might want just "filename.wav"
+        if (!stems) path = filename + ".wav";
         
-        // Also record master mix
-        std::string masterPath = "recordings/" + filename + "_master.wav";
-        mainRecorder.start(masterPath, sampleRate, 2);
-        
-    } else {
-        // Record only master bus (whole mix)
-        std::string path = "recordings/" + filename + ".wav";
         mainRecorder.start(path, sampleRate, 2);
     }
 }

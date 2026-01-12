@@ -165,9 +165,19 @@ struct TrackClipboard {
 enum class PopupType { None, Main, Audio, Project };
 
 struct RecordingState {
-    bool showControls = false;
+    bool showControls = false; // Legacy, can remove or reuse
+    bool showDialog = false;   // New Modal
     bool isRecording = false;
-    bool recordStems = false; // false = Whole, true = Stems
+    
+    // Configuration
+    bool recordMix = true;
+    bool recordStems = false;
+    
+    // State
+    double recordingStartTime = 0.0;
+    std::string lastRecordingPath; // Base filename/path
+    bool finished = false;         // True when recording stopped and waiting to save
+    
     char filenameBuffer[64] = "recording";
 };
 

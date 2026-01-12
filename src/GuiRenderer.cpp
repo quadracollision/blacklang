@@ -2,6 +2,7 @@
 #include "gui/Widgets.h"
 #include "gui/DragDrop.h"
 #include "gui/ProjectBrowser.h"
+#include "gui/RecordingDialog.h" // Added include
 #include <iostream>
 #include <algorithm>
 #include <cstring>
@@ -116,6 +117,9 @@ void GuiRenderer::Draw() {
     if (state.editor.isOpen) {
         patternEditor.Draw();
     }
+
+    // Draw Recording Modal
+    gui::DrawRecordingDialog(state, engine);
     
     // Draw project browser (for save/load project)
     if (state.projectBrowser.isOpen) {

@@ -26,13 +26,9 @@ int main() {
     RenderTexture2D target = LoadRenderTexture(DESIGN_WIDTH, DESIGN_HEIGHT);
     SetTextureFilter(target.texture, TEXTURE_FILTER_BILINEAR); // Smooth scaling
 
-    // Init Audio AFTER Raylib to avoid device conflict
+    // Init Audio Asynchronously to prevent blocking startup on device timeouts
     AudioEngine audio;
-    if (!audio.initialize()) {
-        std::cerr << "Failed to init audio" << std::endl;
-        UnloadRenderTexture(target);
-        return 1;
-    }
+    audio.initializeAsync();
     
     // Init State
     GuiState state;
