@@ -120,15 +120,30 @@ static bool DrawGenericFXEditor(const Rectangle& bounds, const Rectangle& clipRe
         Rectangle hitTest = {sliderRect.x - 10, sliderRect.y - 10, sliderRect.width + 20, sliderRect.height + 20};
         bool isInteracting = (!col.isDragging && CheckCollisionPointRec(state.getMousePosition(), hitTest) && CheckCollisionRecs(hitTest, clipRect));
         
-        if (state.editor.isOpen == false && isInteracting && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-             anyInteraction = true;
-             float mouseX = state.getMousePosition().x;
-             float rawNorm = (mouseX - sliderRect.x) / sliderRect.width;
-             if (rawNorm < 0.0f) rawNorm = 0.0f;
-             if (rawNorm > 1.0f) rawNorm = 1.0f;
+        if (state.editor.isOpen == false) {
+             std::string paramId = col.trackName + "_FX_View_P" + std::to_string(i);
              
-             float newValue = param.min + (rawNorm * (param.max - param.min));
-             effect->setParam(i, newValue);
+             // 1. Is locked to something else?
+             bool isLockedToOther = (!state.drag.activeControlId.empty() && state.drag.activeControlId != paramId);
+             
+             // 2. Start Condition: Clicked THIS slider
+             bool startInteract = (!isLockedToOther && isInteracting && IsMouseButtonPressed(MOUSE_LEFT_BUTTON));
+             
+             // 3. Continue Condition: Locked to THIS slider and holding
+             bool continueInteract = (state.drag.activeControlId == paramId && IsMouseButtonDown(MOUSE_LEFT_BUTTON));
+
+             if (startInteract || continueInteract) {
+                 if (startInteract) state.drag.activeControlId = paramId; // Lock
+                 
+                 anyInteraction = true;
+                 float mouseX = state.getMousePosition().x;
+                 float rawNorm = (mouseX - sliderRect.x) / sliderRect.width;
+                 if (rawNorm < 0.0f) rawNorm = 0.0f;
+                 if (rawNorm > 1.0f) rawNorm = 1.0f;
+                 
+                 float newValue = param.min + (rawNorm * (param.max - param.min));
+                 effect->setParam(i, newValue);
+             }
         }
         
         currentY += 60;
@@ -138,6 +153,17 @@ static bool DrawGenericFXEditor(const Rectangle& bounds, const Rectangle& clipRe
 
 void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state, AudioEngine& engine) {
     bool canInteract = !state.editor.isOpen;
+    
+    // Prevent immediate interaction if just switched modes or tabs
+    // Note: To fix "prior button press" affecting new UI, we need to defer interaction 
+    // if the mouse button was PRESSED this frame but OUTSIDE the current context logic.
+    // However, the issue described usually happens when a click *activates* a new view 
+    // and that same click is registered by the new view in the same frame.
+    // A simple fix is checking if the button was *Pressed* this frame vs *Down*.
+    // If we only act on *Down* for sliders when *Pressed* started on them, we are safe.
+    // But for buttons (which act on Pressed), they might trigger if they appear under the cursor.
+    // The "Just Opened" flag handles this for Editor, but maybe we need one for Mixer layout changes.
+    // For now, let's rely on strict Pressed checks for toggles and locks for sliders.
     
     // Get the track bus for this column
     AudioBus* trackBus = engine.getTrackBus(col.trackName);
@@ -225,8 +251,17 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
         DrawRectangle(panHandleX - 5, panRect.y, 10, panRect.height, ORANGE);
         
         Rectangle hitTestPan = {panRect.x, panRect.y - 10, panRect.width, panRect.height + 20};
-        if (canInteract && !col.isDragging && CheckCollisionPointRec(state.getMousePosition(), hitTestPan) && CheckCollisionRecs(hitTestPan, scrollArea)) {
-            if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+        if (canInteract && CheckCollisionPointRec(state.getMousePosition(), hitTestPan) && CheckCollisionRecs(hitTestPan, scrollArea)) {
+             
+             std::string panId = col.trackName + "_Pan";
+             
+             bool isLockedToOther = (!state.drag.activeControlId.empty() && state.drag.activeControlId != panId);
+             bool startInteract = (!isLockedToOther && !col.isDragging && IsMouseButtonPressed(MOUSE_LEFT_BUTTON));
+             bool continueInteract = (state.drag.activeControlId == panId && IsMouseButtonDown(MOUSE_LEFT_BUTTON));
+
+            if (startInteract || continueInteract) {
+                 if (startInteract) state.drag.activeControlId = panId; // Lock
+                 
                  isInteracting = true; // Capture interaction
                  float mouseX = state.getMousePosition().x;
                  float newPan = (mouseX - panRect.x) / panRect.width;
@@ -235,11 +270,20 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
                  col.pan = newPan;
                  trackBus->pan = newPan;
             }
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) { // Double click reset
+            if (CheckCollisionPointRec(state.getMousePosition(), hitTestPan) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) { // Double click reset
                  static double lastPanClick = 0;
                  if (GetTime() - lastPanClick < 0.3) { col.pan = 0.5f; trackBus->pan = 0.5f; }
                  lastPanClick = GetTime();
             }
+        } else if (state.drag.activeControlId == (col.trackName + "_Pan") && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+             // Handle 'continueInteract' even if mouse left the rect
+             isInteracting = true;
+             float mouseX = state.getMousePosition().x;
+             float newPan = (mouseX - panRect.x) / panRect.width;
+             if (newPan < 0.0f) newPan = 0.0f;
+             if (newPan > 1.0f) newPan = 1.0f;
+             col.pan = newPan;
+             trackBus->pan = newPan;
         }
         
         currentY += 80;
@@ -264,8 +308,16 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
         DrawText(buf, volRect.x + 10, volRect.y + volRect.height + 10, 20, Color{255,255,255,100});
 
         Rectangle hitTestVol = {volRect.x - 15, volRect.y, volRect.width + 30, volRect.height};
-        if (canInteract && !col.isDragging && CheckCollisionPointRec(state.getMousePosition(), hitTestVol) && CheckCollisionRecs(hitTestVol, scrollArea)) {
-            if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+        if (canInteract && CheckCollisionPointRec(state.getMousePosition(), hitTestVol) && CheckCollisionRecs(hitTestVol, scrollArea)) {
+            std::string volId = col.trackName + "_Vol";
+            
+            bool isLockedToOther = (!state.drag.activeControlId.empty() && state.drag.activeControlId != volId);
+            bool startInteract = (!isLockedToOther && !col.isDragging && IsMouseButtonPressed(MOUSE_LEFT_BUTTON));
+            bool continueInteract = (state.drag.activeControlId == volId && IsMouseButtonDown(MOUSE_LEFT_BUTTON));
+            
+            if (startInteract || continueInteract) {
+                if (startInteract) state.drag.activeControlId = volId; // Lock
+                
                 isInteracting = true; // Capture interaction
                 float mouseY = state.getMousePosition().y;
                 float rawVal = ((volRect.y + volRect.height) - mouseY) / volRect.height;
@@ -273,6 +325,14 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
                 col.volume = rawVal;
                 trackBus->volume = rawVal;
             }
+        } else if (state.drag.activeControlId == (col.trackName + "_Vol") && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+             // Handle 'continueInteract' even if mouse left the rect
+             isInteracting = true;
+             float mouseY = state.getMousePosition().y;
+             float rawVal = ((volRect.y + volRect.height) - mouseY) / volRect.height;
+             if (rawVal < 0.0f) rawVal = 0.0f; if (rawVal > 1.0f) rawVal = 1.0f;
+             col.volume = rawVal;
+             trackBus->volume = rawVal;
         }
         currentY += faderHeight + 60;
         
@@ -351,6 +411,11 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
         HandleMixerScroll(scrollArea, col, state);
     } else {
         col.isDragging = false; // Force stop scrolling if we started interacting
+    }
+    
+    // Global Unlock on Release
+    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        state.drag.activeControlId = "";
     }
 }
 

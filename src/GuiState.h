@@ -57,6 +57,9 @@ struct DragState {
     // Scrollbar Interaction
     int scrollbarDraggingColumn = -1;
     float scrollbarClickOffsetY = 0.0f;
+    
+    // Mixer Interaction Locking
+    std::string activeControlId = "";
 };
 
 struct StepClipboard {
