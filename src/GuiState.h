@@ -29,6 +29,9 @@ struct PatternColumn {
     bool isDragging = false;
     float dragStartY = 0.0f;
     float dragStartScroll = 0.0f;
+    
+    // FX Selection (0 = Vol/Pan, 1+ = Insert Slots)
+    int selectedFXSlot = 0;
 };
 
 struct DragState {

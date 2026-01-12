@@ -45,6 +45,10 @@ private:
     void handleSlice(PatternPlayState& state, const Pattern& pattern, int currentStep);
     void handleNudge(PatternPlayState& state, const Pattern& pattern, int currentStep);
     void handleReverse(PatternPlayState& state, const Pattern& pattern, int currentStep);
+    void handleAttack(PatternPlayState& state, const Pattern& pattern, int currentStep);
+    void handleDecay(PatternPlayState& state, const Pattern& pattern, int currentStep);
+    void handleSustain(PatternPlayState& state, const Pattern& pattern, int currentStep);
+    void handleRelease(PatternPlayState& state, const Pattern& pattern, int currentStep);
 };
 
 } // namespace fx

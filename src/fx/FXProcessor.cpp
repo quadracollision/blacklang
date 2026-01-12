@@ -34,7 +34,24 @@ void FXProcessor::processStepFX(PatternPlayState& state, const Pattern& pattern,
                 case Pattern::FX_REVERSE:
                     handleReverse(state, pattern, step);
                     break;
-                // Add new FX handlers here
+                case Pattern::FX_ATTACK:
+                    handleAttack(state, pattern, step);
+                    break;
+                case Pattern::FX_DECAY:
+                    handleDecay(state, pattern, step);
+                    break;
+                case Pattern::FX_SUSTAIN:
+                    handleSustain(state, pattern, step);
+                    break;
+                case Pattern::FX_RELEASE:
+                    handleRelease(state, pattern, step);
+                    break;
+                case Pattern::FX_ADSR:
+                    handleAttack(state, pattern, step);
+                    handleDecay(state, pattern, step);
+                    handleSustain(state, pattern, step);
+                    handleRelease(state, pattern, step);
+                    break;
                 default:
                     break;
             }
@@ -64,6 +81,45 @@ float FXProcessor::processSampleFX(PatternPlayState& state, float sample, double
         state.filter.reset();
     }
     
+    // ADSR Envelope
+    if (state.useADSR) {
+        float increment = 0.0f;
+        
+        switch (state.adsrPhase) {
+            case 1: // Attack
+                state.adsrCurrentValue += state.adsrAttackRate;
+                if (state.adsrCurrentValue >= 1.0f) {
+                    state.adsrCurrentValue = 1.0f;
+                    state.adsrPhase = 2; // Decay
+                }
+                break;
+            case 2: // Decay
+                state.adsrCurrentValue -= state.adsrDecayRate;
+                if (state.adsrCurrentValue <= state.adsrSustainLevel) {
+                    state.adsrCurrentValue = state.adsrSustainLevel;
+                    state.adsrPhase = 3; // Sustain
+                }
+                break;
+            case 3: // Sustain
+                state.adsrCurrentValue = state.adsrSustainLevel;
+                // If sample end is reached or gate off? 
+                // For one-shot samples, we might just stay in sustain until sample ends?
+                // Or if sample is ending naturally, let it fade out?
+                // For now, simple Sustain until sample end.
+                break;
+            case 4: // Release
+                state.adsrCurrentValue -= state.adsrReleaseRate;
+                if (state.adsrCurrentValue <= 0.0f) {
+                    state.adsrCurrentValue = 0.0f;
+                    state.adsrPhase = 0; // Off
+                    state.sampleIsPlaying = false; // Stop voice
+                }
+                break;
+        }
+        
+        sample *= state.adsrCurrentValue;
+    }
+
     return sample;
 }
 
@@ -198,6 +254,54 @@ void FXProcessor::handleReverse(PatternPlayState& state, const Pattern& pattern,
         // Full reverse
         state.samplePlaybackPosition = (double)pattern.sampleBuffer.getNumSamples();
         state.sampleEndPosition = 0;
+    }
+}
+
+void FXProcessor::handleAttack(PatternPlayState& state, const Pattern& pattern, int currentStep) {
+    if (pattern.stepFXParams.count(currentStep) && 
+        pattern.stepFXParams.at(currentStep).count(Pattern::PAR_ATTACK_TIME)) {
+        
+        float val = pattern.stepFXParams.at(currentStep).at(Pattern::PAR_ATTACK_TIME);
+        // Map 0-1 to 1ms-1000ms
+        float timeSeconds = 0.001f + (val * 1.0f);
+        state.adsrAttackRate = 1.0f / (timeSeconds * 44100.0f); // Should get actual sampleRate from caller?
+        state.useADSR = true;
+        // Check if we are starting a note? Assuming AudioEngine calls this on note start.
+        if (state.samplePlaybackPosition < 100.0) state.adsrPhase = 1; 
+    }
+}
+
+void FXProcessor::handleDecay(PatternPlayState& state, const Pattern& pattern, int currentStep) {
+    if (pattern.stepFXParams.count(currentStep) && 
+        pattern.stepFXParams.at(currentStep).count(Pattern::PAR_DECAY_TIME)) {
+        
+        float val = pattern.stepFXParams.at(currentStep).at(Pattern::PAR_DECAY_TIME);
+        // Map 0-1 to 1ms-2000ms
+        float timeSeconds = 0.001f + (val * 2.0f);
+        state.adsrDecayRate = 1.0f / (timeSeconds * 44100.0f); 
+        state.useADSR = true;
+    }
+}
+
+void FXProcessor::handleSustain(PatternPlayState& state, const Pattern& pattern, int currentStep) {
+    if (pattern.stepFXParams.count(currentStep) && 
+        pattern.stepFXParams.at(currentStep).count(Pattern::PAR_SUSTAIN_LEVEL)) {
+        
+        float val = pattern.stepFXParams.at(currentStep).at(Pattern::PAR_SUSTAIN_LEVEL);
+        state.adsrSustainLevel = val;
+        state.useADSR = true;
+    }
+}
+
+void FXProcessor::handleRelease(PatternPlayState& state, const Pattern& pattern, int currentStep) {
+    if (pattern.stepFXParams.count(currentStep) && 
+        pattern.stepFXParams.at(currentStep).count(Pattern::PAR_RELEASE_TIME)) {
+        
+        float val = pattern.stepFXParams.at(currentStep).at(Pattern::PAR_RELEASE_TIME);
+        // Map 0-1 to 1ms-2000ms
+        float timeSeconds = 0.001f + (val * 2.0f);
+        state.adsrReleaseRate = 1.0f / (timeSeconds * 44100.0f);
+        state.useADSR = true;
     }
 }
 

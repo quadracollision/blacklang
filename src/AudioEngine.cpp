@@ -392,7 +392,11 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
     };
     
     if (!playing.load() || paused.load()) {
-         mixPreview(outputChannelData, numOutputChannels); // Allow preview even if paused/stopped!
+         // Lock mutex for preview mixing (accesses pattern data)
+         {
+             std::lock_guard<std::mutex> lock(patternMutex);
+             mixPreview(outputChannelData, numOutputChannels); 
+         }
          
          // Fix: Ensure we record even if the sequencer is stopped
          {
@@ -694,7 +698,14 @@ void AudioEngine::triggerStep(PatternPlayState& state, Pattern& pattern) {
     state.sampleIsPlaying = true;
     state.fadeInSamplesRemaining = 88; // 2ms fade-in
     state.isStuttering = false; // Reset start of step
+    state.isStuttering = false; // Reset start of step
     state.stutterIntervalSamples = 0;
+    
+    // Reset ADSR
+    state.useADSR = false;
+    state.adsrPhase = 0;
+    state.adsrCurrentValue = 0.0f;
+    state.adsrAttackRate = 0.0f;
     
     // Calculate Pitch
     int semitones = 0;

@@ -27,8 +27,15 @@ enum FXType : int {
     FX_PAN      = 11,  // Stereo panning
     FX_PITCH    = 12,  // Pitch shift (non-melodic)
     FX_VOLUME   = 13,  // Volume automation
+    FX_REVERB   = 14,  // Room Reverb
+    FX_COMPRESSOR = 15,// Dynamic Compressor
+    FX_ATTACK   = 16,  // ADSR Attack
+    FX_DECAY    = 17,  // ADSR Decay
+    FX_SUSTAIN  = 18,  // ADSR Sustain
+    FX_RELEASE  = 19,  // ADSR Release
+    FX_ADSR     = 20,  // Consolidated ADSR
     
-    FX_COUNT    = 14   // Total count for iteration
+    FX_COUNT    = 21   // Total count
 };
 
 // ============================================
@@ -78,7 +85,13 @@ enum FXParam : int {
     PAR_PITCH_SHIFT    = 1100, // Semitones
     
     // Volume params (1200-1299)
-    PAR_VOLUME_LEVEL   = 1200  // 0-1
+    PAR_VOLUME_LEVEL   = 1200, // 0-1
+    
+    // ADSR Params (1300-1399)
+    PAR_ATTACK_TIME    = 1300, // 0-1 (mapped to time)
+    PAR_DECAY_TIME     = 1301, // 0-1 (mapped to time)
+    PAR_SUSTAIN_LEVEL  = 1302, // 0-1 (level)
+    PAR_RELEASE_TIME   = 1303  // 0-1 (mapped to time)
 };
 
 // ============================================
@@ -109,6 +122,12 @@ inline const char* GetFXName(FXType type) {
         case FX_PAN:      return "Pan";
         case FX_PITCH:    return "Pitch";
         case FX_VOLUME:   return "Volume";
+        case FX_COMPRESSOR: return "Compressor";
+        case FX_ATTACK:   return "Attack";
+        case FX_DECAY:    return "Decay";
+        case FX_SUSTAIN:  return "Sustain";
+        case FX_RELEASE:  return "Release";
+        case FX_ADSR:     return "ADSR";
         case FX_COUNT:    return "Count";
         default:          return "Unknown";
     }
@@ -130,6 +149,12 @@ inline const char* GetFXShortName(FXType type) {
         case FX_PAN:      return "PAN";
         case FX_PITCH:    return "PIT";
         case FX_VOLUME:   return "VOL";
+        case FX_COMPRESSOR: return "CMP";
+        case FX_ATTACK:   return "ATT";
+        case FX_DECAY:    return "DEC";
+        case FX_SUSTAIN:  return "SUS";
+        case FX_RELEASE:  return "REL";
+        case FX_ADSR:     return "ENV";
         case FX_COUNT:    return "CNT";
         default:          return "???";
     }
@@ -141,8 +166,8 @@ inline bool IsFXImplemented(FXType type) {
         case FX_SLIDE:
         case FX_STUTTER:
         case FX_NUDGE:
-        case FX_SLICE:
         case FX_REVERSE:
+        case FX_ADSR:
             return true;
         default:
             return false;

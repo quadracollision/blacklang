@@ -16,6 +16,17 @@ void AudioBus::clearBuffer() {
     buffer.clear();
 }
 
+void AudioBus::processEffects(int numSamples, int numChannels) {
+    if (effects.empty()) return;
+    
+    // Process each effect in chain
+    for (auto& effect : effects) {
+        if (effect && effect->isActive()) {
+            effect->process(buffer);
+        }
+    }
+}
+
 void AudioBus::applyVolumeAndPan(int numChannels) {
     if (numChannels < 2) {
         // Mono output: just apply volume
@@ -122,6 +133,9 @@ void BusManager::mixTracksToMaster() {
     // Sum all track outputs to master bus
     for (auto& pair : tracks) {
         AudioBus& trackBus = pair.second;
+        
+        // Apply Insert FX
+        trackBus.processEffects(currentBufferSize, numChannels);
         
         // First apply volume and pan to the track
         trackBus.applyVolumeAndPan(numChannels);

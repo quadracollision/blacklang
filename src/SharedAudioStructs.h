@@ -46,6 +46,16 @@ struct PatternPlayState {
         }
     } filter;
 
+    // ADSR State
+    bool useADSR = false;
+    int adsrPhase = 0; // 0=Off, 1=A, 2=D, 3=S, 4=R
+    float adsrLevel = 0.0f;
+    float adsrAttackRate = 0.001f;
+    float adsrDecayRate = 0.001f;
+    float adsrSustainLevel = 1.0f;
+    float adsrReleaseRate = 0.001f;
+    float adsrCurrentValue = 0.0f;
+
     void reset() {
         samplePosition = 0;
         currentStep = 0;
@@ -64,6 +74,13 @@ struct PatternPlayState {
         stutterIntervalSamples = 0;
         stutterCounter = 0;
         filter.reset();
+        
+        // ADSR Reset
+        useADSR = false;
+        adsrPhase = 0;
+        adsrCurrentValue = 0.0f;
+        adsrAttackRate = 0.0f; // Reset to 0 so we know if it was set
+        
         isReverse = false;
     }
     

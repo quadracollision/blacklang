@@ -4,6 +4,9 @@
 #include <map>
 #include <juce_audio_basics/juce_audio_basics.h>
 
+#include <memory>
+#include "fx/TrackEffect.h"
+
 namespace fx {
     struct FXSlot; // Forward declaration for future FX integration
 }
@@ -14,11 +17,14 @@ struct AudioBus {
     float pan = 0.5f;  // 0.0=Left, 0.5=Center, 1.0=Right
     juce::AudioBuffer<float> buffer;
     
-    // Future: Track-level FX chain
-    // std::vector<fx::FXSlot> fxChain;
+    // Track-level FX chain
+    std::vector<std::shared_ptr<fx::TrackEffect>> effects;
     
     void prepareBuffer(int numSamples, int numChannels);
     void clearBuffer();
+    // Process chain of effects
+    void processEffects(int numSamples, int numChannels);
+    
     void applyVolumeAndPan(int numChannels);
 };
 

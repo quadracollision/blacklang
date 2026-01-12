@@ -32,6 +32,11 @@ struct Pattern {
     static constexpr int FX_NUDGE = 4;
     static constexpr int FX_SLICE = 5;
     static constexpr int FX_REVERSE = 6;
+    static constexpr int FX_ATTACK = 16;
+    static constexpr int FX_DECAY = 17;
+    static constexpr int FX_SUSTAIN = 18;
+    static constexpr int FX_RELEASE = 19;
+    static constexpr int FX_ADSR = 20;
     
     // Parameters
     static constexpr int PAR_STUTTER_RATE = 100;
@@ -42,6 +47,11 @@ struct Pattern {
     static constexpr int PAR_SLICE_INDEX = 400; // 0-indexed slice index
     static constexpr int PAR_SLICE_CUTOFF = 401; // 1.0 = Cut at next slice, 0.0 = Play through
     static constexpr int PAR_REVERSE_MODE = 500;
+    
+    static constexpr int PAR_ATTACK_TIME = 1300;
+    static constexpr int PAR_DECAY_TIME = 1301;
+    static constexpr int PAR_SUSTAIN_LEVEL = 1302;
+    static constexpr int PAR_RELEASE_TIME = 1303;
     
     // Audio data (loaded at runtime)
     juce::AudioBuffer<float> sampleBuffer;

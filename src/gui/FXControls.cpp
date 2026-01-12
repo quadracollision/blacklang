@@ -277,6 +277,8 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
                 DrawSlideParams(area.x, paramPanelY, p, step);
             } else if (state.editor.selectedAppliedFxId == Pattern::FX_NUDGE) {
                 DrawNudgeParams(area.x, paramPanelY, p, step);
+            } else if (state.editor.selectedAppliedFxId == Pattern::FX_ADSR) {
+                DrawADSRParams(area.x, paramPanelY, p, step);
             } else {
                 DrawText("No params", area.x + 120, paramPanelY, 20, GRAY);
             }
@@ -288,7 +290,16 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
             engine.addPattern(p);
         }
         
-        startY += boxH + 140;  // Larger spacing for bigger boxes/buttons
+        startY += boxH + 140;  // Base UI height
+        
+        // Add extra height for parameter panel
+        if (state.editor.selectedAppliedFxId != -1) {
+             if (state.editor.selectedAppliedFxId == Pattern::FX_ADSR) {
+                 startY += 120; // 4 sliders
+             } else {
+                 startY += 60; // Standard Params
+             }
+        }
     } else {
         DrawText("Select an active step to edit FX", area.x, startY + 30, 22, GRAY);
         startY += 60;
@@ -490,6 +501,50 @@ void FXControls::DrawNudgeParams(float x, float paramPanelY, Pattern& p, int ste
     } else {
         DrawText("Full", offsetSlider.x + offsetSlider.width + 10, paramPanelY, 10, WHITE);
     }
+}
+
+void FXControls::DrawADSRParams(float x, float y, Pattern& p, int step) {
+    auto drawSlider = [&](const char* label, int paramId, float defaultVal, float min, float max, float yOffset) {
+        DrawText(label, x + 120, y + yOffset, 20, WHITE);
+        
+        float currentVal = defaultVal;
+        if (p.stepFXParams[step].count(paramId)) {
+            currentVal = p.stepFXParams[step][paramId];
+        }
+        
+        Rectangle slider = {x + 200, y + yOffset + 5, 150, 10};
+        DrawRectangleRec(slider, DARKGRAY);
+        DrawRectangleLinesEx(slider, 1, WHITE);
+        
+        float norm = (currentVal - min) / (max - min);
+        if (norm < 0) norm = 0;
+        if (norm > 1) norm = 1;
+        Rectangle handle = {slider.x + norm * (slider.width - 10), slider.y - 2, 10, 14};
+        DrawRectangleRec(handle, LIGHTGRAY);
+        
+        if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+            Vector2 mouse = state.getMousePosition();
+            if (CheckCollisionPointRec(mouse, {slider.x - 5, slider.y - 5, slider.width + 10, slider.height + 10})) {
+                float newVal = min + ((mouse.x - slider.x) / slider.width) * (max - min);
+                if (newVal < min) newVal = min;
+                if (newVal > max) newVal = max;
+                p.stepFXParams[step][paramId] = newVal;
+            }
+        }
+        
+        // Finalize edit on release
+        if (CheckCollisionPointRec(state.getMousePosition(), {slider.x - 5, slider.y - 5, slider.width + 10, slider.height + 10}) 
+            && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+            engine.addPattern(p);
+        }
+        
+        DrawText(TextFormat("%.2f", currentVal), slider.x + slider.width + 10, y + yOffset, 10, WHITE);
+    };
+    
+    drawSlider("Attack", Pattern::PAR_ATTACK_TIME, 0.05f, 0.0f, 1.0f, 0);
+    drawSlider("Decay", Pattern::PAR_DECAY_TIME, 0.1f, 0.0f, 1.0f, 35);
+    drawSlider("Sustain", Pattern::PAR_SUSTAIN_LEVEL, 0.8f, 0.0f, 1.0f, 70);
+    drawSlider("Release", Pattern::PAR_RELEASE_TIME, 0.2f, 0.0f, 1.0f, 105);
 }
 
 } // namespace gui

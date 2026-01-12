@@ -704,6 +704,11 @@ void PatternEditor::Draw() {
 
     // Slicer Controls
     if (state.editor.showSlicerControls) {
+        // Define safe viewport for interaction (exclude header and footer)
+        // Header ~60px, Footer ~55px
+        Rectangle viewportRect = {winRect.x, winRect.y + 60, winRect.width, winRect.height - 110};
+        bool isInViewport = CheckCollisionPointRec(state.getMousePosition(), viewportRect);
+        
         DrawText("Sample Slicer", winRect.x + 20, startY + 10, 24, WHITE);
         startY += 45;
 
@@ -764,14 +769,14 @@ void PatternEditor::Draw() {
                     
                     // Handle Delete (Click on Number)
                     // Only active if NOT in Play Mode
-                    if (!inputBlocked && !state.editor.slicerPlayModeEnabled && CheckCollisionPointRec(state.getMousePosition(), {waveRect.x + xPos, waveRect.y, (float)textWidth + 4, 15}) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                    if (!inputBlocked && isInViewport && !state.editor.slicerPlayModeEnabled && CheckCollisionPointRec(state.getMousePosition(), {waveRect.x + xPos, waveRect.y, (float)textWidth + 4, 15}) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                         p.sliceMarkers.erase(p.sliceMarkers.begin() + mFn);
                         mFn--; 
                         engine.addPattern(p); // SYNC 
                     }
                     
                     // Handle Delete (Right Click near marker - kept for alt method)
-                    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), {waveRect.x + xPos - 5, waveRect.y, 10, waveRect.height}) && IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+                    if (!inputBlocked && isInViewport && CheckCollisionPointRec(state.getMousePosition(), {waveRect.x + xPos - 5, waveRect.y, 10, waveRect.height}) && IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
                         p.sliceMarkers.erase(p.sliceMarkers.begin() + mFn);
                         mFn--; 
                         engine.addPattern(p); // SYNC 
@@ -780,7 +785,7 @@ void PatternEditor::Draw() {
             }
             
             // Interaction: Left Click to Add Marker (Only if NOT in Play Mode)
-            if (!inputBlocked && !state.editor.slicerPlayModeEnabled && CheckCollisionPointRec(state.getMousePosition(), waveRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            if (!inputBlocked && isInViewport && !state.editor.slicerPlayModeEnabled && CheckCollisionPointRec(state.getMousePosition(), waveRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 float localX = state.getMousePosition().x - waveRect.x;
                 int sampleIdx = startSample + (int)(localX / waveRect.width * visibleSamples);
                 
@@ -805,7 +810,7 @@ void PatternEditor::Draw() {
                 static float dragStartX = 0;
                 static float dragStartScroll = 0;
                 
-                if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), scrollBarBg) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                if (!inputBlocked && isInViewport && CheckCollisionPointRec(state.getMousePosition(), scrollBarBg) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                     isDraggingScroll = true;
                     dragStartX = state.getMousePosition().x;
                     dragStartScroll = state.editor.waveformScrollX;
@@ -831,7 +836,7 @@ void PatternEditor::Draw() {
         Rectangle clearBtn = {winRect.x + 20, startY, 140, 45};
         DrawRectangleRec(clearBtn, RED);
         DrawText("Clear Slices", clearBtn.x + 15, clearBtn.y + 12, 16, WHITE);
-        if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), clearBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (!inputBlocked && isInViewport && CheckCollisionPointRec(state.getMousePosition(), clearBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             p.sliceMarkers.clear();
             
             // UX SYNC: Remove entire steps that have FX_SLICE
@@ -863,7 +868,7 @@ void PatternEditor::Draw() {
         Rectangle cutBtn = {winRect.x + 170, startY, 80, 45};
         DrawRectangleRec(cutBtn, state.editor.slicerCutoffEnabled ? GREEN : DARKGRAY);
         DrawText("Cut", cutBtn.x + 25, cutBtn.y + 12, 18, WHITE);
-        if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), cutBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (!inputBlocked && isInViewport && CheckCollisionPointRec(state.getMousePosition(), cutBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.editor.slicerCutoffEnabled = !state.editor.slicerCutoffEnabled;
         }
         
@@ -884,15 +889,15 @@ void PatternEditor::Draw() {
             DrawText("Play", playRect.x + 15, playRect.y + 12, 18, BLACK);
         }
         
-        if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), sliceRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (!inputBlocked && isInViewport && CheckCollisionPointRec(state.getMousePosition(), sliceRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.editor.slicerPlayModeEnabled = false;
         }
-        if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), playRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (!inputBlocked && isInViewport && CheckCollisionPointRec(state.getMousePosition(), playRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.editor.slicerPlayModeEnabled = true;
         }
         
         // Play Mode Interaction: Right Click or Click in Mode
-        if (!inputBlocked && state.editor.slicerPlayModeEnabled && CheckCollisionPointRec(state.getMousePosition(), waveRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (!inputBlocked && isInViewport && state.editor.slicerPlayModeEnabled && CheckCollisionPointRec(state.getMousePosition(), waveRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
              if (p.sampleBuffer.getNumSamples() > 0) {
                  int64_t totalSamples = p.sampleBuffer.getNumSamples();
                  float zoom = state.editor.waveformZoom;
@@ -969,10 +974,10 @@ void PatternEditor::Draw() {
         DrawText("-", zoomOutBtn.x + 16, zoomOutBtn.y + 10, 24, WHITE);
         DrawText("+", zoomInBtn.x + 14, zoomInBtn.y + 10, 24, WHITE);
         
-        if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), zoomInBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (!inputBlocked && isInViewport && CheckCollisionPointRec(state.getMousePosition(), zoomInBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.editor.waveformZoom = std::min(state.editor.waveformZoom * 1.5f, 20.0f);
         }
-        if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), zoomOutBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (!inputBlocked && isInViewport && CheckCollisionPointRec(state.getMousePosition(), zoomOutBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.editor.waveformZoom = std::max(state.editor.waveformZoom / 1.5f, 1.0f);
             if (state.editor.waveformZoom <= 1.0f) state.editor.waveformScrollX = 0.0f;
         }
@@ -984,7 +989,7 @@ void PatternEditor::Draw() {
              Rectangle bookendBtn = {winRect.x + 20, startY, 150, 45};
              DrawRectangleRec(bookendBtn, BLUE);
              DrawText("Bookend", bookendBtn.x + 35, bookendBtn.y + 12, 18, WHITE);
-             if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), bookendBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+             if (!inputBlocked && isInViewport && CheckCollisionPointRec(state.getMousePosition(), bookendBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                  bool changed = false;
                  // Add Start (0)
                  if (std::find(p.sliceMarkers.begin(), p.sliceMarkers.end(), 0) == p.sliceMarkers.end()) {
