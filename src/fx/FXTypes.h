@@ -34,8 +34,9 @@ enum FXType : int {
     FX_SUSTAIN  = 18,  // ADSR Sustain
     FX_RELEASE  = 19,  // ADSR Release
     FX_ADSR     = 20,  // Consolidated ADSR
+    FX_EQ       = 21,  // Parametric EQ
     
-    FX_COUNT    = 21   // Total count
+    FX_COUNT    = 22   // Total count
 };
 
 // ============================================
@@ -128,6 +129,7 @@ inline const char* GetFXName(FXType type) {
         case FX_SUSTAIN:  return "Sustain";
         case FX_RELEASE:  return "Release";
         case FX_ADSR:     return "ADSR";
+        case FX_EQ:       return "EQ";
         case FX_COUNT:    return "Count";
         default:          return "Unknown";
     }
@@ -155,6 +157,7 @@ inline const char* GetFXShortName(FXType type) {
         case FX_SUSTAIN:  return "SUS";
         case FX_RELEASE:  return "REL";
         case FX_ADSR:     return "ENV";
+        case FX_EQ:       return "EQ";
         case FX_COUNT:    return "CNT";
         default:          return "???";
     }

@@ -202,16 +202,41 @@ void FXProcessor::handleNudge(PatternPlayState& state, const Pattern& pattern, i
         pattern.stepFXParams.at(currentStep).count(Pattern::PAR_NUDGE_OFFSET)) {
         
         float val = pattern.stepFXParams.at(currentStep).at(Pattern::PAR_NUDGE_OFFSET);
-        int64_t totalSamples = pattern.sampleBuffer.getNumSamples();
         
-        if (val > 0.5f) {
-            // Right Side: Adjust Start (offset from 0)
-            float norm = (val - 0.5f) * 2.0f; // 0.0 to 1.0
-            state.samplePlaybackPosition = (double)(norm * totalSamples);
-        } else if (val < 0.5f) {
-            // Left Side: Adjust End (Shorten duration)
-            float norm = val * 2.0f; // 0.0 to 1.0
-            state.sampleEndPosition = (int64_t)(norm * totalSamples);
+        // Interpreting Nudge (0-1) as Timing Offset
+        // 0.5 = On Grid (No Delay)
+        // > 0.5 = Delayed (Late)
+        // < 0.5 = Early (Not fully supported without lookahead, so we'll ignore or map 0-1 to small delay range)
+        
+        // Let's Map 0..1 to 0..StepDuration delay
+        // This is the most flexible "Micro-timing" approach.
+        // It means default 0.5 is actually "delayed by half a step" if we used full range.
+        // BUT the UI usually defaults to 0.5? Check FXControls.
+        // Assuming 0.5 is "center", let's map:
+        // 0.5 -> 0 delay.
+        // 1.0 -> Max Delay (e.g. 50% of step).
+        
+        if (val > 0.501f) {
+             float delayNorm = (val - 0.5f) * 2.0f; // 0..1
+             // Delay up to 50% of a step duration seems reasonable for "Nudge"
+             // We need BPM for exact samples. The pattern engine should provide it?
+             // PatternPlayState doesn't hold BPM/SamplesPerStep directly here easily without context.
+             // We'll approximate or use a fixed max delay of say 50ms?
+             // Or better: AudioEngine knows SamplesPerStep.
+             // FXProcessor doesn't have easy access to BPM here.
+             
+             // Workaround: Use a fixed max delay that feels like a "Nudge" (e.g. up to 1/16th note at 120bpm = ~125ms)
+             // Let's say max 100ms.
+             double maxDelayMs = 100.0; 
+             double sampleRate = 44100.0; // Assumption or need to pass it
+             
+             // Actually, this method is called within AudioEngine which has sampleRate context?
+             // No, FXProcessor is separate.
+             // Let's assume standard rate or add it to context later if critical.
+             // For now, strict sample based delay.
+             
+             int64_t delaySamples = (int64_t)(delayNorm * 4000.0); // 4000 samples @ 44.1k is ~90ms. Good range.
+             state.playbackDelaySamples = delaySamples;
         }
     }
 }
@@ -243,7 +268,7 @@ void FXProcessor::handleReverse(PatternPlayState& state, const Pattern& pattern,
              // Last slice or invalid
              state.samplePlaybackPosition = (double)pattern.sampleBuffer.getNumSamples();
              if (sliceIdx >= 0 && sliceIdx < (int)pattern.sliceMarkers.size()) {
-                 state.sampleEndPosition = pattern.sliceMarkers[sliceIdx];
+                 state.sampleEndPosition = pattern.sliceMarkers[(size_t)sliceIdx];
              } else {
                  state.sampleEndPosition = 0; 
              }

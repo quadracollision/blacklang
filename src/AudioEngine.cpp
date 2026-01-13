@@ -40,16 +40,6 @@ bool AudioEngine::initialize() {
     return true;
 }
 
-void AudioEngine::initializeAsync() {
-    std::thread([this]() {
-        if (initialize()) {
-            initialized.store(true);
-        } else {
-            initFailed.store(true);
-        }
-    }).detach();
-}
-
 void AudioEngine::shutdown() {
     stop();
     deviceManager.removeAudioCallback(this);
@@ -401,6 +391,7 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
         }
     };
     
+    // If NOT playing, handle Preview and Skip Playback Logic
     if (!playing.load() || paused.load()) {
          // Lock mutex for preview mixing (accesses pattern data)
          {
@@ -408,19 +399,28 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
              mixPreview(outputChannelData, numOutputChannels); 
          }
          
-         // Fix: Ensure we record even if the sequencer is stopped
-         {
-             std::unique_lock<std::mutex> lock(recordingMutex, std::try_to_lock);
-             if (lock.owns_lock()) {
-                 if (mainRecorder.isRecording()) {
-                     mainRecorder.writeBlock(outputChannelData, numSamples, numOutputChannels);
+         // Recording Preview Playback (from in-memory buffer)
+         if (recordingPreviewActive.load() && recordedSampleCount > 0) {
+             for (int i = 0; i < numSamples; ++i) {
+                 if (recordingPreviewPosition >= recordedSampleCount) {
+                     recordingPreviewActive.store(false);
+                     break;
                  }
+                 
+                 for (int ch = 0; ch < numOutputChannels; ++ch) {
+                     int srcCh = std::min(ch, recordedMasterBuffer.getNumChannels() - 1);
+                     outputChannelData[ch][i] += recordedMasterBuffer.getSample(srcCh, (int)recordingPreviewPosition);
+                 }
+                 recordingPreviewPosition++;
              }
          }
          
-         return;
+         // SKIP playback logic, fall through to Recording Logic at bottom
+         goto recording_block;
     }
     
+    // PLAYBACK LOGIC STARTS HERE
+    {
     std::lock_guard<std::mutex> lock(patternMutex);
     
     // Multi-pattern playback mode
@@ -440,7 +440,6 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
         };
         
         // Stack allocation for contexts (limit to reasonable max, e.g., 64 patterns)
-        // Or use a reusable vector member to avoid allocations, but stack is fast enough for small N
         PatternContext contexts[64]; 
         int activeContextCount = 0;
         
@@ -469,17 +468,13 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                 PatternContext& ctx = contexts[k];
                 Pattern& pattern = *ctx.pattern;
                 PatternPlayState& state = *ctx.state;
-                AudioBus* trackBus = ctx.trackBus; // Direct pointer access
-                
-
+                AudioBus* trackBus = ctx.trackBus; 
                 
                 // Check if we need to advance to next step
                 double stepDuration = pattern.getStepDurationSamples(globalBpm.load(), sampleRate);
                 if (state.samplePosition >= state.stepStartSample + (int64_t)stepDuration) {
                     state.currentStep++;
                     state.stepStartSample = state.samplePosition;
-                    
-                    // SYNC_LOG("Pattern %s advanced to step %d (total %d)", ctx.patternName.c_str(), state.currentStep, pattern.steps);
                     
                     if (state.currentStep > pattern.steps) {
                         // Check for queued pattern switch (per-slot sync)
@@ -497,7 +492,7 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                             
                             if (!nextPat.empty() && patterns.count(nextPat)) {
                                 // Execute the swap
-                                std::string oldPatternName = ctx.patternName; // Save for cleanup
+                                std::string oldPatternName = ctx.patternName; 
                                 state.sampleIsPlaying = false;
                                 state.stopAtEnd = false;
                                 
@@ -517,10 +512,10 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                                     }
                                 }
                                 
-                                // Remove old pattern from patternStates so next swap finds correct current pattern
+                                // Remove old pattern from patternStates
                                 patternStates.erase(oldPatternName);
                                 
-                                // Update context for remainder of this audio block
+                                // Update context
                                 ctx.patternName = nextPat;
                                 ctx.pattern = &patterns[nextPat];
                                 ctx.state = &patternStates[nextPat];
@@ -553,8 +548,11 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                     }
                 }
                 
-                // Process and mix sample if playing
-                if (pattern.sampleBuffer.getNumSamples() > 0 && state.sampleIsPlaying) {
+                if (state.playbackDelaySamples > 0) {
+                     state.playbackDelaySamples--;
+                } 
+                // Process and mix sample if playing (and not delaying)
+                else if (pattern.sampleBuffer.getNumSamples() > 0 && state.sampleIsPlaying) {
                     if (state.isReverse) {
                         state.samplePlaybackPosition -= state.currentSpeedRatio;
                     } else {
@@ -565,13 +563,12 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                     if (state.isStuttering && state.stutterIntervalSamples > 0) {
                         int64_t samplesInStep = state.samplePosition - state.stepStartSample;
                         if (samplesInStep > 0 && samplesInStep % state.stutterIntervalSamples == 0) {
-                            // Re-trigger
                             if (state.isReverse) {
-                                state.samplePlaybackPosition = (double)pattern.sampleBuffer.getNumSamples(); // Default
+                                state.samplePlaybackPosition = (double)pattern.sampleBuffer.getNumSamples(); 
                             } else {
                                 state.samplePlaybackPosition = 0.0; 
                             }
-                            state.fadeInSamplesRemaining = 88; // Fade-in on stutter
+                            state.fadeInSamplesRemaining = 88; 
                         }
                     }
                     
@@ -637,11 +634,11 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                      for (int ch = 0; ch < std::min(numOutputChannels, trackBus->buffer.getNumChannels()); ++ch) {
                          trackBus->buffer.addSample(ch, i, currentSample);
                      }
-                } // Close if sampleIsPlaying
+                } 
                 
                 state.samplePosition++;
-            } // Close for loop over contexts (patterns)
-        } // Close for loop over samples
+            } 
+        } 
 
     
     // Mix all tracks to master and apply master processing
@@ -656,6 +653,7 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
     mixPreview(masterWritePointers, masterBusForPreview->buffer.getNumChannels());
 
     busManager.applyMasterProcessing();
+    }
     
     // Copy master bus to output
     AudioBus* masterBus = busManager.getMasterBus();
@@ -666,40 +664,84 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
             }
         }
     }
+    } // End Playback Scope
     
     // Send to Recorder - now recording from buses!
+    recording_block:
     {
         std::unique_lock<std::mutex> lock(recordingMutex, std::try_to_lock);
         if (lock.owns_lock()) {
+            
+            // 1. File-based recording (legacy)
             if (mainRecorder.isRecording()) {
-                // Record master bus
-                const float* masterChannels[2] = {
-                    masterBus->buffer.getReadPointer(0),
-                    masterBus->buffer.getNumChannels() > 1 ? masterBus->buffer.getReadPointer(1) : masterBus->buffer.getReadPointer(0)
-                };
-                mainRecorder.writeBlock(masterChannels, numSamples, 2);
+                // Always record what is going to output
+                mainRecorder.writeBlock(outputChannelData, numSamples, numOutputChannels);
             }
             
-            // Record stems if enabled
+            // Record stems if enabled (file-based)
             if (recordingStems) {
                 for (auto& pair : stemRecorders) {
                     const std::string& trackName = pair.first;
                     AudioBus* trackBus = busManager.getTrack(trackName);
                     
-                    if (trackBus && trackBus->buffer.getNumSamples() > 0) {
+                    if (playing.load() && !paused.load() && trackBus && trackBus->buffer.getNumSamples() > 0) {
                         const float* trackChannels[2] = {
                             trackBus->buffer.getReadPointer(0),
                             trackBus->buffer.getNumChannels() > 1 ? trackBus->buffer.getReadPointer(1) : trackBus->buffer.getReadPointer(0)
                         };
                         pair.second.writeBlock(trackChannels, numSamples, 2);
+                    } else {
+                        // Write silence for stems if stopped or track empty
+                         float* silence[2];
+                         float silentBuffer[numSamples]; // Stack alloc safe for small buffer
+                         std::fill(silentBuffer, silentBuffer + numSamples, 0.0f);
+                         silence[0] = silentBuffer;
+                         silence[1] = silentBuffer;
+                         pair.second.writeBlock(silence, numSamples, 2);
                     }
                 }
+            }
+            
+            // 2. In-Memory Recording (New - for Android)
+            if (inMemoryRecording.load() && recordedSampleCount + numSamples <= recordedBufferCapacity) {
+                // Copy master to buffer (Always use outputChannelData - works for Playing AND Stopped/Preview)
+                for (int ch = 0; ch < 2; ++ch) {
+                    // Safety check: map to available output channels
+                    float* src = outputChannelData[ch < numOutputChannels ? ch : 0];
+                    for (int i = 0; i < numSamples; ++i) {
+                        recordedMasterBuffer.setSample(ch, recordedSampleCount + i, src[i]);
+                    }
+                }
+                
+                // Copy stems if enabled
+                if (inMemoryRecordingStems) {
+                    bool canReadBuses = playing.load() && !paused.load();
+                    
+                    for (auto& pair : recordedStemBuffers) {
+                        const std::string& trackName = pair.first;
+                        AudioBus* trackBus = busManager.getTrack(trackName);
+                        
+                        if (canReadBuses && trackBus && trackBus->buffer.getNumSamples() > 0) {
+                            for (int ch = 0; ch < 2; ++ch) {
+                                int srcCh = std::min(ch, trackBus->buffer.getNumChannels() - 1);
+                                for (int i = 0; i < numSamples; ++i) {
+                                    pair.second.setSample(ch, recordedSampleCount + i, trackBus->buffer.getSample(srcCh, i));
+                                }
+                            }
+                        } else {
+                            // Write silence
+                            pair.second.clear(recordedSampleCount, numSamples);
+                        }
+                    }
+                }
+                
+                recordedSampleCount += numSamples;
             }
         }
     }
     
 }
-}
+
     
 
 
@@ -775,20 +817,20 @@ void AudioEngine::previewSlice(Pattern& pattern, int sliceIndex, bool playToEnd)
 
 
 
-void AudioEngine::startRecording(const std::string& filename, bool recordMix, bool stems) {
+void AudioEngine::startRecording(const std::string& filename, bool stems) {
     std::lock_guard<std::mutex> lock(recordingMutex);
     recordingStems = stems;
     
-    // Ensure "recordings" dir exists (on Desktop)
-    // On Android, filename should probably be an absolute path to internal/external cache
-    // For now we assume filename passed is valid or relative to CWD
-    
     if (stems) {
         // Record individual track buses as stems
+        // Get all active track buses
         std::vector<std::string> trackNames;
         
+        // Collect all track names from the bus manager
+        // We'll record all non-empty tracks
         for (const auto& pair : patternToTrack) {
             const std::string& trackName = pair.second;
+            // Check if this track name is already in our list
             bool found = false;
             for (const auto& name : trackNames) {
                 if (name == trackName) {
@@ -801,20 +843,19 @@ void AudioEngine::startRecording(const std::string& filename, bool recordMix, bo
             }
         }
         
+        // Start a recorder for each track
         for (const auto& trackName : trackNames) {
-            std::string stemPath = filename + "_" + trackName + ".wav";
+            std::string stemPath = "recordings/" + filename + "_" + trackName + ".wav";
             stemRecorders[trackName].start(stemPath, sampleRate, 2);
         }
-    }
-    
-    if (recordMix) {
-        // Record master bus
-        std::string path = filename + "_master.wav";
-        // If only recording mix, maybe just keep original filename? 
-        // User asked for "recording to stems by track AND as the whole mix"
-        // If stems is false, we might want just "filename.wav"
-        if (!stems) path = filename + ".wav";
         
+        // Also record master mix
+        std::string masterPath = "recordings/" + filename + "_master.wav";
+        mainRecorder.start(masterPath, sampleRate, 2);
+        
+    } else {
+        // Record only master bus (whole mix)
+        std::string path = "recordings/" + filename + ".wav";
         mainRecorder.start(path, sampleRate, 2);
     }
 }
@@ -892,7 +933,7 @@ void AudioEngine::resyncAllPatternsInternal() {
         // Wrap to pattern length
         int stepIndex = (fullSteps % pattern.steps); 
         
-        int oldStep = state.currentStep;
+
         
         state.currentStep = stepIndex + 1; // 1-based
         
@@ -934,3 +975,184 @@ void AudioEngine::resyncAllPatterns() {
     resyncAllPatternsInternal();
 }
 
+// ============================================================================
+// In-Memory Recording (New - for Android)
+// ============================================================================
+
+void AudioEngine::armRecording(bool stems) {
+    std::lock_guard<std::mutex> lock(recordingMutex);
+    inMemoryRecordingStems = stems;
+    recordingArmed.store(true);
+    
+    // Pre-allocate buffers (10 minutes at 44.1kHz stereo)
+    double safeRate = sampleRate > 0 ? sampleRate : 44100.0;
+    int maxSamples = (int)(safeRate * 60 * 10); // 10 minutes
+    recordedBufferCapacity = maxSamples;
+    recordedSampleCount = 0;
+    
+    recordedMasterBuffer.setSize(2, maxSamples, false, true, false);
+    recordedMasterBuffer.clear();
+    
+    if (stems) {
+        // Will allocate stem buffers when recording starts (after we know track names)
+        recordedStemBuffers.clear();
+    }
+}
+
+void AudioEngine::disarmRecording() {
+    recordingArmed.store(false);
+    inMemoryRecording.store(false);
+}
+
+void AudioEngine::startInMemoryRecording() {
+    if (!recordingArmed.load()) return;
+    
+    std::lock_guard<std::mutex> lock(recordingMutex);
+    recordedSampleCount = 0;
+    
+    // SAFETY CHECK: Ensure buffer has capacity. 
+    // If sampleRate was 0 during Arm(), capacity might be 0. Fix it now.
+    if (recordedBufferCapacity < 44100 * 60) { // Less than 1 minute? Suspicious.
+        double safeRate = sampleRate > 0 ? sampleRate : 44100.0;
+        int maxSamples = (int)(safeRate * 60 * 10); // 10 minutes
+        recordedBufferCapacity = maxSamples;
+        recordedMasterBuffer.setSize(2, maxSamples, false, true, false);
+        recordedMasterBuffer.clear();
+        
+        if (inMemoryRecordingStems) {
+            recordedStemBuffers.clear();
+        }
+    }
+    
+    if (inMemoryRecordingStems) {
+        // Allocate buffers for each active track
+        recordedStemBuffers.clear();
+        for (const auto& pair : patternToTrack) {
+            const std::string& trackName = pair.second;
+            if (recordedStemBuffers.find(trackName) == recordedStemBuffers.end()) {
+                recordedStemBuffers[trackName].setSize(2, recordedBufferCapacity, false, true, false);
+                recordedStemBuffers[trackName].clear();
+            }
+        }
+    }
+    
+    inMemoryRecording.store(true);
+    recordingArmed.store(false); // No longer armed, now recording
+}
+
+void AudioEngine::stopInMemoryRecording() {
+    inMemoryRecording.store(false);
+}
+
+void AudioEngine::clearRecordedBuffers() {
+    std::lock_guard<std::mutex> lock(recordingMutex);
+    recordedMasterBuffer.clear();
+    recordedStemBuffers.clear();
+    recordedSampleCount = 0;
+}
+
+void AudioEngine::startRecordingPreview(const std::string& stemName) {
+    recordingPreviewStem = stemName;
+    recordingPreviewPosition = 0;
+    recordingPreviewActive.store(true);
+}
+
+void AudioEngine::stopRecordingPreview() {
+    recordingPreviewActive.store(false);
+}
+
+void AudioEngine::seekRecordingPreview(int64_t sample) {
+    if (sample < 0) sample = 0;
+    if (sample >= recordedSampleCount) sample = recordedSampleCount - 1;
+    recordingPreviewPosition = sample;
+}
+
+bool AudioEngine::saveRecordedAudio(const std::string& filepath) {
+    if (recordedSampleCount <= 0) return false;
+    
+    std::lock_guard<std::mutex> lock(recordingMutex);
+    
+    // Create output file
+    juce::File outputFile(filepath);
+    outputFile.deleteFile(); // Remove if exists
+    
+    // Create WAV format writer
+    juce::WavAudioFormat wavFormat;
+    std::unique_ptr<juce::AudioFormatWriter> writer(
+        wavFormat.createWriterFor(
+            new juce::FileOutputStream(outputFile),
+            sampleRate,
+            2,  // Stereo
+            16, // 16-bit
+            {},
+            0
+        )
+    );
+    
+    if (!writer) return false;
+    
+    // Write samples
+    writer->writeFromAudioSampleBuffer(recordedMasterBuffer, 0, recordedSampleCount);
+    writer->flush();
+    
+    return true;
+}
+
+bool AudioEngine::saveRecordedStems(const std::string& directory, const std::string& baseName) {
+    if (recordedSampleCount <= 0) return false;
+    if (recordedStemBuffers.empty()) {
+        // No stems, just save master
+        return saveRecordedAudio(directory + "/" + baseName + ".wav");
+    }
+    
+    std::lock_guard<std::mutex> lock(recordingMutex);
+    
+    bool success = true;
+    
+    // Save master
+    {
+        juce::File masterFile(directory + "/" + baseName + "_master.wav");
+        masterFile.deleteFile();
+        
+        juce::WavAudioFormat wavFormat;
+        std::unique_ptr<juce::AudioFormatWriter> writer(
+            wavFormat.createWriterFor(
+                new juce::FileOutputStream(masterFile),
+                sampleRate, 2, 16, {}, 0
+            )
+        );
+        
+        if (writer) {
+            writer->writeFromAudioSampleBuffer(recordedMasterBuffer, 0, recordedSampleCount);
+            writer->flush();
+        } else {
+            success = false;
+        }
+    }
+    
+    // Save each stem
+    for (const auto& pair : recordedStemBuffers) {
+        const std::string& stemName = pair.first;
+        const juce::AudioBuffer<float>& buffer = pair.second;
+        
+        juce::File stemFile(directory + "/" + baseName + "_" + stemName + ".wav");
+        stemFile.deleteFile();
+        
+        juce::WavAudioFormat wavFormat;
+        std::unique_ptr<juce::AudioFormatWriter> writer(
+            wavFormat.createWriterFor(
+                new juce::FileOutputStream(stemFile),
+                sampleRate, 2, 16, {}, 0
+            )
+        );
+        
+        if (writer) {
+            writer->writeFromAudioSampleBuffer(buffer, 0, recordedSampleCount);
+            writer->flush();
+        } else {
+            success = false;
+        }
+    }
+    
+    return success;
+}

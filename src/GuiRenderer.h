@@ -6,6 +6,7 @@
 #include "gui/TrackView.h"
 #include "gui/DragDrop.h"
 #include "gui/PatternEditor.h"
+#include "gui/RecordingUI.h"
 
 class GuiRenderer {
 public:
@@ -22,6 +23,7 @@ private:
     gui::TransportBar transportBar;
     gui::TrackView trackView;
     gui::PatternEditor patternEditor;
+    gui::RecordingUI recordingUI;
     
     Font font;
     Texture2D patternIcon;

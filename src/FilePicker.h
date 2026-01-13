@@ -8,16 +8,17 @@
 
 namespace FilePicker {
 
-    // Audio import
-    std::string openAudioFile();
-    
-    // Project management
-    std::string openProjectFile();
-    std::string saveProjectFile();
-    
-    // Recording / Export
-    std::string getWritablePath(); // Returns a safe directory for temporary recordings
-    void exportFile(const std::string& sourcePath, const std::string& targetName); // Launches share/save intent dialog for project files
+// Opens a file picker dialog for audio files
+// Returns the file path, or empty string if cancelled
+std::string openAudioFile();
+
+// Opens a file picker dialog for project files  
+// Returns the file path, or empty string if cancelled
+std::string openProjectFile();
+
+// Saves a file dialog for project files
+// Returns the file path, or empty string if cancelled  
+std::string saveProjectFile();
 
 // Permission helpers
 void requestPermissions();

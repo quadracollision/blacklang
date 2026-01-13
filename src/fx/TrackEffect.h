@@ -252,12 +252,147 @@ private:
     float envelope = 0.0f;
 };
 
+// ==========================================
+// EQ EFFECT (Multi-band Parametric/Graphic)
+// ==========================================
+class EQEffect : public TrackEffect {
+public:
+    struct Band {
+        float frequency;
+        float q;
+        float gaindB;
+        
+        // Biquad state
+        double z1_L = 0, z2_L = 0;
+        double z1_R = 0, z2_R = 0;
+        double b0, b1, b2, a1, a2;
+    };
+
+    EQEffect() {
+        // Param 0: Band Count (0=3, 1=6, 2=12) - stored as float index
+        params.push_back({"Bands", 0.0f, 0.0f, 2.0f, 0.0f, ""});
+        
+        // Initialize with default bands (we'll support max 12)
+        // We'll create parameters for all max 12 bands, but only show/process active ones
+        // Frequencies will be: 
+        // 3-Band: 100, 1000, 10000
+        // 6-Band: 60, 200, 600, 2k, 6k, 12k
+        // 12-Band: 30, 60, 120, 250, 500, 1k, 2k, 4k, 8k, 12k, 16k, 20k
+        
+        for (int i=0; i<12; ++i) {
+            std::string name = "Band " + std::to_string(i+1);
+            params.push_back({name, 0.0f, -12.0f, 12.0f, 0.0f, "dB"});
+        }
+        
+        updateInternalParams();
+    }
+    
+    std::string getName() const override { return "EQ"; }
+    FXType getType() const override { return FX_EQ; }
+    
+    // Override to dynamically update frequencies when band count changes
+    void setParam(int index, float value) override {
+        TrackEffect::setParam(index, value);
+        if (index == 0) setupBands();
+        updateInternalParams();
+    }
+    
+    void process(juce::AudioBuffer<float>& buffer) override {
+        int numSamples = buffer.getNumSamples();
+        int numChannels = buffer.getNumChannels();
+        
+        // Simple series processing of biquads
+        for (int c = 0; c < numChannels; ++c) {
+            float* data = buffer.getWritePointer(c);
+            for (int i = 0; i < numSamples; ++i) {
+                float sample = data[i];
+                
+                for (auto& band : bands) {
+                    double in = (double)sample;
+                    double out;
+                    
+                    if (c == 0) { // Left / Mono
+                         out = in * band.b0 + band.z1_L;
+                         band.z1_L = in * band.b1 + band.z2_L - band.a1 * out;
+                         band.z2_L = in * band.b2 - band.a2 * out;
+                    } else { // Right
+                         out = in * band.b0 + band.z1_R;
+                         band.z1_R = in * band.b1 + band.z2_R - band.a1 * out;
+                         band.z2_R = in * band.b2 - band.a2 * out;
+                    }
+                    
+                    sample = (float)out;
+                }
+                data[i] = sample;
+            }
+        }
+    }
+    
+private:
+    std::vector<Band> bands;
+    
+    void setupBands() {
+        int mode = (int)params[0].value;
+        std::vector<float> freqs;
+        
+        if (mode == 0) { // 3 Band
+            freqs = {100.0f, 1000.0f, 10000.0f};
+        } else if (mode == 1) { // 6 Band
+            freqs = {60.0f, 200.0f, 600.0f, 2000.0f, 6000.0f, 12000.0f};
+        } else { // 12 Band
+            freqs = {30.0f, 60.0f, 120.0f, 250.0f, 500.0f, 1000.0f, 2000.0f, 4000.0f, 8000.0f, 12000.0f, 16000.0f, 20000.0f};
+        }
+        
+        // Resize bands vector if needed, preserving state where possible
+        if (bands.size() != freqs.size()) {
+            std::vector<Band> newBands(freqs.size());
+            bands = newBands;
+        }
+        
+        for (size_t i=0; i<bands.size(); ++i) {
+            bands[i].frequency = freqs[i];
+            bands[i].q = 1.0f; // Default Q
+            bands[i].gaindB = params[i+1].value;
+        }
+    }
+
+    void updateInternalParams() override {
+        if (bands.empty()) setupBands();
+        
+        // Update gains and coeffs
+        const double pi = 3.14159265358979323846;
+        
+        for (size_t i=0; i<bands.size(); ++i) {
+             bands[i].gaindB = params[i+1].value;
+             
+             // Peaking filter coeffs
+             double A = std::pow(10.0, bands[i].gaindB / 40.0);
+             double w0 = 2.0 * pi * bands[i].frequency / sampleRate;
+             double alpha = std::sin(w0) / (2.0 * bands[i].q);
+             
+             double b0 = 1.0 + alpha * A;
+             double b1 = -2.0 * std::cos(w0);
+             double b2 = 1.0 - alpha * A;
+             double a0 = 1.0 + alpha / A;
+             double a1 = -2.0 * std::cos(w0);
+             double a2 = 1.0 - alpha / A;
+             
+             bands[i].b0 = b0 / a0;
+             bands[i].b1 = b1 / a0;
+             bands[i].b2 = b2 / a0;
+             bands[i].a1 = a1 / a0;
+             bands[i].a2 = a2 / a0;
+        }
+    }
+};
+
 // Factory
 inline std::shared_ptr<TrackEffect> CreateTrackEffect(FXType type) {
     switch (type) {
         case FX_DELAY: return std::make_shared<DelayEffect>();
         case FX_REVERB: return std::make_shared<ReverbEffect>();
         case FX_COMPRESSOR: return std::make_shared<CompressorEffect>();
+        case FX_EQ: return std::make_shared<EQEffect>();
         default: return nullptr;
     }
 }

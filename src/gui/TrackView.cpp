@@ -97,7 +97,8 @@ void TrackView::Draw() {
     DrawRectangleRec(addColBtn, Color{40, 40, 40, 255});
     DrawText("+", addColBtn.x + 13, addColBtn.y + 30, 30, GRAY);
     
-    if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), addColBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (state.isClickAvailable() && !state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), addColBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+         state.consumeClick();
          if (CheckCollisionPointRec(state.getMousePosition(), viewRect)) {
              // FIX: Correctly initialize PatternColumn with all fields
              std::string newTrackName = "Track_" + std::to_string(state.columns.size());
@@ -493,7 +494,8 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
     DrawText("-", delBtnRect.x + 15, delBtnRect.y + 2, 24, WHITE);
     
     // Delete button action
-    if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), delBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (state.isClickAvailable() && !state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), delBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        state.consumeClick();
         // Delete the selected pattern in this column
         if (state.activePatternSlots.count(index)) {
             int selectedSlot = state.activePatternSlots[index];
@@ -509,7 +511,8 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
     DrawRectangleRec(mixBtnRect, Color{30, 30, 40, 255});
     DrawText("MIXER", mixBtnRect.x + mixBtnRect.width/2 - 25, mixBtnRect.y + 8, 14, GRAY);
     
-    if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), mixBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (state.isClickAvailable() && !state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), mixBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        state.consumeClick();
         col.mixerMode = true;
     }
     
@@ -534,16 +537,31 @@ void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::strin
         static std::string lastPatternClickName = "";
 
         // 1. Handle Release (Selection, Edit, Paste) - Only if NOT dragging/scrolling
+        // 1. Handle Release (Selection, Edit, Paste) - Only if NOT dragging/scrolling
         if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+            // STRICT CLICK OWNERSHIP: Only act if WE started the interaction
+            std::string cellId = "GridCell_" + std::to_string(colIndex) + "_" + std::to_string(slotIndex);
+            
+            // Allow if we are the active control OR if no control is active (legacy fallback, but locking is better)
+            // Actually, if "Add Track" was clicked, it consumed the click but probably didn't set a lock ID?
+            // "Add Track" consumes click. So we shouldn't have set lock ID.
+            // But here we are in Release. "Add Track" happened frames ago on Press.
+            // If "Add Track" didn't set lock, activeControlId is empty.
+            // If we rely on activeControlId match, we strictly require Press to have happened here.
+            
+            bool isMyInteraction = (state.drag.activeControlId == cellId);
+            
             bool wasDragging = state.drag.isDragging || state.drag.scrollDirection != 0;
 
-            if (!wasDragging) {
+            if (isMyInteraction && !wasDragging) {
+                // ... (Logic remains identical, just wrapped in isMyInteraction)
                 // NEW WORKFLOW: Source Selection (Priority over everything else)
                 if (state.trackClipboard.isSelectingSource) {
                     state.trackClipboard.patternName = patternName;
                     state.trackClipboard.hasData = true;
                     state.trackClipboard.isSelectingSource = false;
                     state.trackClipboard.isPasting = true; // Enter paste mode immediately
+                    // Global Unlock done by Draw()
                     return;
                 }
                 
@@ -552,19 +570,19 @@ void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::strin
                     // Check if target slot is empty
                     if (state.columns[(size_t)colIndex].patternNames[(size_t)slotIndex].empty()) {
                         // Perform Paste
-                            Pattern* origPat = engine.getPattern(state.trackClipboard.patternName);
-                            if (origPat) {
-                            Pattern copy = *origPat;
-                            copy.name = origPat->name + "_" + std::to_string(state.patternIdCounter++);
-                            if (copy.samplePath != "") engine.loadSample(copy);
-                            engine.addPattern(copy);
-                            
-                            // FIX: Register track assignment
-                            engine.assignPatternToTrack(copy.name, state.columns[(size_t)colIndex].title);
-                            
-                            // Assign to slot
-                            state.columns[(size_t)colIndex].patternNames[(size_t)slotIndex] = copy.name;
-                            }
+                             Pattern* origPat = engine.getPattern(state.trackClipboard.patternName);
+                             if (origPat) {
+                                Pattern copy = *origPat;
+                                copy.name = origPat->name + "_" + std::to_string(state.patternIdCounter++);
+                                if (copy.samplePath != "") engine.loadSample(copy);
+                                engine.addPattern(copy);
+                                
+                                // FIX: Register track assignment
+                                engine.assignPatternToTrack(copy.name, state.columns[(size_t)colIndex].title);
+                                
+                                // Assign to slot
+                                state.columns[(size_t)colIndex].patternNames[(size_t)slotIndex] = copy.name;
+                             }
                     }
                     return;
                 }
@@ -700,7 +718,13 @@ void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::strin
         }
 
         // 2. Initialize Drag/Scroll on Press
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (state.isClickAvailable() && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            state.consumeClick();
+            
+            // STRICT CLICK OWNERSHIP: Claim the lock
+            std::string cellId = "GridCell_" + std::to_string(colIndex) + "_" + std::to_string(slotIndex);
+            state.drag.activeControlId = cellId;
+            
             // Start hold for drag OR scroll
             if (!patternName.empty()) {
                 state.drag.isDragging = false;
@@ -735,7 +759,8 @@ void TrackView::HandleAddPattern(int colIndex, PatternColumn& col) {
     
     Rectangle addBtnRect = {col.bounds.x + 5, col.bounds.y + col.bounds.height - 35, 40, 30};
     
-    if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), addBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (state.isClickAvailable() && !state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), addBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        state.consumeClick();
         // Only create pattern if we have a selected EMPTY slot
         int targetSlot = -1;
         

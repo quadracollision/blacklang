@@ -223,6 +223,7 @@ bool Draw(GuiState& state, AudioEngine& engine) {
     
     if (CheckCollisionPointRec(mousePos, listRect)) {
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            state.consumeClick();
             isDragging = true;
             dragStartY = mousePos.y;
             dragStartScroll = state.projectBrowser.scrollY;

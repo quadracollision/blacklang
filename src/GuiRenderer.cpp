@@ -2,7 +2,7 @@
 #include "gui/Widgets.h"
 #include "gui/DragDrop.h"
 #include "gui/ProjectBrowser.h"
-#include "gui/RecordingDialog.h" // Added include
+#include "gui/RecordingUI.h"
 #include <iostream>
 #include <algorithm>
 #include <cstring>
@@ -12,7 +12,7 @@
 namespace fs = std::filesystem;
 
 GuiRenderer::GuiRenderer(GuiState& s, AudioEngine& e) 
-    : state(s), engine(e), transportBar(s, e), trackView(s, e), patternEditor(s, e) {
+    : state(s), engine(e), transportBar(s, e), trackView(s, e), patternEditor(s, e), recordingUI(s, e) {
     font = GetFontDefault();
 }
 #include "tinyfiledialogs.h"
@@ -26,6 +26,32 @@ void GuiRenderer::Update() {
 }
 
 void GuiRenderer::Draw() {
+    // Reset click consumption for this frame
+    state.resetClickState();
+    
+    // =============================
+    // EARLY INPUT PASS: Consume clicks for overlays BEFORE main view processes input
+    // This prevents clicks from passing through to elements behind overlays
+    // =============================
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        // Recording overlays (highest priority)
+        if (state.recorder.showModeSelection || state.recorder.showReview) {
+            state.consumeClick();
+        }
+        // Project browser
+        else if (state.projectBrowser.isOpen) {
+            state.consumeClick();
+        }
+        // Pattern editor
+        else if (state.editor.isOpen) {
+            state.consumeClick();
+        }
+        // Settings popup
+        else if (state.settings.activePopup != PopupType::None) {
+            state.consumeClick();
+        }
+    }
+    
     ClearBackground(Color{20, 20, 20, 255});
     
     // Draw Headers
@@ -117,9 +143,6 @@ void GuiRenderer::Draw() {
     if (state.editor.isOpen) {
         patternEditor.Draw();
     }
-
-    // Draw Recording Modal
-    gui::DrawRecordingDialog(state, engine);
     
     // Draw project browser (for save/load project)
     if (state.projectBrowser.isOpen) {
@@ -131,6 +154,9 @@ void GuiRenderer::Draw() {
         wasOpen = state.projectBrowser.isOpen;
         ProjectBrowser::Draw(state, engine);
     }
+    
+    // Draw RecordingUI (mode selection and review overlays)
+    recordingUI.Draw();
 }
 
 void GuiRenderer::DrawColumn(int index, PatternColumn& col) {

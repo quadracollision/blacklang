@@ -213,6 +213,7 @@ bool Draw(GuiState& state, AudioEngine& engine) {
     
     if (CheckCollisionPointRec(mousePos, listRect)) {
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            state.consumeClick();
             isDraggingContent = true;
             dragStartY = mousePos.y;
             dragStartScroll = state.editor.browserScrollY;
@@ -240,6 +241,7 @@ bool Draw(GuiState& state, AudioEngine& engine) {
     
     if (CheckCollisionPointRec(mousePos, scrollbarTrack)) {
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            state.consumeClick();
             if (CheckCollisionPointRec(mousePos, thumbRect)) {
                 isDraggingScrollbar = true;
                 sbDragStartY = mousePos.y;

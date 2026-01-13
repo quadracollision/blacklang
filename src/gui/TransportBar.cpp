@@ -29,36 +29,49 @@ void TransportBar::DrawRecording() {
     Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
     float centerX = state.getScreenWidth() / 2.0f;
     float btnH = (float)state.FOOTER_HEIGHT;
+    float btnW = 60;
     
-    // Position for the REC button (Beside Stop: Center + 80)
-    float x = centerX + 80;
-    float y = rect.y;
-    float height = btnH;
-
-    // Determine button color based on state
-    Color btnColor = state.recorder.isRecording ? RED : DARKGRAY;
-    if (state.recorder.showDialog) btnColor = Color{80, 80, 80, 255}; // Open state
+    // Record Button (Beside Stop)
+    Rectangle recBtn = {centerX + 80, rect.y, btnW, btnH};
     
-    // Draw simple Rec Button
-    Rectangle recBtn = {x, y, 60.0f, height};
-    if (DrawButton(recBtn, "REC", btnColor, WHITE, state.getMousePosition())) {
-        if (state.recorder.isRecording) {
-            // Stop Recording from here
-            engine.stopRecording();
-            state.recorder.isRecording = false;
-            state.recorder.finished = true;
-            state.recorder.showDialog = true; // Show dialog to export
-        } else {
-            state.recorder.showDialog = !state.recorder.showDialog;
-        }
+    bool isArmed = state.recorder.isArmed;
+    bool isRecording = state.recorder.isRecording;
+    
+    // Draw Record Button based on state
+    if (isRecording) {
+        // Full red when actively recording
+        DrawRectangleRec(recBtn, Color{200, 50, 50, 255});
+        DrawCircle((int)(recBtn.x + 30), (int)(recBtn.y + 30), 18, RED);
+    } else if (isArmed) {
+        // Orange/Yellow when armed (waiting for Play)
+        DrawRectangleRec(recBtn, Color{200, 150, 50, 255});
+        DrawCircle((int)(recBtn.x + 30), (int)(recBtn.y + 30), 14, ORANGE);
+        DrawCircleLines((int)(recBtn.x + 30), (int)(recBtn.y + 30), 18, WHITE);
+    } else {
+        // Gray button with Red Dot (idle)
+        DrawRectangleRec(recBtn, LIGHTGRAY);
+        DrawCircle((int)(recBtn.x + 30), (int)(recBtn.y + 30), 12, RED);
     }
     
-    // Timer display if recording (compact)
-    if (state.recorder.isRecording) {
-        double duration = GetTime() - state.recorder.recordingStartTime;
-        int minutes = (int)duration / 60;
-        int seconds = (int)duration % 60;
-        DrawText(TextFormat("%02d:%02d", minutes, seconds), x + 65, y + 10, 20, RED);
+    // Handle Record Button Click
+    if (state.isClickAvailable() && !state.editor.isOpen &&
+        CheckCollisionPointRec(state.getMousePosition(), recBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        state.consumeClick();
+        if (isRecording) {
+            // Stop in-memory recording and show review
+            state.recorder.isRecording = false;
+            engine.stopInMemoryRecording();
+            engine.stop();
+            state.recorder.showReview = true;
+            state.recorder.justOpenedReview = true;  // Prevent click-through
+        } else if (isArmed) {
+            // Disarm
+            state.recorder.isArmed = false;
+            engine.disarmRecording();
+        } else {
+            // Open Mode Selection
+            state.recorder.showModeSelection = true;
+        }
     }
 }
 
@@ -71,8 +84,10 @@ void TransportBar::DrawPlayStop() {
     // Play
     Rectangle playRect = {centerX - btnW - 5, rect.y, btnW, btnH};
     DrawRectangleRec(playRect, state.isPlaying ? GREEN : GRAY);
-    DrawText(">", playRect.x + 28, playRect.y + 18, 24, BLACK);
-    if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), playRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    DrawText(">", (int)(playRect.x + 28), (int)(playRect.y + 18), 24, BLACK);
+    if (state.isClickAvailable() && !state.editor.isOpen &&
+        CheckCollisionPointRec(state.getMousePosition(), playRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        state.consumeClick();
         std::vector<std::string> names;
         
         if (!state.activePatternSlots.empty()) {
@@ -109,14 +124,30 @@ void TransportBar::DrawPlayStop() {
             }
         }
         
+        // NEW: Start in-memory recording if armed
+        if (state.recorder.isArmed) {
+            engine.startInMemoryRecording();
+            state.recorder.isRecording = true;
+        }
+        
         if (!names.empty()) engine.playMultiplePatterns(names);
     }
     
     // Stop
     Rectangle stopRect = {centerX + 5, rect.y, btnW, btnH};
     DrawRectangleRec(stopRect, RED);
-    DrawRectangle(stopRect.x + 25, stopRect.y + 20, 20, 20, WHITE);
-    if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), stopRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    DrawRectangle((int)(stopRect.x + 25), (int)(stopRect.y + 20), 20, 20, WHITE);
+    if (state.isClickAvailable() && !state.editor.isOpen &&
+        CheckCollisionPointRec(state.getMousePosition(), stopRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        state.consumeClick();
+        // If in-memory recording, stop and show review
+        if (state.recorder.isRecording) {
+            engine.stopInMemoryRecording();
+            state.recorder.isRecording = false;
+            state.recorder.showReview = true;
+            state.recorder.justOpenedReview = true;
+        }
+        
         engine.stop();
     }
 }
@@ -202,7 +233,8 @@ void TransportBar::DrawSettingsButton() {
     DrawRectangleRec(gearBtn, isOpen ? ORANGE : DARKGRAY);
     DrawText("*", gearBtn.x + 22, gearBtn.y + 15, 30, WHITE);
     
-    if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), gearBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (state.isClickAvailable() && !state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), gearBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        state.consumeClick();
         if (isOpen) {
             state.settings.activePopup = PopupType::None;
             state.settings.showSettingsMenu = false;
@@ -215,6 +247,11 @@ void TransportBar::DrawSettingsButton() {
 
 void TransportBar::DrawSettingsPopup() {
     if (state.settings.activePopup == PopupType::None) return;
+    
+    // CRITICAL: Consume ALL clicks when settings popup is open to prevent click-through
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        state.consumeClick();
+    }
     
     Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
     
@@ -238,7 +275,8 @@ void TransportBar::DrawSettingsPopup() {
     Rectangle closeBtn = {popX + popW - 30, popY + 5, 25, 25};
     DrawRectangleRec(closeBtn, RED);
     DrawText("X", closeBtn.x + 7, closeBtn.y + 3, 18, WHITE);
-    if (CheckCollisionPointRec(state.getMousePosition(), closeBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(state.getMousePosition(), closeBtn)) {
+        state.consumeClick();
         state.settings.activePopup = PopupType::None;
         state.settings.showSettingsMenu = false;
     }
@@ -248,7 +286,8 @@ void TransportBar::DrawSettingsPopup() {
         Rectangle backBtn = {popX + popW - 60, popY + 5, 25, 25};
         DrawRectangleRec(backBtn, DARKGRAY);
         DrawText("<", backBtn.x + 8, backBtn.y + 3, 18, WHITE);
-        if (CheckCollisionPointRec(state.getMousePosition(), backBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(state.getMousePosition(), backBtn)) {
+            state.consumeClick();
             state.settings.activePopup = PopupType::Main;
         }
     }
@@ -260,14 +299,16 @@ void TransportBar::DrawSettingsPopup() {
         Rectangle projBtn = {popX + 20, currentY, popW - 40, 30};
         DrawRectangleRec(projBtn, DARKGRAY);
         DrawText("Project...", projBtn.x + 10, projBtn.y + 5, 14, WHITE);
-        if (CheckCollisionPointRec(state.getMousePosition(), projBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(state.getMousePosition(), projBtn)) {
+            state.consumeClick();
             state.settings.activePopup = PopupType::Project;
         }
         
         Rectangle audioBtn = {popX + 20, currentY + 40, popW - 40, 30};
         DrawRectangleRec(audioBtn, DARKGRAY);
         DrawText("Audio Settings...", audioBtn.x + 10, audioBtn.y + 5, 14, WHITE);
-        if (CheckCollisionPointRec(state.getMousePosition(), audioBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(state.getMousePosition(), audioBtn)) {
+            state.consumeClick();
             state.settings.activePopup = PopupType::Audio;
             state.settings.availableOutputDevices = engine.getAvailableOutputDevices();
             state.settings.currentDevice = engine.getCurrentOutputDevice();
@@ -281,7 +322,8 @@ void TransportBar::DrawSettingsPopup() {
         Rectangle saveBtn = {popX + 20, currentY, 140, 30};
         DrawRectangleRec(saveBtn, DARKGRAY);
         DrawText("Save Project", saveBtn.x + 25, saveBtn.y + 8, 14, WHITE);
-        if (CheckCollisionPointRec(state.getMousePosition(), saveBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(state.getMousePosition(), saveBtn)) {
+            state.consumeClick();
             // Open project browser in save mode
             state.projectBrowser.isOpen = true;
             state.projectBrowser.isSaveMode = true;
@@ -299,7 +341,8 @@ void TransportBar::DrawSettingsPopup() {
         Rectangle loadBtn = {popX + 170, currentY, 140, 30};
         DrawRectangleRec(loadBtn, DARKGRAY);
         DrawText("Load Project", loadBtn.x + 25, loadBtn.y + 8, 14, WHITE);
-        if (CheckCollisionPointRec(state.getMousePosition(), loadBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(state.getMousePosition(), loadBtn)) {
+            state.consumeClick();
             // Open project browser in load mode
             state.projectBrowser.isOpen = true;
             state.projectBrowser.isSaveMode = false;
@@ -342,7 +385,8 @@ void TransportBar::DrawSettingsPopup() {
             DrawText(devName.c_str(), devBtn.x + 5, devBtn.y + 4, 12, textColor);
             
             // Only allow clicking if not currently switching and not the current device
-            if (!isCurrent && !isSwitching && CheckCollisionPointRec(state.getMousePosition(), devBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            if (!isCurrent && !isSwitching && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(state.getMousePosition(), devBtn)) {
+                state.consumeClick();
                 state.settings.isSwitchingDevice = true;
                 
                 // Use async switching - capture state pointer

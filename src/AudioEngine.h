@@ -18,10 +18,7 @@ public:
     ~AudioEngine() override;
     
     // Initialize audio
-    bool initialize(); 
-    void initializeAsync(); // Non-blocking
-    bool isInitialized() const { return initialized.load(); }
-    bool hasInitFailed() const { return initFailed.load(); }
+    bool initialize();
     void shutdown();
     
     // Sample loading
@@ -69,10 +66,34 @@ public:
     void setOutputDeviceAsync(const std::string& deviceName, std::function<void(bool)> callback);
     bool isDeviceSwitching() const { return deviceSwitching.load(); }
 
-    // Recording
-    void startRecording(const std::string& filename, bool recordMix, bool recordStems);
+    // Recording (Legacy file-based)
+    void startRecording(const std::string& filename, bool stems);
     void stopRecording();
     bool isRecording();
+    
+    // In-Memory Recording (New - for Android)
+    void armRecording(bool stems);
+    void disarmRecording();
+    bool isRecordingArmed() const { return recordingArmed.load(); }
+    void startInMemoryRecording();  // Called when Play pressed while armed
+    void stopInMemoryRecording();   // Called when Stop pressed while recording
+    
+    // Access recorded buffers (after stopInMemoryRecording)
+    const juce::AudioBuffer<float>& getRecordedMaster() const { return recordedMasterBuffer; }
+    const std::map<std::string, juce::AudioBuffer<float>>& getRecordedStems() const { return recordedStemBuffers; }
+    int getRecordedSampleCount() const { return recordedSampleCount; }
+    double getRecordedSampleRate() const { return sampleRate; }
+    void clearRecordedBuffers();
+    
+    // Preview playback of recorded audio
+    void startRecordingPreview(const std::string& stemName = "");
+    void stopRecordingPreview();
+    void seekRecordingPreview(int64_t sample);
+    bool isPreviewingRecording() const { return recordingPreviewActive.load(); }
+    
+    // Save recorded audio to file
+    bool saveRecordedAudio(const std::string& filepath);
+    bool saveRecordedStems(const std::string& directory, const std::string& baseName);
     
     // AudioIODeviceCallback
     void audioDeviceIOCallbackWithContext(
@@ -151,15 +172,22 @@ private:
     
     // Device switching
     std::atomic<bool> deviceSwitching{false};
-    
-    // Initialization State
-    std::atomic<bool> initialized{false};
-    std::atomic<bool> initFailed{false};
 
     // Per-Slot Sync Queueing
     std::map<std::string, std::string> pendingPatternQueues; // TrackName -> Queued PatternName
     std::mutex queueMutex;
 
-    // Internal method to process a sample block
-    // ...
+    // In-Memory Recording (New - for Android)
+    std::atomic<bool> recordingArmed{false};
+    std::atomic<bool> inMemoryRecording{false};
+    bool inMemoryRecordingStems = false;
+    juce::AudioBuffer<float> recordedMasterBuffer;
+    std::map<std::string, juce::AudioBuffer<float>> recordedStemBuffers;
+    int recordedSampleCount = 0;
+    int recordedBufferCapacity = 0;
+    
+    // Recording Preview
+    std::atomic<bool> recordingPreviewActive{false};
+    int64_t recordingPreviewPosition = 0;
+    std::string recordingPreviewStem = "";
 };

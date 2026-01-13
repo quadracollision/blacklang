@@ -58,8 +58,8 @@ struct DragState {
     int scrollbarDraggingColumn = -1;
     float scrollbarClickOffsetY = 0.0f;
     
-    // Mixer Interaction Locking
-    std::string activeControlId = "";
+    // Generic UI Control Locking
+    std::string activeControlId = ""; 
 };
 
 struct StepClipboard {
@@ -165,20 +165,26 @@ struct TrackClipboard {
 enum class PopupType { None, Main, Audio, Project };
 
 struct RecordingState {
-    bool showControls = false; // Legacy, can remove or reuse
-    bool showDialog = false;   // New Modal
-    bool isRecording = false;
-    
-    // Configuration
-    bool recordMix = true;
+    // Mode Selection
+    bool showModeSelection = false;
     bool recordStems = false;
     
-    // State
-    double recordingStartTime = 0.0;
-    std::string lastRecordingPath; // Base filename/path
-    bool finished = false;         // True when recording stopped and waiting to save
+    // Armed/Recording State
+    bool isArmed = false;      // Waiting for Play to start recording
+    bool isRecording = false;  // Actively recording
     
+    // Review UI
+    bool showReview = false;
+    bool justOpenedReview = false;  // Prevent click-through on first frame
     char filenameBuffer[64] = "recording";
+    
+    // Preview Playback in Review
+    bool isPreviewing = false;
+    int64_t previewPosition = 0;
+    std::string previewingStem = ""; // Empty = master
+    
+    // Legacy (for transport bar compatibility)
+    bool showControls = false;
 };
 
 struct SettingsState {
@@ -245,10 +251,19 @@ struct GuiState {
     Vector2 virtualMouse = {0, 0};  // Transformed mouse position
     float uiScale = 1.0f;           // Current UI scale factor
     
+    // Global Click Consumption (prevents click-through)
+    bool clickConsumed = false;
+    
     // Helper methods for consistent virtual screen/mouse access
     int getScreenWidth() const { return virtualWidth; }
     int getScreenHeight() const { return virtualHeight; }
     Vector2 getMousePosition() const { return virtualMouse; }
+    
+    // Click consumption helpers - call consumeClick() when handling a click
+    // in overlay/modal UI. Other components check isClickAvailable() before processing.
+    void consumeClick() { clickConsumed = true; }
+    bool isClickAvailable() const { return !clickConsumed; }
+    void resetClickState() { clickConsumed = false; }
     
     void initDemo() {
      // Add some default columns with track names

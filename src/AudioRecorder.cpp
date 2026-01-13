@@ -4,7 +4,8 @@
 #include <iostream>
 
 AudioRecorder::AudioRecorder() {
-    // Allocation deferred to start()
+    // Pre-allocate buffer
+    buffer.resize(BUFFER_SAMPLES, 0.0f);
 }
 
 AudioRecorder::~AudioRecorder() {
@@ -13,11 +14,6 @@ AudioRecorder::~AudioRecorder() {
 
 void AudioRecorder::start(const std::string& filePath, double sampleRate, int numChannels) {
     if (workerRunning) stop();
-    
-    // Allocate buffer if needed (lazy alloc)
-    if (buffer.size() != BUFFER_SAMPLES) {
-        buffer.resize(BUFFER_SAMPLES, 0.0f);
-    }
     
     // Reset buffer
     writeIndex = 0;
