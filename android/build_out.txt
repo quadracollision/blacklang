@@ -1,0 +1,837 @@
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:compileDebugJavaWithJavac UP-TO-DATE
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:processDebugJavaRes NO-SOURCE
+> Task :app:mergeDebugJavaResource UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:dexBuilderDebug UP-TO-DATE
+> Task :app:mergeProjectDexDebug UP-TO-DATE
+> Task :app:configureCMakeDebug[arm64-v8a]
+
+> Task :app:buildCMakeDebug[arm64-v8a] FAILED
+C/C++: ninja: Entering directory `/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a'
+C/C++: /home/jacob/src/blacklang-main/android_sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++ --target=aarch64-none-linux-android29 --sysroot=/home/jacob/src/blacklang-main/android_sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/sysroot -DDEBUG=1 -DGRAPHICS_API_OPENGL_ES2 -DJUCE_ANDROID=1 -DJUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1 -DJUCE_MODULE_AVAILABLE_juce_audio_basics=1 -DJUCE_MODULE_AVAILABLE_juce_audio_devices=1 -DJUCE_MODULE_AVAILABLE_juce_audio_formats=1 -DJUCE_MODULE_AVAILABLE_juce_audio_processors=1 -DJUCE_MODULE_AVAILABLE_juce_audio_utils=1 -DJUCE_MODULE_AVAILABLE_juce_core=1 -DJUCE_MODULE_AVAILABLE_juce_data_structures=1 -DJUCE_MODULE_AVAILABLE_juce_events=1 -DJUCE_MODULE_AVAILABLE_juce_graphics=1 -DJUCE_MODULE_AVAILABLE_juce_gui_basics=1 -DJUCE_MODULE_AVAILABLE_juce_gui_extra=1 -DJUCE_STANDALONE_APPLICATION=0 -DJUCE_USE_CURL=0 -DJUCE_WEB_BROWSER=0 -DOBOE_ENABLE_LOGGING=1 -DPLATFORM_ANDROID -D_DEBUG=1 -Dblacklang_EXPORTS -I/home/jacob/src/blacklang-main/src -I/home/jacob/src/blacklang-main/android_sdk/ndk/26.1.10909125/sources/android/native_app_glue -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules -I/home/jacob/src/blacklang-main/android_sdk/ndk/26.1.10909125/sources/android/cpufeatures -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_devices/native/oboe/include -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/VST3_SDK -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/lv2 -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/serd -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/sord -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/sord/src -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/sratom -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/lilv -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/lilv/src -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -std=c++17 -fno-limit-debug-info  -fPIC -g -O0 -Wall -Wshadow-all -Wshorten-64-to-32 -Wstrict-aliasing -Wuninitialized -Wunused-parameter -Wconversion -Wsign-compare -Wint-conversion -Wconditional-uninitialized -Wconstant-conversion -Wsign-conversion -Wbool-conversion -Wextra-semi -Wunreachable-code -Wcast-align -Wshift-sign-overflow -Wmissing-prototypes -Wnullable-to-nonnull-conversion -Wno-ignored-qualifiers -Wswitch-enum -Wpedantic -Wdeprecated -Wfloat-equal -Wmissing-field-initializers -Wzero-as-null-pointer-constant -Wunused-private-field -Woverloaded-virtual -Wreorder -Winconsistent-missing-destructor-override -std=c++17 -MD -MT blacklang_build/CMakeFiles/blacklang.dir/src/gui/TrackView.cpp.o -MF blacklang_build/CMakeFiles/blacklang.dir/src/gui/TrackView.cpp.o.d -o blacklang_build/CMakeFiles/blacklang.dir/src/gui/TrackView.cpp.o -c /home/jacob/src/blacklang-main/src/gui/TrackView.cpp
+C/C++: In file included from /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:2:
+C/C++: In file included from /home/jacob/src/blacklang-main/src/gui/TrackFX.h:4:
+C/C++: In file included from /home/jacob/src/blacklang-main/src/gui/../GuiState.h:3:
+C/C++: In file included from /home/jacob/src/blacklang-main/src/AudioEngine.h:4:
+C/C++: /home/jacob/src/blacklang-main/src/PatternChain.h:39:30: warning: implicit conversion changes signedness: 'difference_type' (aka 'long') to 'size_t' (aka 'unsigned long') [-Wsign-conversion]
+C/C++:                 pos += match.length();
+C/C++:                     ~~ ~~~~~~^~~~~~~~
+C/C++: In file included from /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:2:
+C/C++: In file included from /home/jacob/src/blacklang-main/src/gui/TrackFX.h:4:
+C/C++: In file included from /home/jacob/src/blacklang-main/src/gui/../GuiState.h:3:
+C/C++: In file included from /home/jacob/src/blacklang-main/src/AudioEngine.h:6:
+C/C++: In file included from /home/jacob/src/blacklang-main/src/BusManager.h:10:
+C/C++: In file included from /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:7:
+C/C++: /home/jacob/src/blacklang-main/src/fx/FXTypes.h:115:13: warning: enumeration value 'FX_REVERB' not explicitly handled in switch [-Wswitch-enum]
+C/C++:     switch (type) {
+C/C++:             ^~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/FXTypes.h:147:13: warning: enumeration value 'FX_REVERB' not explicitly handled in switch [-Wswitch-enum]
+C/C++:     switch (type) {
+C/C++:             ^~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/FXTypes.h:179:13: warning: 21 enumeration values not explicitly handled in switch: 'FX_NONE', 'FX_SLICE', 'FX_RETRIG'... [-Wswitch-enum]
+C/C++:     switch (type) {
+C/C++:             ^~~~
+C/C++: In file included from /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:2:
+C/C++: In file included from /home/jacob/src/blacklang-main/src/gui/TrackFX.h:4:
+C/C++: In file included from /home/jacob/src/blacklang-main/src/gui/../GuiState.h:3:
+C/C++: In file included from /home/jacob/src/blacklang-main/src/AudioEngine.h:6:
+C/C++: In file included from /home/jacob/src/blacklang-main/src/BusManager.h:10:
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:29:33: warning: declaration shadows a field of 'fx::TrackEffect' [-Wshadow]
+C/C++:     virtual void prepare(double sampleRate) { this->sampleRate = sampleRate; }
+C/C++:                                 ^
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:48:12: note: previous declaration is here
+C/C++:     double sampleRate = 44100.0;
+C/C++:            ^
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:33:54: warning: implicit conversion loses integer precision: 'size_type' (aka 'unsigned long') to 'int' [-Wshorten-64-to-32]
+C/C++:     virtual int getNumParams() const { return params.size(); }
+C/C++:                                        ~~~~~~ ~~~~~~~^~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:34:63: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+C/C++:     virtual TrackFXParam& getParam(int index) { return params[index]; }
+C/C++:                                                        ~~~~~~ ^~~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:37:20: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+C/C++:             params[index].value = std::clamp(value, params[index].min, params[index].max);
+C/C++:             ~~~~~~ ^~~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:37:79: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+C/C++:             params[index].value = std::clamp(value, params[index].min, params[index].max);
+C/C++:                                                                        ~~~~~~ ^~~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:37:60: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+C/C++:             params[index].value = std::clamp(value, params[index].min, params[index].max);
+C/C++:                                                     ~~~~~~ ^~~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:36:33: warning: comparison of integers of different signs: 'int' and 'size_type' (aka 'unsigned long') [-Wsign-compare]
+C/C++:         if (index >= 0 && index < params.size()) {
+C/C++:                           ~~~~~ ^ ~~~~~~~~~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:150:25: warning: parameter 'sampleRate' shadows member inherited from type 'TrackEffect' [-Wshadow-field]
+C/C++:     void prepare(double sampleRate) override {
+C/C++:                         ^
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:48:12: note: declared here
+C/C++:     double sampleRate = 44100.0;
+C/C++:            ^
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:217:25: warning: implicit conversion loses floating-point precision: 'double' to 'float' [-Wimplicit-float-conversion]
+C/C++:         float attCoef = std::exp(-1.0f / (attTime * sampleRate));
+C/C++:               ~~~~~~~   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:218:25: warning: implicit conversion loses floating-point precision: 'double' to 'float' [-Wimplicit-float-conversion]
+C/C++:         float relCoef = std::exp(-1.0f / (relTime * sampleRate));
+C/C++:               ~~~~~~~   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:486:47: warning: implicit conversion loses floating-point precision: 'double' to 'float' [-Wimplicit-float-conversion]
+C/C++:         float depthSamples = depthMs * 0.001f * sampleRate;
+C/C++:               ~~~~~~~~~~~~   ~~~~~~~~~~~~~~~~~^~~~~~~~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:487:49: warning: implicit conversion loses floating-point precision: 'double' to 'float' [-Wimplicit-float-conversion]
+C/C++:         float lfoInc = (2.0f * 3.14159f * rate) / sampleRate;
+C/C++:               ~~~~~~   ~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:502:43: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+C/C++:             float currentPhase = phase + (c * 3.14159f / 2.0f);
+C/C++:                                           ^ ~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:507:58: warning: implicit conversion loses floating-point precision: 'double' to 'float' [-Wimplicit-float-conversion]
+C/C++:                 float currentDelay = 0.005f * sampleRate + (lfoVal * depthSamples); // Base 5ms delay + mod
+C/C++:                       ~~~~~~~~~~~~   ~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:510:45: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+C/C++:                 float readIndex = (writePos + i) - currentDelay;
+C/C++:                                    ~~~~~~~~~^~~  ~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:511:52: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+C/C++:                 while (readIndex < 0) readIndex += delayBufferSize;
+C/C++:                                                 ~~ ^~~~~~~~~~~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:512:37: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+C/C++:                 while (readIndex >= delayBufferSize) readIndex -= delayBufferSize;
+C/C++:                                  ~~ ^~~~~~~~~~~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:512:67: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+C/C++:                 while (readIndex >= delayBufferSize) readIndex -= delayBufferSize;
+C/C++:                                                                ~~ ^~~~~~~~~~~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:516:42: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+C/C++:                 float frac = readIndex - i1;
+C/C++:                                        ~ ^~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:531:27: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+C/C++:         phase += lfoInc * numSamples;
+C/C++:                         ~ ^~~~~~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:569:47: warning: implicit conversion loses floating-point precision: 'double' to 'float' [-Wimplicit-float-conversion]
+C/C++:         float depthSamples = depthMs * 0.001f * sampleRate;
+C/C++:               ~~~~~~~~~~~~   ~~~~~~~~~~~~~~~~~^~~~~~~~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:570:49: warning: implicit conversion loses floating-point precision: 'double' to 'float' [-Wimplicit-float-conversion]
+C/C++:         float lfoInc = (2.0f * 3.14159f * rate) / sampleRate;
+C/C++:               ~~~~~~   ~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:589:58: warning: implicit conversion loses floating-point precision: 'double' to 'float' [-Wimplicit-float-conversion]
+C/C++:                 float currentDelay = 0.001f * sampleRate + (lfoVal * depthSamples); // Base 1ms
+C/C++:                       ~~~~~~~~~~~~   ~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:592:45: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+C/C++:                 float readIndex = (writePos + i) - currentDelay;
+C/C++:                                    ~~~~~~~~~^~~  ~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:593:52: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+C/C++:                 while (readIndex < 0) readIndex += delayBufferSize;
+C/C++:                                                 ~~ ^~~~~~~~~~~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:594:37: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+C/C++:                 while (readIndex >= delayBufferSize) readIndex -= delayBufferSize;
+C/C++:                                  ~~ ^~~~~~~~~~~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:594:67: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+C/C++:                 while (readIndex >= delayBufferSize) readIndex -= delayBufferSize;
+C/C++:                                                                ~~ ^~~~~~~~~~~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:598:42: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+C/C++:                 float frac = readIndex - i1;
+C/C++:                                        ~ ^~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:612:27: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+C/C++:         phase += lfoInc * numSamples;
+C/C++:                         ~ ^~~~~~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:627:13: warning: 19 enumeration values not explicitly handled in switch: 'FX_NONE', 'FX_CUTOFF', 'FX_SLIDE'... [-Wswitch-enum]
+C/C++:     switch (type) {
+C/C++:             ^~~~
+C/C++: In file included from /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:2:
+C/C++: In file included from /home/jacob/src/blacklang-main/src/gui/TrackFX.h:4:
+C/C++: In file included from /home/jacob/src/blacklang-main/src/gui/../GuiState.h:8:
+C/C++: In file included from /home/jacob/src/blacklang-main/src/gui/AppFont.h:3:
+C/C++: /home/jacob/src/blacklang-main/src/gui/FontManager.h:17:28: warning: missing field 'glyphCount' initializer [-Wmissing-field-initializers]
+C/C++:     Font currentFont = { 0 };
+C/C++:                            ^
+C/C++: /home/jacob/src/blacklang-main/src/gui/FontManager.h:18:29: warning: missing field 'glyphCount' initializer [-Wmissing-field-initializers]
+C/C++:     Font fallbackFont = { 0 }; // Anonymous Pro
+C/C++:                             ^
+C/C++: In file included from /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:3:
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:380:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Vector2 result = { 0 };
+C/C++:                          ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:396:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Vector2 result = { 0 };
+C/C++:                          ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:411:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Vector2 result = { 0 };
+C/C++:                          ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:422:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Vector2 result = { 0 };
+C/C++:                          ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:435:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Vector2 result = { 0 };
+C/C++:                          ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:449:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Vector2 result = { 0 };
+C/C++:                          ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:455:16: warning: comparing floating point with == or != is unsafe [-Wfloat-equal]
+C/C++:     if ((value == 0) || ((maxDistance >= 0) && (value <= maxDistance*maxDistance))) return target;
+C/C++:          ~~~~~ ^  ~
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:477:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Vector2 result = { 0 };
+C/C++:                          ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:604:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Vector3 result = { 0 };
+C/C++:                          ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:730:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Vector3 result = { 0 };
+C/C++:                          ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:747:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Vector3 result = { 0 };
+C/C++:                          ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:799:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Vector3 result = { 0 };
+C/C++:                          ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:815:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Vector3 result = { 0 };
+C/C++:                          ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:879:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Vector3 result = { 0 };
+C/C++:                          ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:891:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Vector3 result = { 0 };
+C/C++:                          ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:909:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Vector3 result = { 0 };
+C/C++:                          ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:921:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Vector3 result = { 0 };
+C/C++:                          ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:934:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Vector3 result = { 0 };
+C/C++:                          ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:958:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Vector3 result = { 0 };
+C/C++:                          ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1062:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Vector3 result = { 0 };
+C/C++:                          ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1121:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Vector3 result = { 0 };
+C/C++:                          ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1175:25: warning: missing field 'm4' initializer [-Wmissing-field-initializers]
+C/C++:     Matrix result = { 0 };
+C/C++:                         ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1200:25: warning: missing field 'm4' initializer [-Wmissing-field-initializers]
+C/C++:     Matrix result = { 0 };
+C/C++:                         ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1258:25: warning: missing field 'm4' initializer [-Wmissing-field-initializers]
+C/C++:     Matrix result = { 0 };
+C/C++:                         ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1283:25: warning: missing field 'm4' initializer [-Wmissing-field-initializers]
+C/C++:     Matrix result = { 0 };
+C/C++:                         ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1309:25: warning: missing field 'm4' initializer [-Wmissing-field-initializers]
+C/C++:     Matrix result = { 0 };
+C/C++:                         ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1346:25: warning: missing field 'm4' initializer [-Wmissing-field-initializers]
+C/C++:     Matrix result = { 0 };
+C/C++:                         ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1483:25: warning: missing field 'm4' initializer [-Wmissing-field-initializers]
+C/C++:     Matrix result = { 0 };
+C/C++:                         ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1529:25: warning: missing field 'm4' initializer [-Wmissing-field-initializers]
+C/C++:     Matrix result = { 0 };
+C/C++:                         ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1562:25: warning: missing field 'm4' initializer [-Wmissing-field-initializers]
+C/C++:     Matrix result = { 0 };
+C/C++:                         ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1588:25: warning: missing field 'm4' initializer [-Wmissing-field-initializers]
+C/C++:     Matrix result = { 0 };
+C/C++:                         ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1617:25: warning: missing field 'm4' initializer [-Wmissing-field-initializers]
+C/C++:     Matrix result = { 0 };
+C/C++:                         ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1749:29: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Quaternion result = { 0 };
+C/C++:                             ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1786:29: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Quaternion result = { 0 };
+C/C++:                             ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1802:29: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Quaternion result = { 0 };
+C/C++:                             ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1823:29: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Quaternion result = { 0 };
+C/C++:                             ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1836:29: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Quaternion result = { 0 };
+C/C++:                             ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1861:29: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Quaternion result = { 0 };
+C/C++:                             ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1907:29: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Quaternion result = { 0 };
+C/C++:                             ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1935:29: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Quaternion result = { 0 };
+C/C++:                             ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:2116:29: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Quaternion result = { 0 };
+C/C++:                             ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:2137:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Vector3 result = { 0 };
+C/C++:                          ^
+C/C++: /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:2161:29: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+C/C++:     Quaternion result = { 0 };
+C/C++:                             ^
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:20:15: warning: unused variable 'dist' [-Wunused-variable]
+C/C++:         float dist = Vector2Distance(state.getMousePosition(), state.drag.initialClickPos);
+C/C++:               ^
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:67:112: warning: implicit conversion from 'size_type' (aka 'unsigned long') to 'float' may lose precision [-Wimplicit-int-float-conversion]
+C/C++:                 float maxScrollX = (state.columns.size() * (state.COLUMN_WIDTH + 10)) - state.getScreenWidth() + 100;
+C/C++:                       ~~~~~~~~~~   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:67:95: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+C/C++:                 float maxScrollX = (state.columns.size() * (state.COLUMN_WIDTH + 10)) - state.getScreenWidth() + 100;
+C/C++:                                                                                       ~ ~~~~~~^~~~~~~~~~~~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:67:80: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+C/C++:                 float maxScrollX = (state.columns.size() * (state.COLUMN_WIDTH + 10)) - state.getScreenWidth() + 100;
+C/C++:                                                          ~  ~~~~~~~~~~~~~~~~~~~^~~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:92:36: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+C/C++:         colX += state.COLUMN_WIDTH + 10;
+C/C++:              ~~ ~~~~~~~~~~~~~~~~~~~^~~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:98:52: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:     DrawTextApp("+", addColBtn.x + 13, addColBtn.y + 30, 30, GRAY);
+C/C++:     ~~~~~~~~~~~                        ~~~~~~~~~~~~^~~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:98:34: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:     DrawTextApp("+", addColBtn.x + 13, addColBtn.y + 30, 30, GRAY);
+C/C++:     ~~~~~~~~~~~      ~~~~~~~~~~~~^~~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:128:83: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:         DrawTextApp(state.drag.patternName.c_str(), ghostRect.x + 10, ghostRect.y + 15, 10, WHITE);
+C/C++:         ~~~~~~~~~~~                                                   ~~~~~~~~~~~~^~~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:128:65: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:         DrawTextApp(state.drag.patternName.c_str(), ghostRect.x + 10, ghostRect.y + 15, 10, WHITE);
+C/C++:         ~~~~~~~~~~~                                 ~~~~~~~~~~~~^~~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:142:75: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+C/C++:                     int slotIdx = (int)(relativeY / (state.PATTERN_HEIGHT + 5));
+C/C++:                                                   ~  ~~~~~~~~~~~~~~~~~~~~~^~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:132:18: warning: variable 'dropped' set but not used [-Wunused-but-set-variable]
+C/C++:             bool dropped = false;
+C/C++:                  ^
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:212:23: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+C/C++:         state.columns[index].bounds = col.bounds; // Ensure bounds synced
+C/C++:         ~~~~~         ^~~~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:254:71: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:         DrawTextApp(col.title.c_str(), headerRect.x + 5, headerRect.y + 4, 18, WHITE);
+C/C++:         ~~~~~~~~~~~                                      ~~~~~~~~~~~~~^~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:254:53: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:         DrawTextApp(col.title.c_str(), headerRect.x + 5, headerRect.y + 4, 18, WHITE);
+C/C++:         ~~~~~~~~~~~                    ~~~~~~~~~~~~~^~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:268:21: error: use of undeclared identifier 'FilePicker'
+C/C++:                     FilePicker::showKeyboard();
+C/C++:                     ^
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:286:73: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+C/C++:     int visibleCells = (int)(contentArea.height / (state.PATTERN_HEIGHT + 5)) + 2; 
+C/C++:                                                 ~  ~~~~~~~~~~~~~~~~~~~~~^~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:306:35: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+C/C++:         y += state.PATTERN_HEIGHT + 5;
+C/C++:           ~~ ~~~~~~~~~~~~~~~~~~~~~^~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:321:100: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:                 DrawTextApp("-", cellRect.x + cellRect.width/2 - 5, cellRect.y + cellRect.height/2 - 10, 20, DARKGRAY);
+C/C++:                 ~~~~~~~~~~~                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:321:64: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:                 DrawTextApp("-", cellRect.x + cellRect.width/2 - 5, cellRect.y + cellRect.height/2 - 10, 20, DARKGRAY);
+C/C++:                 ~~~~~~~~~~~      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:327:22: warning: unused variable 'isHoldingThis' [-Wunused-variable]
+C/C++:                 bool isHoldingThis = state.drag.isHolding && 
+C/C++:                      ^
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:375:81: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:                  DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{255, 161, 0, 50}); // translucent orange
+C/C++:                  ~~~~~~~~~~~~~                                         ~~~~~~~~~^~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:375:65: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:                  DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{255, 161, 0, 50}); // translucent orange
+C/C++:                  ~~~~~~~~~~~~~                         ~~~~~~~~~^~~~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:375:53: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:                  DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{255, 161, 0, 50}); // translucent orange
+C/C++:                  ~~~~~~~~~~~~~             ~~~~~~~~~^
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:375:41: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:                  DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{255, 161, 0, 50}); // translucent orange
+C/C++:                  ~~~~~~~~~~~~~ ~~~~~~~~~^
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:387:80: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:                 DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{255, 0, 255, 50});
+C/C++:                 ~~~~~~~~~~~~~                                         ~~~~~~~~~^~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:387:64: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:                 DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{255, 0, 255, 50});
+C/C++:                 ~~~~~~~~~~~~~                         ~~~~~~~~~^~~~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:387:52: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:                 DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{255, 0, 255, 50});
+C/C++:                 ~~~~~~~~~~~~~             ~~~~~~~~~^
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:387:40: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:                 DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{255, 0, 255, 50});
+C/C++:                 ~~~~~~~~~~~~~ ~~~~~~~~~^
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:405:76: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:             DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{0, 255, 0, 60}); // Brighter Green Highlight
+C/C++:             ~~~~~~~~~~~~~                                         ~~~~~~~~~^~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:405:60: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:             DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{0, 255, 0, 60}); // Brighter Green Highlight
+C/C++:             ~~~~~~~~~~~~~                         ~~~~~~~~~^~~~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:405:48: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:             DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{0, 255, 0, 60}); // Brighter Green Highlight
+C/C++:             ~~~~~~~~~~~~~             ~~~~~~~~~^
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:405:36: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:             DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{0, 255, 0, 60}); // Brighter Green Highlight
+C/C++:             ~~~~~~~~~~~~~ ~~~~~~~~~^
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:495:54: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:     DrawTextApp("+", addBtnRect.x + 13, addBtnRect.y + 2, 24, WHITE);
+C/C++:     ~~~~~~~~~~~                         ~~~~~~~~~~~~~^~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:495:35: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:     DrawTextApp("+", addBtnRect.x + 13, addBtnRect.y + 2, 24, WHITE);
+C/C++:     ~~~~~~~~~~~      ~~~~~~~~~~~~~^~~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:500:54: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:     DrawTextApp("-", delBtnRect.x + 15, delBtnRect.y + 2, 24, WHITE);
+C/C++:     ~~~~~~~~~~~                         ~~~~~~~~~~~~~^~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:500:35: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:     DrawTextApp("-", delBtnRect.x + 15, delBtnRect.y + 2, 24, WHITE);
+C/C++:     ~~~~~~~~~~~      ~~~~~~~~~~~~~^~~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:522:84: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:     DrawTextApp(mixText, mixBtnRect.x + (mixBtnRect.width - textW)/2, mixBtnRect.y + 6, fontSize, GRAY);
+C/C++:     ~~~~~~~~~~~                                                       ~~~~~~~~~~~~~^~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:522:39: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+C/C++:     DrawTextApp(mixText, mixBtnRect.x + (mixBtnRect.width - textW)/2, mixBtnRect.y + 6, fontSize, GRAY);
+C/C++:     ~~~~~~~~~~~          ~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:522:61: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+C/C++:     DrawTextApp(mixText, mixBtnRect.x + (mixBtnRect.width - textW)/2, mixBtnRect.y + 6, fontSize, GRAY);
+C/C++:                                                           ~ ^~~~~
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:546:23: warning: variable 'lastPatternClickTime' set but not used [-Wunused-but-set-variable]
+C/C++:         static double lastPatternClickTime = 0;
+C/C++:                       ^
+C/C++: /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:815:55: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+C/C++:                 col.slotSyncEnabled.resize(targetSlot + 1, false);
+C/C++:                                     ~~~~~~ ~~~~~~~~~~~^~~
+C/C++: 119 warnings and 1 error generated.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:buildCMakeDebug[arm64-v8a]'.
+> com.android.ide.common.process.ProcessException: ninja: Entering directory `/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a'
+  [0/2] Re-checking globbed directories...
+  [1/2] Building CXX object blacklang_build/CMakeFiles/blacklang.dir/src/gui/TrackView.cpp.o
+  FAILED: blacklang_build/CMakeFiles/blacklang.dir/src/gui/TrackView.cpp.o 
+  /home/jacob/src/blacklang-main/android_sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++ --target=aarch64-none-linux-android29 --sysroot=/home/jacob/src/blacklang-main/android_sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/sysroot -DDEBUG=1 -DGRAPHICS_API_OPENGL_ES2 -DJUCE_ANDROID=1 -DJUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1 -DJUCE_MODULE_AVAILABLE_juce_audio_basics=1 -DJUCE_MODULE_AVAILABLE_juce_audio_devices=1 -DJUCE_MODULE_AVAILABLE_juce_audio_formats=1 -DJUCE_MODULE_AVAILABLE_juce_audio_processors=1 -DJUCE_MODULE_AVAILABLE_juce_audio_utils=1 -DJUCE_MODULE_AVAILABLE_juce_core=1 -DJUCE_MODULE_AVAILABLE_juce_data_structures=1 -DJUCE_MODULE_AVAILABLE_juce_events=1 -DJUCE_MODULE_AVAILABLE_juce_graphics=1 -DJUCE_MODULE_AVAILABLE_juce_gui_basics=1 -DJUCE_MODULE_AVAILABLE_juce_gui_extra=1 -DJUCE_STANDALONE_APPLICATION=0 -DJUCE_USE_CURL=0 -DJUCE_WEB_BROWSER=0 -DOBOE_ENABLE_LOGGING=1 -DPLATFORM_ANDROID -D_DEBUG=1 -Dblacklang_EXPORTS -I/home/jacob/src/blacklang-main/src -I/home/jacob/src/blacklang-main/android_sdk/ndk/26.1.10909125/sources/android/native_app_glue -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules -I/home/jacob/src/blacklang-main/android_sdk/ndk/26.1.10909125/sources/android/cpufeatures -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_devices/native/oboe/include -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/VST3_SDK -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/lv2 -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/serd -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/sord -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/sord/src -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/sratom -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/lilv -I/home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/juce-src/modules/juce_audio_processors/format_types/LV2_SDK/lilv/src -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -std=c++17 -fno-limit-debug-info  -fPIC -g -O0 -Wall -Wshadow-all -Wshorten-64-to-32 -Wstrict-aliasing -Wuninitialized -Wunused-parameter -Wconversion -Wsign-compare -Wint-conversion -Wconditional-uninitialized -Wconstant-conversion -Wsign-conversion -Wbool-conversion -Wextra-semi -Wunreachable-code -Wcast-align -Wshift-sign-overflow -Wmissing-prototypes -Wnullable-to-nonnull-conversion -Wno-ignored-qualifiers -Wswitch-enum -Wpedantic -Wdeprecated -Wfloat-equal -Wmissing-field-initializers -Wzero-as-null-pointer-constant -Wunused-private-field -Woverloaded-virtual -Wreorder -Winconsistent-missing-destructor-override -std=c++17 -MD -MT blacklang_build/CMakeFiles/blacklang.dir/src/gui/TrackView.cpp.o -MF blacklang_build/CMakeFiles/blacklang.dir/src/gui/TrackView.cpp.o.d -o blacklang_build/CMakeFiles/blacklang.dir/src/gui/TrackView.cpp.o -c /home/jacob/src/blacklang-main/src/gui/TrackView.cpp
+  In file included from /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:2:
+  In file included from /home/jacob/src/blacklang-main/src/gui/TrackFX.h:4:
+  In file included from /home/jacob/src/blacklang-main/src/gui/../GuiState.h:3:
+  In file included from /home/jacob/src/blacklang-main/src/AudioEngine.h:4:
+  /home/jacob/src/blacklang-main/src/PatternChain.h:39:30: warning: implicit conversion changes signedness: 'difference_type' (aka 'long') to 'size_t' (aka 'unsigned long') [-Wsign-conversion]
+                  pos += match.length();
+                      ~~ ~~~~~~^~~~~~~~
+  In file included from /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:2:
+  In file included from /home/jacob/src/blacklang-main/src/gui/TrackFX.h:4:
+  In file included from /home/jacob/src/blacklang-main/src/gui/../GuiState.h:3:
+  In file included from /home/jacob/src/blacklang-main/src/AudioEngine.h:6:
+  In file included from /home/jacob/src/blacklang-main/src/BusManager.h:10:
+  In file included from /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:7:
+  /home/jacob/src/blacklang-main/src/fx/FXTypes.h:115:13: warning: enumeration value 'FX_REVERB' not explicitly handled in switch [-Wswitch-enum]
+      switch (type) {
+              ^~~~
+  /home/jacob/src/blacklang-main/src/fx/FXTypes.h:147:13: warning: enumeration value 'FX_REVERB' not explicitly handled in switch [-Wswitch-enum]
+      switch (type) {
+              ^~~~
+  /home/jacob/src/blacklang-main/src/fx/FXTypes.h:179:13: warning: 21 enumeration values not explicitly handled in switch: 'FX_NONE', 'FX_SLICE', 'FX_RETRIG'... [-Wswitch-enum]
+      switch (type) {
+              ^~~~
+  In file included from /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:2:
+  In file included from /home/jacob/src/blacklang-main/src/gui/TrackFX.h:4:
+  In file included from /home/jacob/src/blacklang-main/src/gui/../GuiState.h:3:
+  In file included from /home/jacob/src/blacklang-main/src/AudioEngine.h:6:
+  In file included from /home/jacob/src/blacklang-main/src/BusManager.h:10:
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:29:33: warning: declaration shadows a field of 'fx::TrackEffect' [-Wshadow]
+      virtual void prepare(double sampleRate) { this->sampleRate = sampleRate; }
+                                  ^
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:48:12: note: previous declaration is here
+      double sampleRate = 44100.0;
+             ^
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:33:54: warning: implicit conversion loses integer precision: 'size_type' (aka 'unsigned long') to 'int' [-Wshorten-64-to-32]
+      virtual int getNumParams() const { return params.size(); }
+                                         ~~~~~~ ~~~~~~~^~~~~~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:34:63: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+      virtual TrackFXParam& getParam(int index) { return params[index]; }
+                                                         ~~~~~~ ^~~~~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:37:20: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+              params[index].value = std::clamp(value, params[index].min, params[index].max);
+              ~~~~~~ ^~~~~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:37:79: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+              params[index].value = std::clamp(value, params[index].min, params[index].max);
+                                                                         ~~~~~~ ^~~~~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:37:60: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+              params[index].value = std::clamp(value, params[index].min, params[index].max);
+                                                      ~~~~~~ ^~~~~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:36:33: warning: comparison of integers of different signs: 'int' and 'size_type' (aka 'unsigned long') [-Wsign-compare]
+          if (index >= 0 && index < params.size()) {
+                            ~~~~~ ^ ~~~~~~~~~~~~~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:150:25: warning: parameter 'sampleRate' shadows member inherited from type 'TrackEffect' [-Wshadow-field]
+      void prepare(double sampleRate) override {
+                          ^
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:48:12: note: declared here
+      double sampleRate = 44100.0;
+             ^
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:217:25: warning: implicit conversion loses floating-point precision: 'double' to 'float' [-Wimplicit-float-conversion]
+          float attCoef = std::exp(-1.0f / (attTime * sampleRate));
+                ~~~~~~~   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:218:25: warning: implicit conversion loses floating-point precision: 'double' to 'float' [-Wimplicit-float-conversion]
+          float relCoef = std::exp(-1.0f / (relTime * sampleRate));
+                ~~~~~~~   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:486:47: warning: implicit conversion loses floating-point precision: 'double' to 'float' [-Wimplicit-float-conversion]
+          float depthSamples = depthMs * 0.001f * sampleRate;
+                ~~~~~~~~~~~~   ~~~~~~~~~~~~~~~~~^~~~~~~~~~~~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:487:49: warning: implicit conversion loses floating-point precision: 'double' to 'float' [-Wimplicit-float-conversion]
+          float lfoInc = (2.0f * 3.14159f * rate) / sampleRate;
+                ~~~~~~   ~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:502:43: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+              float currentPhase = phase + (c * 3.14159f / 2.0f);
+                                            ^ ~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:507:58: warning: implicit conversion loses floating-point precision: 'double' to 'float' [-Wimplicit-float-conversion]
+                  float currentDelay = 0.005f * sampleRate + (lfoVal * depthSamples); // Base 5ms delay + mod
+                        ~~~~~~~~~~~~   ~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:510:45: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+                  float readIndex = (writePos + i) - currentDelay;
+                                     ~~~~~~~~~^~~  ~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:511:52: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+                  while (readIndex < 0) readIndex += delayBufferSize;
+                                                  ~~ ^~~~~~~~~~~~~~~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:512:37: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+                  while (readIndex >= delayBufferSize) readIndex -= delayBufferSize;
+                                   ~~ ^~~~~~~~~~~~~~~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:512:67: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+                  while (readIndex >= delayBufferSize) readIndex -= delayBufferSize;
+                                                                 ~~ ^~~~~~~~~~~~~~~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:516:42: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+                  float frac = readIndex - i1;
+                                         ~ ^~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:531:27: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+          phase += lfoInc * numSamples;
+                          ~ ^~~~~~~~~~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:569:47: warning: implicit conversion loses floating-point precision: 'double' to 'float' [-Wimplicit-float-conversion]
+          float depthSamples = depthMs * 0.001f * sampleRate;
+                ~~~~~~~~~~~~   ~~~~~~~~~~~~~~~~~^~~~~~~~~~~~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:570:49: warning: implicit conversion loses floating-point precision: 'double' to 'float' [-Wimplicit-float-conversion]
+          float lfoInc = (2.0f * 3.14159f * rate) / sampleRate;
+                ~~~~~~   ~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:589:58: warning: implicit conversion loses floating-point precision: 'double' to 'float' [-Wimplicit-float-conversion]
+                  float currentDelay = 0.001f * sampleRate + (lfoVal * depthSamples); // Base 1ms
+                        ~~~~~~~~~~~~   ~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:592:45: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+                  float readIndex = (writePos + i) - currentDelay;
+                                     ~~~~~~~~~^~~  ~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:593:52: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+                  while (readIndex < 0) readIndex += delayBufferSize;
+                                                  ~~ ^~~~~~~~~~~~~~~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:594:37: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+                  while (readIndex >= delayBufferSize) readIndex -= delayBufferSize;
+                                   ~~ ^~~~~~~~~~~~~~~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:594:67: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+                  while (readIndex >= delayBufferSize) readIndex -= delayBufferSize;
+                                                                 ~~ ^~~~~~~~~~~~~~~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:598:42: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+                  float frac = readIndex - i1;
+                                         ~ ^~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:612:27: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+          phase += lfoInc * numSamples;
+                          ~ ^~~~~~~~~~
+  /home/jacob/src/blacklang-main/src/fx/TrackEffect.h:627:13: warning: 19 enumeration values not explicitly handled in switch: 'FX_NONE', 'FX_CUTOFF', 'FX_SLIDE'... [-Wswitch-enum]
+      switch (type) {
+              ^~~~
+  In file included from /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:2:
+  In file included from /home/jacob/src/blacklang-main/src/gui/TrackFX.h:4:
+  In file included from /home/jacob/src/blacklang-main/src/gui/../GuiState.h:8:
+  In file included from /home/jacob/src/blacklang-main/src/gui/AppFont.h:3:
+  /home/jacob/src/blacklang-main/src/gui/FontManager.h:17:28: warning: missing field 'glyphCount' initializer [-Wmissing-field-initializers]
+      Font currentFont = { 0 };
+                             ^
+  /home/jacob/src/blacklang-main/src/gui/FontManager.h:18:29: warning: missing field 'glyphCount' initializer [-Wmissing-field-initializers]
+      Font fallbackFont = { 0 }; // Anonymous Pro
+                              ^
+  In file included from /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:3:
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:380:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Vector2 result = { 0 };
+                           ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:396:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Vector2 result = { 0 };
+                           ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:411:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Vector2 result = { 0 };
+                           ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:422:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Vector2 result = { 0 };
+                           ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:435:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Vector2 result = { 0 };
+                           ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:449:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Vector2 result = { 0 };
+                           ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:455:16: warning: comparing floating point with == or != is unsafe [-Wfloat-equal]
+      if ((value == 0) || ((maxDistance >= 0) && (value <= maxDistance*maxDistance))) return target;
+           ~~~~~ ^  ~
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:477:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Vector2 result = { 0 };
+                           ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:604:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Vector3 result = { 0 };
+                           ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:730:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Vector3 result = { 0 };
+                           ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:747:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Vector3 result = { 0 };
+                           ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:799:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Vector3 result = { 0 };
+                           ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:815:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Vector3 result = { 0 };
+                           ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:879:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Vector3 result = { 0 };
+                           ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:891:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Vector3 result = { 0 };
+                           ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:909:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Vector3 result = { 0 };
+                           ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:921:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Vector3 result = { 0 };
+                           ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:934:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Vector3 result = { 0 };
+                           ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:958:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Vector3 result = { 0 };
+                           ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1062:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Vector3 result = { 0 };
+                           ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1121:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Vector3 result = { 0 };
+                           ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1175:25: warning: missing field 'm4' initializer [-Wmissing-field-initializers]
+      Matrix result = { 0 };
+                          ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1200:25: warning: missing field 'm4' initializer [-Wmissing-field-initializers]
+      Matrix result = { 0 };
+                          ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1258:25: warning: missing field 'm4' initializer [-Wmissing-field-initializers]
+      Matrix result = { 0 };
+                          ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1283:25: warning: missing field 'm4' initializer [-Wmissing-field-initializers]
+      Matrix result = { 0 };
+                          ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1309:25: warning: missing field 'm4' initializer [-Wmissing-field-initializers]
+      Matrix result = { 0 };
+                          ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1346:25: warning: missing field 'm4' initializer [-Wmissing-field-initializers]
+      Matrix result = { 0 };
+                          ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1483:25: warning: missing field 'm4' initializer [-Wmissing-field-initializers]
+      Matrix result = { 0 };
+                          ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1529:25: warning: missing field 'm4' initializer [-Wmissing-field-initializers]
+      Matrix result = { 0 };
+                          ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1562:25: warning: missing field 'm4' initializer [-Wmissing-field-initializers]
+      Matrix result = { 0 };
+                          ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1588:25: warning: missing field 'm4' initializer [-Wmissing-field-initializers]
+      Matrix result = { 0 };
+                          ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1617:25: warning: missing field 'm4' initializer [-Wmissing-field-initializers]
+      Matrix result = { 0 };
+                          ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1749:29: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Quaternion result = { 0 };
+                              ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1786:29: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Quaternion result = { 0 };
+                              ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1802:29: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Quaternion result = { 0 };
+                              ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1823:29: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Quaternion result = { 0 };
+                              ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1836:29: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Quaternion result = { 0 };
+                              ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1861:29: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Quaternion result = { 0 };
+                              ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1907:29: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Quaternion result = { 0 };
+                              ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:1935:29: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Quaternion result = { 0 };
+                              ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:2116:29: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Quaternion result = { 0 };
+                              ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:2137:26: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Vector3 result = { 0 };
+                           ^
+  /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a/_deps/raylib-src/src/raymath.h:2161:29: warning: missing field 'y' initializer [-Wmissing-field-initializers]
+      Quaternion result = { 0 };
+                              ^
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:20:15: warning: unused variable 'dist' [-Wunused-variable]
+          float dist = Vector2Distance(state.getMousePosition(), state.drag.initialClickPos);
+                ^
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:67:112: warning: implicit conversion from 'size_type' (aka 'unsigned long') to 'float' may lose precision [-Wimplicit-int-float-conversion]
+                  float maxScrollX = (state.columns.size() * (state.COLUMN_WIDTH + 10)) - state.getScreenWidth() + 100;
+                        ~~~~~~~~~~   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:67:95: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+                  float maxScrollX = (state.columns.size() * (state.COLUMN_WIDTH + 10)) - state.getScreenWidth() + 100;
+                                                                                        ~ ~~~~~~^~~~~~~~~~~~~~~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:67:80: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+                  float maxScrollX = (state.columns.size() * (state.COLUMN_WIDTH + 10)) - state.getScreenWidth() + 100;
+                                                           ~  ~~~~~~~~~~~~~~~~~~~^~~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:92:36: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+          colX += state.COLUMN_WIDTH + 10;
+               ~~ ~~~~~~~~~~~~~~~~~~~^~~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:98:52: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+      DrawTextApp("+", addColBtn.x + 13, addColBtn.y + 30, 30, GRAY);
+      ~~~~~~~~~~~                        ~~~~~~~~~~~~^~~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:98:34: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+      DrawTextApp("+", addColBtn.x + 13, addColBtn.y + 30, 30, GRAY);
+      ~~~~~~~~~~~      ~~~~~~~~~~~~^~~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:128:83: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+          DrawTextApp(state.drag.patternName.c_str(), ghostRect.x + 10, ghostRect.y + 15, 10, WHITE);
+          ~~~~~~~~~~~                                                   ~~~~~~~~~~~~^~~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:128:65: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+          DrawTextApp(state.drag.patternName.c_str(), ghostRect.x + 10, ghostRect.y + 15, 10, WHITE);
+          ~~~~~~~~~~~                                 ~~~~~~~~~~~~^~~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:142:75: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+                      int slotIdx = (int)(relativeY / (state.PATTERN_HEIGHT + 5));
+                                                    ~  ~~~~~~~~~~~~~~~~~~~~~^~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:132:18: warning: variable 'dropped' set but not used [-Wunused-but-set-variable]
+              bool dropped = false;
+                   ^
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:212:23: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+          state.columns[index].bounds = col.bounds; // Ensure bounds synced
+          ~~~~~         ^~~~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:254:71: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+          DrawTextApp(col.title.c_str(), headerRect.x + 5, headerRect.y + 4, 18, WHITE);
+          ~~~~~~~~~~~                                      ~~~~~~~~~~~~~^~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:254:53: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+          DrawTextApp(col.title.c_str(), headerRect.x + 5, headerRect.y + 4, 18, WHITE);
+          ~~~~~~~~~~~                    ~~~~~~~~~~~~~^~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:268:21: error: use of undeclared identifier 'FilePicker'
+                      FilePicker::showKeyboard();
+                      ^
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:286:73: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+      int visibleCells = (int)(contentArea.height / (state.PATTERN_HEIGHT + 5)) + 2; 
+                                                  ~  ~~~~~~~~~~~~~~~~~~~~~^~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:306:35: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+          y += state.PATTERN_HEIGHT + 5;
+            ~~ ~~~~~~~~~~~~~~~~~~~~~^~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:321:100: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+                  DrawTextApp("-", cellRect.x + cellRect.width/2 - 5, cellRect.y + cellRect.height/2 - 10, 20, DARKGRAY);
+                  ~~~~~~~~~~~                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:321:64: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+                  DrawTextApp("-", cellRect.x + cellRect.width/2 - 5, cellRect.y + cellRect.height/2 - 10, 20, DARKGRAY);
+                  ~~~~~~~~~~~      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:327:22: warning: unused variable 'isHoldingThis' [-Wunused-variable]
+                  bool isHoldingThis = state.drag.isHolding && 
+                       ^
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:375:81: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+                   DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{255, 161, 0, 50}); // translucent orange
+                   ~~~~~~~~~~~~~                                         ~~~~~~~~~^~~~~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:375:65: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+                   DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{255, 161, 0, 50}); // translucent orange
+                   ~~~~~~~~~~~~~                         ~~~~~~~~~^~~~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:375:53: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+                   DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{255, 161, 0, 50}); // translucent orange
+                   ~~~~~~~~~~~~~             ~~~~~~~~~^
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:375:41: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+                   DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{255, 161, 0, 50}); // translucent orange
+                   ~~~~~~~~~~~~~ ~~~~~~~~~^
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:387:80: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+                  DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{255, 0, 255, 50});
+                  ~~~~~~~~~~~~~                                         ~~~~~~~~~^~~~~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:387:64: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+                  DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{255, 0, 255, 50});
+                  ~~~~~~~~~~~~~                         ~~~~~~~~~^~~~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:387:52: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+                  DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{255, 0, 255, 50});
+                  ~~~~~~~~~~~~~             ~~~~~~~~~^
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:387:40: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+                  DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{255, 0, 255, 50});
+                  ~~~~~~~~~~~~~ ~~~~~~~~~^
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:405:76: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+              DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{0, 255, 0, 60}); // Brighter Green Highlight
+              ~~~~~~~~~~~~~                                         ~~~~~~~~~^~~~~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:405:60: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+              DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{0, 255, 0, 60}); // Brighter Green Highlight
+              ~~~~~~~~~~~~~                         ~~~~~~~~~^~~~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:405:48: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+              DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{0, 255, 0, 60}); // Brighter Green Highlight
+              ~~~~~~~~~~~~~             ~~~~~~~~~^
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:405:36: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+              DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{0, 255, 0, 60}); // Brighter Green Highlight
+              ~~~~~~~~~~~~~ ~~~~~~~~~^
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:495:54: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+      DrawTextApp("+", addBtnRect.x + 13, addBtnRect.y + 2, 24, WHITE);
+      ~~~~~~~~~~~                         ~~~~~~~~~~~~~^~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:495:35: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+      DrawTextApp("+", addBtnRect.x + 13, addBtnRect.y + 2, 24, WHITE);
+      ~~~~~~~~~~~      ~~~~~~~~~~~~~^~~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:500:54: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+      DrawTextApp("-", delBtnRect.x + 15, delBtnRect.y + 2, 24, WHITE);
+      ~~~~~~~~~~~                         ~~~~~~~~~~~~~^~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:500:35: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+      DrawTextApp("-", delBtnRect.x + 15, delBtnRect.y + 2, 24, WHITE);
+      ~~~~~~~~~~~      ~~~~~~~~~~~~~^~~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:522:84: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+      DrawTextApp(mixText, mixBtnRect.x + (mixBtnRect.width - textW)/2, mixBtnRect.y + 6, fontSize, GRAY);
+      ~~~~~~~~~~~                                                       ~~~~~~~~~~~~~^~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:522:39: warning: implicit conversion turns floating-point number into integer: 'float' to 'int' [-Wfloat-conversion]
+      DrawTextApp(mixText, mixBtnRect.x + (mixBtnRect.width - textW)/2, mixBtnRect.y + 6, fontSize, GRAY);
+      ~~~~~~~~~~~          ~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:522:61: warning: implicit conversion from 'int' to 'float' may lose precision [-Wimplicit-int-float-conversion]
+      DrawTextApp(mixText, mixBtnRect.x + (mixBtnRect.width - textW)/2, mixBtnRect.y + 6, fontSize, GRAY);
+                                                            ~ ^~~~~
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:546:23: warning: variable 'lastPatternClickTime' set but not used [-Wunused-but-set-variable]
+          static double lastPatternClickTime = 0;
+                        ^
+  /home/jacob/src/blacklang-main/src/gui/TrackView.cpp:815:55: warning: implicit conversion changes signedness: 'int' to 'size_type' (aka 'unsigned long') [-Wsign-conversion]
+                  col.slotSyncEnabled.resize(targetSlot + 1, false);
+                                      ~~~~~~ ~~~~~~~~~~~^~~
+  119 warnings and 1 error generated.
+  ninja: build stopped: subcommand failed.
+  
+  C++ build system [build] failed while executing:
+      /home/jacob/src/blacklang-main/android_sdk/cmake/3.22.1/bin/ninja \
+        -C \
+        /home/jacob/src/blacklang-main/android/app/.cxx/Debug/655a5114/arm64-v8a \
+        blacklang
+    from /home/jacob/src/blacklang-main/android/app
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 3s
+26 actionable tasks: 2 executed, 24 up-to-date

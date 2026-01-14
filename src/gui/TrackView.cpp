@@ -245,8 +245,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
     DrawRectangleRec(headerRect, Color{20, 60, 100, 255}); // Darker Blue Title Bar
 
     if (state.renamingColumnIndex == index) {
-        DrawTextInput(headerRect, state.columnRenameBuffer, 63, 1000 + index, state.focusedFieldId);
-        if (IsKeyPressed(KEY_ENTER)) {
+        if (DrawTextInput(headerRect, state.columnRenameBuffer, 63, 1000 + index, state.focusedFieldId) || IsKeyPressed(KEY_ENTER)) {
             col.title = state.columnRenameBuffer;
             state.renamingColumnIndex = -1;
             state.focusedFieldId = -1;

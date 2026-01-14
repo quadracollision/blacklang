@@ -67,7 +67,9 @@ void PatternEditor::Draw() {
     
     // Name
     DrawTextApp("Name:", labelX, startY + 8, labelSize, WHITE);
-    DrawTextInput({fieldX, startY, 280, (float)fieldH}, state.editor.nameBuffer, 63, 0, state.editor.focusedFieldId, state.getMousePosition());
+    if (DrawTextInput({fieldX, startY, 280, (float)fieldH}, state.editor.nameBuffer, 63, 0, state.editor.focusedFieldId, state.getMousePosition(), inputBlocked)) {
+        state.editor.scrollConsumed = true;
+    }
     
     // Sample
     startY += rowHeight;
@@ -103,12 +105,16 @@ void PatternEditor::Draw() {
     // Steps
     startY += rowHeight;
     DrawTextApp("Steps:", labelX, startY + 8, labelSize, WHITE);
-    DrawTextInput({fieldX, startY, 100, (float)fieldH}, state.editor.stepsBuffer, 4, 3, state.editor.focusedFieldId, state.getMousePosition());
+    if (DrawTextInput({fieldX, startY, 100, (float)fieldH}, state.editor.stepsBuffer, 4, 3, state.editor.focusedFieldId, state.getMousePosition(), inputBlocked)) {
+        state.editor.scrollConsumed = true;
+    }
     
     // Sync Base (for polyrhythm timing)
     startY += rowHeight;
     DrawTextApp("Sync:", labelX, startY + 8, labelSize, WHITE);
-    DrawTextInput({fieldX, startY, 100, (float)fieldH}, state.editor.syncBaseBuffer, 4, 4, state.editor.focusedFieldId, state.getMousePosition());
+    if (DrawTextInput({fieldX, startY, 100, (float)fieldH}, state.editor.syncBaseBuffer, 4, 4, state.editor.focusedFieldId, state.getMousePosition(), inputBlocked)) {
+        state.editor.scrollConsumed = true;
+    }
     
     // Always Sync moved to footer for better touch access
     

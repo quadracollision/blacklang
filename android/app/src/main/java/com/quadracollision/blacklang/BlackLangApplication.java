@@ -215,6 +215,13 @@ public class BlackLangApplication extends Application {
                         }
                     });
 
+                    // Handle Enter/Done key
+                    inputProxy.setOnEditorActionListener((v, actionId, event) -> {
+                        // Send Enter key code (using 257 which is KEY_ENTER in Raylib)
+                        nativeOnInput(257, 0);
+                        return true;
+                    });
+
                     activity.addContentView(inputProxy, new ViewGroup.LayoutParams(1, 1));
                 }
 
