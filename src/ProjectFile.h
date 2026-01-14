@@ -6,12 +6,21 @@
 #include <map>
 #include <vector>
 
+struct SerializedFX {
+    int type;
+    bool enabled;
+    std::vector<float> params; // Ordered by param index
+};
+
 // Simple struct to represent column layout without GUI dependency
 struct SerializedColumn {
     std::string title;
     std::string trackName;
+    float volume = 1.0f;
+    float pan = 0.5f;
     std::vector<std::string> patternNames;
     std::vector<bool> slotSyncEnabled;  // Per-slot sync flags
+    std::vector<SerializedFX> fxChain;
 };
 
 class ProjectFile {

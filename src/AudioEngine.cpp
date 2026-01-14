@@ -2,6 +2,16 @@
 #include "fx/FXProcessor.h"
 #include <iostream>
 #include <cmath>
+
+#include <juce_audio_utils/juce_audio_utils.h>
+#include <juce_audio_formats/juce_audio_formats.h>
+
+#if defined(__ANDROID__)
+#include <android/log.h>
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, "AudioEngine", __VA_ARGS__)
+#else
+#define LOGD(...) 
+#endif
 #include <set>
 
 // Debug logging disabled - sync feature removed for rewrite
@@ -226,6 +236,7 @@ void AudioEngine::playMultiplePatterns(const std::vector<std::string>& names) {
 }
 
 void AudioEngine::stop() {
+    std::lock_guard<std::mutex> lock(patternMutex);
     playing.store(false);
     paused.store(false);
     sampleIsPlaying = false;
@@ -375,9 +386,24 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
             int totalSamples = previewState.sourcePattern->sampleBuffer.getNumSamples();
             int64_t end = previewState.endPosition > 0 ? previewState.endPosition : totalSamples;
             
+            const int fadeLen = 88;
             for (int i = 0; i < numSamples; ++i) {
                 if (previewState.active && previewState.position < end && previewState.position < totalSamples) {
                      float vol = 1.0f; 
+                     
+                     // 1. Fade-in
+                     if (previewState.fadeInSamplesRemaining > 0) {
+                         vol *= (1.0f - (float)previewState.fadeInSamplesRemaining / (float)fadeLen);
+                         previewState.fadeInSamplesRemaining--;
+                     }
+                     
+                     // 2. Fade-out near end
+                     if (previewState.position >= end - fadeLen) {
+                         int64_t remaining = end - previewState.position;
+                         if (remaining < 0) remaining = 0;
+                         vol *= ((float)remaining / (float)fadeLen);
+                     }
+
                      for (int ch = 0; ch < numTargetChannels; ++ch) {
                          int srcCh = std::min(ch, previewState.sourcePattern->sampleBuffer.getNumChannels() - 1);
                          targetBuffer[ch][i] += previewState.sourcePattern->sampleBuffer.getSample(srcCh, (int)previewState.position) * vol;
@@ -463,6 +489,9 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
         // ---------------------------------------------------------
         // Sample Processing Loop
         // ---------------------------------------------------------
+        double currentSR = sampleRate;
+        int currentBPM = globalBpm.load();
+        
         for (int i = 0; i < numSamples; ++i) {
             for (int k = 0; k < activeContextCount; ++k) {
                 PatternContext& ctx = contexts[k];
@@ -471,7 +500,7 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                 AudioBus* trackBus = ctx.trackBus; 
                 
                 // Check if we need to advance to next step
-                double stepDuration = pattern.getStepDurationSamples(globalBpm.load(), sampleRate);
+                double stepDuration = pattern.getStepDurationSamples(currentBPM, currentSR);
                 if (state.samplePosition >= state.stepStartSample + (int64_t)stepDuration) {
                     state.currentStep++;
                     state.stepStartSample = state.samplePosition;
@@ -582,19 +611,14 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                          }
                     }
                     
-                    // Stop conditions
-                     if (!state.isReverse) {
-                         if (state.samplePlaybackPosition >= pattern.sampleBuffer.getNumSamples() || 
-                            (state.sampleEndPosition > 0 && state.samplePlaybackPosition >= state.sampleEndPosition)) {
-                             state.sampleIsPlaying = false;
-                         }
-                     } else {
-                         // Reverse stop
-                         if (state.samplePlaybackPosition < 0 || 
-                            (state.sampleEndPosition > 0 && state.samplePlaybackPosition <= state.sampleEndPosition)) {
-                             state.sampleIsPlaying = false;
-                         }
-                     }
+                    // Stop conditions - simplified (actual stop handled in envelope logic below)
+                    bool forceStop = false;
+                    if (!state.isReverse) {
+                        if (state.samplePlaybackPosition >= (double)pattern.sampleBuffer.getNumSamples() + 10.0) forceStop = true; // Safety margin
+                    } else {
+                        if (state.samplePlaybackPosition < -10.0) forceStop = true;
+                    }
+                    if (forceStop) state.sampleIsPlaying = false;
 
                      float currentSample = 0.0f;
                      int sampleIdx = (int)state.samplePlaybackPosition;
@@ -603,29 +627,52 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                         float sample = pattern.sampleBuffer.getSample(0, sampleIdx);
                         
                         // Per-Sample FX (Filter, etc.)
-                        sample = fxProcessor.processSampleFX(state, sample, sampleRate, state.currentStep, pattern);
+                        sample = fxProcessor.processSampleFX(state, sample, currentSR, state.currentStep, pattern);
                         
-                        // --- ANTI-CLICK ENVELOPE (1-2ms fade-in/out) ---
-                        const int fadeLen = 88;
+                        // --- ANTI-CLICK ENVELOPE (2ms fade-in/out) ---
+                        const double fadeLen = 88.0;
                         float envelope = 1.0f;
                         
-                        // Dynamic Fade-In
+                        // 1. Fade-In (Start of note/stutter)
                         if (state.fadeInSamplesRemaining > 0) {
                             envelope *= (1.0f - (float)state.fadeInSamplesRemaining / (float)fadeLen);
                             state.fadeInSamplesRemaining--;
                         }
                         
-                        // Fade-out at end (either Buffer End or Custom End)
-                        int64_t effectiveEnd = pattern.sampleBuffer.getNumSamples();
-                        if (state.sampleEndPosition > 0 && state.sampleEndPosition < effectiveEnd) {
-                            effectiveEnd = state.sampleEndPosition;
+                        // 2. Fade-Out (End of buffer or Slice Cutoff)
+                        if (state.isReverse) {
+                            double target = (state.sampleEndPosition > 0) ? (double)state.sampleEndPosition : 0.0;
+                            if (state.samplePlaybackPosition <= target) {
+                                envelope = 0.0f;
+                                state.sampleIsPlaying = false;
+                            } else if (state.samplePlaybackPosition <= target + fadeLen) {
+                                float dist = (float)(state.samplePlaybackPosition - target);
+                                envelope *= (dist / (float)fadeLen);
+                            }
+                        } else {
+                            double target = (state.sampleEndPosition > 0 && state.sampleEndPosition < pattern.sampleBuffer.getNumSamples()) 
+                                           ? (double)state.sampleEndPosition : (double)pattern.sampleBuffer.getNumSamples();
+                            
+                            if (state.samplePlaybackPosition >= target) {
+                                envelope = 0.0f;
+                                state.sampleIsPlaying = false;
+                            } else if (state.samplePlaybackPosition >= target - fadeLen) {
+                                float dist = (float)(target - state.samplePlaybackPosition);
+                                envelope *= (dist / (float)fadeLen);
+                            }
                         }
                         
-                        if (sampleIdx >= effectiveEnd - fadeLen) {
-                            int samplesRemaining = effectiveEnd - sampleIdx;
-                            if (samplesRemaining < 0) samplesRemaining = 0;
-                            envelope *= ((float)samplesRemaining / (float)fadeLen);
+                        // 3. Stutter Border Fade-Out (Ensure repeats don't click)
+                        if (state.sampleIsPlaying && state.isStuttering && state.stutterIntervalSamples > 0) {
+                            int64_t samplesInStutter = (state.samplePosition - state.stepStartSample) % state.stutterIntervalSamples;
+                            int64_t remainingInStutter = state.stutterIntervalSamples - samplesInStutter;
+                            if (remainingInStutter < (int64_t)fadeLen) {
+                                envelope *= ((float)remainingInStutter / (float)fadeLen);
+                            }
                         }
+                        
+                        if (envelope < 0.0f) envelope = 0.0f;
+                        if (envelope > 1.0f) envelope = 1.0f;
                         
                         currentSample = sample * state.currentVelocity * envelope;
                      }
@@ -659,8 +706,13 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
     AudioBus* masterBus = busManager.getMasterBus();
     for (int ch = 0; ch < numOutputChannels; ++ch) {
         if (ch < masterBus->buffer.getNumChannels()) {
-            for (int i = 0; i < numSamples; ++i) {
-                outputChannelData[ch][i] = masterBus->buffer.getSample(ch, i);
+            const float* src = masterBus->buffer.getReadPointer(ch);
+            if (outputChannelData[ch]) {
+                juce::FloatVectorOperations::copy(outputChannelData[ch], src, numSamples);
+            }
+        } else {
+            if (outputChannelData[ch]) {
+                juce::FloatVectorOperations::clear(outputChannelData[ch], numSamples);
             }
         }
     }
@@ -691,10 +743,10 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                         };
                         pair.second.writeBlock(trackChannels, numSamples, 2);
                     } else {
-                        // Write silence for stems if stopped or track empty
+                         // Write silence for stems if stopped or track empty
                          float* silence[2];
-                         float silentBuffer[numSamples]; // Stack alloc safe for small buffer
-                         std::fill(silentBuffer, silentBuffer + numSamples, 0.0f);
+                         static float silentBuffer[4096]; // Safe fixed size, static to avoid stack overhead
+                         std::fill(silentBuffer, silentBuffer + std::min(4096, numSamples), 0.0f);
                          silence[0] = silentBuffer;
                          silence[1] = silentBuffer;
                          pair.second.writeBlock(silence, numSamples, 2);
@@ -724,9 +776,7 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                         if (canReadBuses && trackBus && trackBus->buffer.getNumSamples() > 0) {
                             for (int ch = 0; ch < 2; ++ch) {
                                 int srcCh = std::min(ch, trackBus->buffer.getNumChannels() - 1);
-                                for (int i = 0; i < numSamples; ++i) {
-                                    pair.second.setSample(ch, recordedSampleCount + i, trackBus->buffer.getSample(srcCh, i));
-                                }
+                                pair.second.copyFrom(ch, recordedSampleCount, trackBus->buffer, srcCh, 0, numSamples);
                             }
                         } else {
                             // Write silence
@@ -749,7 +799,9 @@ void AudioEngine::triggerStep(PatternPlayState& state, Pattern& pattern) {
     state.samplePlaybackPosition = 0.0;
     state.sampleIsPlaying = true;
     state.fadeInSamplesRemaining = 88; // 2ms fade-in
-    state.isStuttering = false; // Reset start of step
+    state.sampleEndPosition = 0;       // Reset boundaries for logic check
+    state.sliceEndPosition = -1;
+    state.stopAtSliceEnd = false;
     state.isStuttering = false; // Reset start of step
     state.stutterIntervalSamples = 0;
     
@@ -810,6 +862,7 @@ void AudioEngine::previewSlice(Pattern& pattern, int sliceIndex, bool playToEnd)
             previewState.sourcePattern = &enginePattern;
             previewState.position = start;
             previewState.endPosition = end;
+            previewState.fadeInSamplesRemaining = 88; // 2ms fade-in
             previewState.active = true;
         }
     }
@@ -914,6 +967,7 @@ void AudioEngine::resyncAllPatternsInternal() {
     double currentBpm = globalBpm.load();
     
     for (auto& pair : patternStates) {
+        pair.second.fadeInSamplesRemaining = 88; 
         std::string name = pair.first;
         PatternPlayState& state = pair.second;
         
@@ -1044,6 +1098,9 @@ void AudioEngine::stopInMemoryRecording() {
     inMemoryRecording.store(false);
 }
 
+bool AudioEngine::saveRecordingWrapper(const std::string& filepath) {
+    return saveRecordedAudio(filepath);
+}    
 void AudioEngine::clearRecordedBuffers() {
     std::lock_guard<std::mutex> lock(recordingMutex);
     recordedMasterBuffer.clear();
@@ -1089,7 +1146,14 @@ bool AudioEngine::saveRecordedAudio(const std::string& filepath) {
         )
     );
     
-    if (!writer) return false;
+
+    
+    if (!writer) {
+        LOGD("AudioEngine::saveRecordedAudio - Failed to create WAV writer for: %s", filepath.c_str());
+        return false;
+    }
+    
+    LOGD("AudioEngine::saveRecordedAudio - Writing %d samples to %s", recordedSampleCount, filepath.c_str());
     
     // Write samples
     writer->writeFromAudioSampleBuffer(recordedMasterBuffer, 0, recordedSampleCount);

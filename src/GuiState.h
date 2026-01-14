@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <raylib.h>
+#include "gui/AppFont.h"
 
 struct PatternColumn {
     std::string title;
@@ -96,9 +97,10 @@ struct PatternEditorState {
     char stepsBuffer[4] = {0};
     char syncBaseBuffer[4] = {0};  // Sync base for polyrhythm timing
     
-    // File Browser
     bool showFileBrowser = false;
+    bool browserWaitForMouseUp = false; // Prevent click-through on open
     std::string currentPath;
+    std::string lastSamplePath; // Persist sample browser location
     std::vector<std::string> fileList;
     std::vector<std::string> dirList; // Separate dirs vs files
     float browserScrollY = 0.0f;
@@ -127,6 +129,9 @@ struct PatternEditorState {
     // Preview playback state
     bool isPreviewing = false;
 
+    int sourceColumnIndex = -1;
+    int sourceSlotIndex = -1;
+    
     // FX Mode State
     bool showFxControls = false;
     int selectedStep = -1; // 0-63
@@ -148,6 +153,20 @@ struct PatternEditorState {
     float waveformScrollX = 0.0f; // 0.0-1.0 scroll position (normalized)
     bool slicerPlayModeEnabled = false; // Toggle for preview/record mode
     
+    // Unified File Browser
+    enum class BrowserMode {
+        Samples,
+        ProjectLoad,
+        ProjectSave,
+        RecordingSave
+    };
+    BrowserMode browserMode = BrowserMode::Samples;
+    
+
+    
+    // Project Save Filename (reused here)
+    char projectSaveFilename[64] = "";
+    
     // Scroll Event Handling
     bool scrollConsumed = false; // Flag to indicate if a child widget consumed the scroll event
 };
@@ -160,6 +179,9 @@ struct TrackClipboard {
     // New Workflow State
     bool isSelectingSource = false; // Step 1: User clicked Copy, waiting for source click
     bool isPasting = false;         // Step 2: User selected source, allowing multi-paste
+    
+    // Copy Attributes
+    bool syncEnabled = false;       // Copy of the slot's sync/slope status
 };
 
 enum class PopupType { None, Main, Audio, Project };
@@ -185,6 +207,14 @@ struct RecordingState {
     
     // Legacy (for transport bar compatibility)
     bool showControls = false;
+    
+    // Waveform View State (Slicer-like)
+    float waveformZoom = 1.0f;
+    float waveformScrollX = 0.0f;
+    bool isDraggingScroll = false;
+    bool isDraggingWaveform = false;
+    float dragStartScrollX = 0.0f;
+    float dragStartX = 0.0f;
 };
 
 struct SettingsState {
@@ -196,16 +226,7 @@ struct SettingsState {
     bool isSwitchingDevice = false;  // Indicates device switch in progress
 };
 
-struct ProjectBrowserState {
-    bool isOpen = false;
-    bool isSaveMode = false; // true = save, false = load
-    std::string currentPath;
-    std::vector<std::string> fileList; // .json files
-    std::vector<std::string> dirList;
-    float scrollY = 0.0f;
-    char filenameBuffer[64] = "project"; // For save mode
-    char selectedFile[256] = {0}; // For load mode
-};
+
 
 struct GuiState {
     std::vector<PatternColumn> columns;
@@ -216,7 +237,7 @@ struct GuiState {
     TrackClipboard trackClipboard; // For copy/paste patterns in track view
     SettingsState settings; // Audio device settings
     RecordingState recorder;
-    ProjectBrowserState projectBrowser; // For project save/load file browser
+
     
     // Column Renaming
     int renamingColumnIndex = -1;
@@ -267,9 +288,9 @@ struct GuiState {
     
     void initDemo() {
      // Add some default columns with track names
-        columns.push_back({"Drums", std::vector<std::string>(16, ""), std::vector<bool>(16, false), {0, 0, 0, 0}, 0.0f, false, "Track_0", 1.0f, 0.5f});
-        columns.push_back({"Bass", std::vector<std::string>(16, ""), std::vector<bool>(16, false), {0, 0, 0, 0}, 0.0f, false, "Track_1", 1.0f, 0.5f});
-        columns.push_back({"Leads", std::vector<std::string>(16, ""), std::vector<bool>(16, false), {0, 0, 0, 0}, 0.0f, false, "Track_2", 1.0f, 0.5f});
+        columns.push_back({"Drums", std::vector<std::string>(16, ""), std::vector<bool>(16, true), {0, 0, 0, 0}, 0.0f, false, "Track_0", 1.0f, 0.5f});
+        columns.push_back({"Bass", std::vector<std::string>(16, ""), std::vector<bool>(16, true), {0, 0, 0, 0}, 0.0f, false, "Track_1", 1.0f, 0.5f});
+        columns.push_back({"Leads", std::vector<std::string>(16, ""), std::vector<bool>(16, true), {0, 0, 0, 0}, 0.0f, false, "Track_2", 1.0f, 0.5f});
     }
     
     int patternIdCounter = 1;

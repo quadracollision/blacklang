@@ -22,7 +22,7 @@
         android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
         
         <activity
-            android:name="android.app.NativeActivity"
+            android:name="com.quadracollision.blacklang.BlackLangActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:exported="true"
             android:screenOrientation="landscape"

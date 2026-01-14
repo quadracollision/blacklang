@@ -17,6 +17,7 @@ void AudioBus::clearBuffer() {
 }
 
 void AudioBus::processEffects(int numSamples, int numChannels) {
+    std::lock_guard<std::mutex> lock(effectsMutex);
     if (effects.empty()) return;
     
     // Process each effect in chain
@@ -82,9 +83,10 @@ void BusManager::initialize(double sr, int channels) {
 void BusManager::prepareBuffers(int numSamples) {
     currentBufferSize = numSamples;
     
+    std::lock_guard<std::mutex> lock(busMutex);
     // Prepare all track buffers
     for (auto& pair : tracks) {
-        pair.second.prepareBuffer(numSamples, numChannels);
+        pair.second->prepareBuffer(numSamples, numChannels);
     }
     
     // Prepare master bus
@@ -92,9 +94,10 @@ void BusManager::prepareBuffers(int numSamples) {
 }
 
 void BusManager::clearAllBuffers() {
+    std::lock_guard<std::mutex> lock(busMutex);
     // Clear all track buffers
     for (auto& pair : tracks) {
-        pair.second.clearBuffer();
+        pair.second->clearBuffer();
     }
     
     // Clear master bus
@@ -102,25 +105,27 @@ void BusManager::clearAllBuffers() {
 }
 
 AudioBus* BusManager::getOrCreateTrack(const std::string& trackName) {
+    std::lock_guard<std::mutex> lock(busMutex);
     // Check if track exists
     auto it = tracks.find(trackName);
     if (it != tracks.end()) {
-        return &it->second;
+        return it->second.get();
     }
     
     // Create new track
-    AudioBus newBus;
-    newBus.name = trackName;
-    newBus.prepareBuffer(currentBufferSize, numChannels);
+    auto newBus = std::make_unique<AudioBus>();
+    newBus->name = trackName;
+    newBus->prepareBuffer(currentBufferSize, numChannels);
     
-    tracks[trackName] = newBus;
-    return &tracks[trackName];
+    tracks[trackName] = std::move(newBus);
+    return tracks[trackName].get();
 }
 
 AudioBus* BusManager::getTrack(const std::string& trackName) {
+    std::lock_guard<std::mutex> lock(busMutex);
     auto it = tracks.find(trackName);
     if (it != tracks.end()) {
-        return &it->second;
+        return it->second.get();
     }
     return nullptr;
 }
@@ -130,9 +135,17 @@ AudioBus* BusManager::getMasterBus() {
 }
 
 void BusManager::mixTracksToMaster() {
+    std::vector<AudioBus*> tracksToProcess;
+    {
+        std::lock_guard<std::mutex> lock(busMutex);
+        for (auto& pair : tracks) {
+            tracksToProcess.push_back(pair.second.get());
+        }
+    }
+
     // Sum all track outputs to master bus
-    for (auto& pair : tracks) {
-        AudioBus& trackBus = pair.second;
+    for (auto* trackBusPtr : tracksToProcess) {
+        AudioBus& trackBus = *trackBusPtr;
         
         // Apply Insert FX
         trackBus.processEffects(currentBufferSize, numChannels);
@@ -171,12 +184,15 @@ void BusManager::applyMasterProcessing() {
         for (int i = 0; i < masterBus.buffer.getNumSamples(); ++i) {
             float sample = channelData[i];
             
-            // Soft clip using tanh
-            if (std::abs(sample) > 0.9f) {
-                sample = std::tanh(sample * 0.5f) * 2.0f;
+            // Proper soft clip using tanh - saturates at 1.0
+            if (std::abs(sample) > 0.8f) {
+                float sign = (sample > 0) ? 1.0f : -1.0f;
+                float x = std::abs(sample);
+                // Soft curve from 0.8 to 1.0
+                sample = sign * (0.8f + 0.2f * std::tanh((x - 0.8f) / 0.2f));
             }
             
-            // Hard limit at ±1.0
+            // Hard limit at ±1.0 (safety)
             if (sample > 1.0f) sample = 1.0f;
             if (sample < -1.0f) sample = -1.0f;
             

@@ -1,4 +1,5 @@
 #include "Widgets.h"
+#include "AppFont.h"
 #include "../FilePicker.h"
 #include <cstring>
 
@@ -16,13 +17,17 @@ void DrawTextInput(Rectangle rect, char* buffer, size_t maxLen, int fieldId, int
     
     DrawRectangleRec(rect, isFocused ? WHITE : LIGHTGRAY);
     DrawRectangleLinesEx(rect, 1, isFocused ? BLUE : DARKGRAY);
-    DrawText(buffer, rect.x + 5, rect.y + 5, 20, BLACK);
+    
+    // Improved vertical centering for text input
+    int fontSize = 20;
+    DrawTextApp(buffer, (int)(rect.x + 5), (int)(rect.y + (rect.height - fontSize) / 2), fontSize, BLACK);
     
     if (isFocused) {
         // Blinking Cursor
         if ((int)(GetTime() * 2) % 2 == 0) {
-            int textW = MeasureText(buffer, 20);
-            DrawLine(rect.x + 5 + textW + 2, rect.y + 5, rect.x + 5 + textW + 2, rect.y + 25, BLACK);
+            int textW = MeasureTextApp(buffer, fontSize);
+            float cursorX = rect.x + 5 + textW + 2;
+            DrawLineV({cursorX, rect.y + 4}, {cursorX, rect.y + rect.height - 4}, BLACK);
         }
 
 #if defined(__ANDROID__)
@@ -58,7 +63,7 @@ void DrawTextInput(Rectangle rect, char* buffer, size_t maxLen, int fieldId, int
     }
 }
 
-bool DrawButton(Rectangle rect, const char* text, Color bgColor, Color textColor, Vector2 mousePos) {
+bool DrawButton(Rectangle rect, const char* text, Color bgColor, Color textColor, Vector2 mousePos, int fontSize) {
     Vector2 m = (mousePos.x < 0) ? GetMousePosition() : mousePos;
     bool hovered = CheckCollisionPointRec(m, rect);
     bool clicked = hovered && IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
@@ -67,8 +72,8 @@ bool DrawButton(Rectangle rect, const char* text, Color bgColor, Color textColor
     DrawRectangleRec(rect, bg);
     DrawRectangleLinesEx(rect, 1, WHITE);
     
-    int textWidth = MeasureText(text, 14);
-    DrawText(text, rect.x + (rect.width - textWidth) / 2, rect.y + (rect.height - 14) / 2, 14, textColor);
+    int textWidth = MeasureTextApp(text, fontSize);
+    DrawTextApp(text, (int)(rect.x + (rect.width - textWidth) / 2), (int)(rect.y + (rect.height - fontSize) / 2), fontSize, textColor);
     
     return clicked;
 }

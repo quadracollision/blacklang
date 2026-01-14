@@ -1,7 +1,9 @@
 #include "GuiRenderer.h"
+#include "gui/AppFont.h"
+
 #include "gui/Widgets.h"
 #include "gui/DragDrop.h"
-#include "gui/ProjectBrowser.h"
+#include "gui/FileBrowser.h"
 #include "gui/RecordingUI.h"
 #include <iostream>
 #include <algorithm>
@@ -13,7 +15,8 @@ namespace fs = std::filesystem;
 
 GuiRenderer::GuiRenderer(GuiState& s, AudioEngine& e) 
     : state(s), engine(e), transportBar(s, e), trackView(s, e), patternEditor(s, e), recordingUI(s, e) {
-    font = GetFontDefault();
+    // Load Fonts via Manager
+    FontManager::Get().Init();
 }
 #include "tinyfiledialogs.h"
 
@@ -38,8 +41,8 @@ void GuiRenderer::Draw() {
         if (state.recorder.showModeSelection || state.recorder.showReview) {
             state.consumeClick();
         }
-        // Project browser
-        else if (state.projectBrowser.isOpen) {
+        // File browser
+        else if (state.editor.showFileBrowser) {
             state.consumeClick();
         }
         // Pattern editor
@@ -57,16 +60,16 @@ void GuiRenderer::Draw() {
     // Draw Headers
     Rectangle headerRect = {0, 0, (float)state.getScreenWidth(), (float)state.HEADER_HEIGHT};
     DrawRectangleRec(headerRect, Color{30, 30, 30, 255});
-    DrawText("QC-33", 20, 15, 30, WHITE);
+    DrawTextApp("QC-33", 20, 15, 30, WHITE);
     
     // BPM Display in header (top right)
-    float bpmX = state.getScreenWidth() - 150;
-    DrawText("BPM:", bpmX, 15, 20, LIGHTGRAY);
+    float bpmX = state.getScreenWidth() - 170; // Moved left (was 150)
+    DrawTextApp("BPM:", bpmX, 15, 20, LIGHTGRAY);
     if (!state.editor.isOpen) {
-        DrawTextInput({bpmX + 55, 10, 80, 35}, state.globalBpmBuffer, 5, 999, state.focusedFieldId, state.getMousePosition());
+        DrawTextInput({bpmX + 60, 10, 80, 35}, state.globalBpmBuffer, 5, 999, state.focusedFieldId, state.getMousePosition());
     } else {
-        DrawRectangleRec({bpmX + 55, 10, 80, 35}, LIGHTGRAY);
-        DrawText(state.globalBpmBuffer, bpmX + 65, 18, 20, BLACK);
+        DrawRectangleRec({bpmX + 60, 10, 80, 35}, LIGHTGRAY);
+        DrawTextApp(state.globalBpmBuffer, bpmX + 70, 18, 20, BLACK);
     }
     
     // Update BPM if changed
@@ -145,15 +148,8 @@ void GuiRenderer::Draw() {
     }
     
     // Draw project browser (for save/load project)
-    if (state.projectBrowser.isOpen) {
-        // Initialize on first open
-        static bool wasOpen = false;
-        if (!wasOpen) {
-            ProjectBrowser::Refresh(state);
-        }
-        wasOpen = state.projectBrowser.isOpen;
-        ProjectBrowser::Draw(state, engine);
-    }
+    // Draw Unified File Browser (Overlay)
+    FileBrowser::Draw(state, engine);
     
     // Draw RecordingUI (mode selection and review overlays)
     recordingUI.Draw();

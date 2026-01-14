@@ -1,11 +1,19 @@
 #include "TransportBar.h"
 #include "Widgets.h"
+#include "FileBrowser.h"
 #include "../GuiState.h"
 #include "../AudioEngine.h"
 #include "../ProjectFile.h"
 #include "../tinyfiledialogs.h"
 #include <cstdlib>
 #include <cstring>
+
+#if defined(__ANDROID__)
+#include <android/log.h>
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, "TransportBar", __VA_ARGS__)
+#else
+#define LOGD(...) 
+#endif
 #include <filesystem>
 
 namespace gui {
@@ -32,7 +40,9 @@ void TransportBar::DrawRecording() {
     float btnW = 60;
     
     // Record Button (Beside Stop)
-    Rectangle recBtn = {centerX + 80, rect.y, btnW, btnH};
+    float gap = 5.0f;
+    // Stop ends at centerX + 2.5 + 70 = centerX + 72.5
+    Rectangle recBtn = {centerX + 72.5f + gap, rect.y, btnW, btnH};
     
     bool isArmed = state.recorder.isArmed;
     bool isRecording = state.recorder.isRecording;
@@ -82,9 +92,12 @@ void TransportBar::DrawPlayStop() {
     float btnW = 70;  // Wider buttons
     
     // Play
-    Rectangle playRect = {centerX - btnW - 5, rect.y, btnW, btnH};
+    float gap = 5.0f;
+    Rectangle playRect = {centerX - btnW - (gap/2), rect.y, btnW, btnH};
     DrawRectangleRec(playRect, state.isPlaying ? GREEN : GRAY);
-    DrawText(">", (int)(playRect.x + 28), (int)(playRect.y + 18), 24, BLACK);
+    const char* playTxt = ">";
+    int playTxtW = MeasureTextApp(playTxt, 24);
+    DrawTextApp(playTxt, playRect.x + (playRect.width - playTxtW)/2, playRect.y + (playRect.height - 24)/2, 24, BLACK);
     if (state.isClickAvailable() && !state.editor.isOpen &&
         CheckCollisionPointRec(state.getMousePosition(), playRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.consumeClick();
@@ -134,7 +147,9 @@ void TransportBar::DrawPlayStop() {
     }
     
     // Stop
-    Rectangle stopRect = {centerX + 5, rect.y, btnW, btnH};
+    // Stop
+    // Gap 5px between Play and Stop means Offset 2.5 from center
+    Rectangle stopRect = {centerX + (gap/2), rect.y, btnW, btnH};
     DrawRectangleRec(stopRect, RED);
     DrawRectangle((int)(stopRect.x + 25), (int)(stopRect.y + 20), 20, 20, WHITE);
     if (state.isClickAvailable() && !state.editor.isOpen &&
@@ -170,7 +185,9 @@ void TransportBar::DrawCopyPaste() {
     // If not active, draw normal button
     if (!state.trackClipboard.isSelectingSource && !state.trackClipboard.isPasting) {
         DrawRectangleRec(copyBtn, DARKGRAY);
-        DrawText("Copy", copyBtn.x + 20, copyBtn.y + 20, 18, WHITE);
+        const char* txt = "COPY";
+        int txtW = MeasureTextApp(txt, 16);
+        DrawTextApp(txt, copyBtn.x + (copyBtn.width - txtW)/2, copyBtn.y + (copyBtn.height - 16)/2, 16, WHITE);
         
         if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), copyBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.trackClipboard.isSelectingSource = true;
@@ -178,7 +195,7 @@ void TransportBar::DrawCopyPaste() {
     } else {
         // Active "Copy" State or "Cancel" button
         DrawRectangleRec(copyBtn, ORANGE); 
-        DrawText("Cancel", copyBtn.x + 15, copyBtn.y + 20, 18, WHITE);
+        DrawTextApp("Cancel", copyBtn.x + 15, copyBtn.y + 20, 18, WHITE);
          if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), copyBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.trackClipboard.isSelectingSource = false;
             state.trackClipboard.isPasting = false;
@@ -188,38 +205,11 @@ void TransportBar::DrawCopyPaste() {
 
 void TransportBar::DrawEditShift() {
     Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
-    float btnH = (float)state.FOOTER_HEIGHT;
-    float btnW = 80;
-    float startX = 85; // After Copy button
+    // Variables removed as they are no longer used.
+
     
-    if (state.isPlaying && !state.activePatternSlots.empty()) {
-        Rectangle editBtn = {startX, rect.y, btnW, btnH};
-        DrawRectangleRec(editBtn, state.isLiveEditMode ? SKYBLUE : DARKGRAY);
-        DrawText("Edit", editBtn.x + 22, editBtn.y + 20, 18, WHITE);
-        
-        if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), editBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            state.isLiveEditMode = !state.isLiveEditMode;
-            
-            if (!state.isLiveEditMode) {
-                state.editor.isOpen = false;
-                state.isShiftMode = false;
-                state.shiftEditingPatternName = "";
-            }
-        }
-        
-        if (state.isLiveEditMode) {
-            Rectangle shiftBtn = {startX + btnW + 5, rect.y, btnW, btnH};
-            DrawRectangleRec(shiftBtn, state.isShiftMode ? ORANGE : DARKGRAY);
-            DrawText("Shift", shiftBtn.x + 20, shiftBtn.y + 20, 18, WHITE);
-            
-            if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), shiftBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                state.isShiftMode = !state.isShiftMode;
-                if (!state.isShiftMode) {
-                    state.shiftEditingPatternName = "";
-                }
-            }
-        }
-    }
+    // Edit button deprecated and removed per user request.
+    // Logic was: if (state.isPlaying && !state.activePatternSlots.empty()) { ... Edit/Shift ... }
 }
 
 void TransportBar::DrawSettingsButton() {
@@ -228,10 +218,14 @@ void TransportBar::DrawSettingsButton() {
     float btnW = 60;
     
     // Far right
-    Rectangle gearBtn = {state.getScreenWidth() - btnW, rect.y, btnW, btnH};
+    // Far right - add margin
+    Rectangle gearBtn = {state.getScreenWidth() - btnW - 5, rect.y, btnW, btnH};
     bool isOpen = (state.settings.activePopup != PopupType::None);
     DrawRectangleRec(gearBtn, isOpen ? ORANGE : DARKGRAY);
-    DrawText("*", gearBtn.x + 22, gearBtn.y + 15, 30, WHITE);
+    const char* gearTxt = "*";
+    int gearW = MeasureTextApp(gearTxt, 30);
+    // Removed +5 offset
+    DrawTextApp(gearTxt, gearBtn.x + (gearBtn.width - gearW)/2, gearBtn.y + (gearBtn.height - 30)/2, 30, WHITE);
     
     if (state.isClickAvailable() && !state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), gearBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.consumeClick();
@@ -255,11 +249,11 @@ void TransportBar::DrawSettingsPopup() {
     
     Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
     
-    float popW = 350;
-    float popH = 200;
+    float popW = 450;
+    float popH = 300; // Increased height for better spacing
     // Align with new gear button (Right side)
     float popX = state.getScreenWidth() - popW - 10;
-    float popY = rect.y - popH - 10;
+    float popH_rect = rect.y - popH - 10; float popY = popH_rect; // Fix variable reuse
     
     DrawRectangle(popX, popY, popW, popH, Color{40, 40, 40, 245});
     DrawRectangleLinesEx({popX, popY, popW, popH}, 2, WHITE);
@@ -269,12 +263,12 @@ void TransportBar::DrawSettingsPopup() {
     if (state.settings.activePopup == PopupType::Project) title = "Project";
     else if (state.settings.activePopup == PopupType::Audio) title = "Audio Device";
     
-    DrawText(title, popX + 10, popY + 10, 18, WHITE);
+    DrawTextApp(title, popX + 10, popY + 10, 18, WHITE);
     
     // Close Button (X)
     Rectangle closeBtn = {popX + popW - 30, popY + 5, 25, 25};
     DrawRectangleRec(closeBtn, RED);
-    DrawText("X", closeBtn.x + 7, closeBtn.y + 3, 18, WHITE);
+    DrawTextApp("X", closeBtn.x + 7, closeBtn.y + 3, 18, WHITE);
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(state.getMousePosition(), closeBtn)) {
         state.consumeClick();
         state.settings.activePopup = PopupType::None;
@@ -285,7 +279,7 @@ void TransportBar::DrawSettingsPopup() {
     if (state.settings.activePopup != PopupType::Main) {
         Rectangle backBtn = {popX + popW - 60, popY + 5, 25, 25};
         DrawRectangleRec(backBtn, DARKGRAY);
-        DrawText("<", backBtn.x + 8, backBtn.y + 3, 18, WHITE);
+        DrawTextApp("<", backBtn.x + 8, backBtn.y + 3, 18, WHITE);
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(state.getMousePosition(), backBtn)) {
             state.consumeClick();
             state.settings.activePopup = PopupType::Main;
@@ -298,7 +292,7 @@ void TransportBar::DrawSettingsPopup() {
         // --- Main Menu ---
         Rectangle projBtn = {popX + 20, currentY, popW - 40, 30};
         DrawRectangleRec(projBtn, DARKGRAY);
-        DrawText("Project...", projBtn.x + 10, projBtn.y + 5, 14, WHITE);
+        DrawTextApp("Project...", projBtn.x + 10, projBtn.y + 5, 14, WHITE);
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(state.getMousePosition(), projBtn)) {
             state.consumeClick();
             state.settings.activePopup = PopupType::Project;
@@ -306,7 +300,7 @@ void TransportBar::DrawSettingsPopup() {
         
         Rectangle audioBtn = {popX + 20, currentY + 40, popW - 40, 30};
         DrawRectangleRec(audioBtn, DARKGRAY);
-        DrawText("Audio Settings...", audioBtn.x + 10, audioBtn.y + 5, 14, WHITE);
+        DrawTextApp("Audio Settings...", audioBtn.x + 10, audioBtn.y + 5, 14, WHITE);
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(state.getMousePosition(), audioBtn)) {
             state.consumeClick();
             state.settings.activePopup = PopupType::Audio;
@@ -316,56 +310,48 @@ void TransportBar::DrawSettingsPopup() {
     }
     else if (state.settings.activePopup == PopupType::Project) {
         // --- Project Menu ---
-        DrawText("Manage Project:", popX + 20, currentY, 14, LIGHTGRAY);
+        DrawTextApp("Manage Project:", popX + 20, currentY, 14, LIGHTGRAY);
         currentY += 30;
         
-        Rectangle saveBtn = {popX + 20, currentY, 140, 30};
+        // Save Button
+        Rectangle saveBtn = {popX + 20, currentY, 200, 30};
         DrawRectangleRec(saveBtn, DARKGRAY);
-        DrawText("Save Project", saveBtn.x + 25, saveBtn.y + 8, 14, WHITE);
+        const char* saveTxt = "SAVE PROJECT";
+        int saveW = MeasureTextApp(saveTxt, 14);
+        DrawTextApp(saveTxt, saveBtn.x + (saveBtn.width - saveW)/2, saveBtn.y + 8, 14, WHITE);
+        
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(state.getMousePosition(), saveBtn)) {
             state.consumeClick();
-            // Open project browser in save mode
-            state.projectBrowser.isOpen = true;
-            state.projectBrowser.isSaveMode = true;
-            if (state.projectBrowser.currentPath.empty()) {
-                state.projectBrowser.currentPath = std::filesystem::current_path().string();
-            }
-            state.projectBrowser.fileList.clear();
-            state.projectBrowser.dirList.clear();
-            state.projectBrowser.scrollY = 0;
-            // Refresh will be called on first draw
+            LOGD("TransportBar: Save Project clicked");
+            FileBrowser::Open(state, PatternEditorState::BrowserMode::ProjectSave);
             state.settings.activePopup = PopupType::None;
             state.settings.showSettingsMenu = false;
         }
         
-        Rectangle loadBtn = {popX + 170, currentY, 140, 30};
+        // Load Button
+        Rectangle loadBtn = {popX + 230, currentY, 200, 30};
         DrawRectangleRec(loadBtn, DARKGRAY);
-        DrawText("Load Project", loadBtn.x + 25, loadBtn.y + 8, 14, WHITE);
+        const char* loadTxt = "LOAD PROJECT";
+        int loadW = MeasureTextApp(loadTxt, 14);
+        DrawTextApp(loadTxt, loadBtn.x + (loadBtn.width - loadW)/2, loadBtn.y + 8, 14, WHITE);
+        
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(state.getMousePosition(), loadBtn)) {
             state.consumeClick();
-            // Open project browser in load mode
-            state.projectBrowser.isOpen = true;
-            state.projectBrowser.isSaveMode = false;
-            if (state.projectBrowser.currentPath.empty()) {
-                state.projectBrowser.currentPath = std::filesystem::current_path().string();
-            }
-            state.projectBrowser.fileList.clear();
-            state.projectBrowser.dirList.clear();
-            state.projectBrowser.scrollY = 0;
-            memset(state.projectBrowser.selectedFile, 0, sizeof(state.projectBrowser.selectedFile));
+            FileBrowser::Open(state, PatternEditorState::BrowserMode::ProjectLoad);
             state.settings.activePopup = PopupType::None;
             state.settings.showSettingsMenu = false;
         }
     }
     else if (state.settings.activePopup == PopupType::Audio) {
         // --- Audio Menu ---
-        DrawText("Output Device:", popX + 20, currentY, 14, LIGHTGRAY);
+        DrawTextApp("Output Device:", popX + 20, currentY, 14, LIGHTGRAY);
+        currentY += 20; // New Line
         
         // Show switching indicator
         if (state.settings.isSwitchingDevice) {
-            DrawText("Switching...", popX + 130, currentY, 14, ORANGE);
+            DrawTextApp("Switching...", popX + 20, currentY, 14, ORANGE);
         } else {
-            DrawText(state.settings.currentDevice.c_str(), popX + 130, currentY, 14, GREEN);
+            DrawTextApp(state.settings.currentDevice.c_str(), popX + 20, currentY, 14, GREEN);
         }
         
         float listY = currentY + 30;
@@ -382,7 +368,7 @@ void TransportBar::DrawSettingsPopup() {
             Color textColor = isSwitching ? GRAY : WHITE;
             
             DrawRectangleRec(devBtn, bgColor);
-            DrawText(devName.c_str(), devBtn.x + 5, devBtn.y + 4, 12, textColor);
+            DrawTextApp(devName.c_str(), devBtn.x + 5, devBtn.y + 4, 12, textColor);
             
             // Only allow clicking if not currently switching and not the current device
             if (!isCurrent && !isSwitching && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(state.getMousePosition(), devBtn)) {
@@ -401,7 +387,7 @@ void TransportBar::DrawSettingsPopup() {
             listY += 25;
         }
          if (state.settings.availableOutputDevices.empty()) {
-            DrawText("No devices found", popX + 20, listY, 14, GRAY);
+            DrawTextApp("No devices found", popX + 20, listY, 14, GRAY);
         }
     }
 }
@@ -419,15 +405,20 @@ void TransportBar::DrawSyncButton() {
     // Let's put Sync at Center + 160 (Right of Record)
     
     float centerX = state.getScreenWidth() / 2.0f;
-    float x = centerX + 160;
-    float y = (float)state.getScreenHeight() - state.FOOTER_HEIGHT + 10;
+    // Rec starts at centerX + 77.5. Width 60. Ends at + 137.5.
+    // Sync starts at + 137.5 + 5 = 142.5.
+    float x = centerX + 142.5f;
+    float y = (float)state.getScreenHeight() - state.FOOTER_HEIGHT; // Match others
     float w = 60;
-    float h = 40;
+    float h = (float)state.FOOTER_HEIGHT; // Match others
     
     Rectangle btn = {x, y, w, h};
     
     DrawRectangleRec(btn, LIGHTGRAY);
-    DrawText("SYNC", x + 10, y + 12, 16, BLACK);
+    // Reduced font size to fit new font
+    const char* txt = "SYNC";
+    int txtW = MeasureTextApp(txt, 12);
+    DrawTextApp(txt, x + (w - txtW)/2, y + (h - 12)/2, 12, BLACK);
     
     if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), btn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         engine.scheduleResync();

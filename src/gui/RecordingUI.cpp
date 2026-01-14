@@ -1,7 +1,10 @@
 #include "RecordingUI.h"
 #include "../GuiState.h"
 #include "../AudioEngine.h"
+#include "FileBrowser.h"
 #include "Widgets.h"
+#include "../platform/AndroidBridge.h"
+#include <iostream>
 #include <cmath>
 #include <algorithm>
 #include <filesystem>
@@ -37,11 +40,11 @@ void RecordingUI::DrawModeSelection() {
     
     // Title
     const char* title = "New Recording";
-    int titleW = MeasureText(title, 24);
-    DrawText(title, (int)(screenW/2 - titleW/2), (int)(panelY + 20), 24, WHITE);
+    int titleW = MeasureTextApp(title, 24);
+    DrawTextApp(title, (int)(screenW/2 - titleW/2), (int)(panelY + 20), 24, WHITE);
     
     // Save As textbox
-    DrawText("Save as:", (int)(panelX + 30), (int)(panelY + 60), 14, LIGHTGRAY);
+    DrawTextApp("Save as:", (int)(panelX + 30), (int)(panelY + 60), 14, LIGHTGRAY);
     Rectangle nameBox = {panelX + 30, panelY + 80, panelW - 60, 28};
     DrawRectangleRec(nameBox, Color{50, 50, 55, 255});
     DrawRectangleLinesEx(nameBox, 1, Color{80, 80, 90, 255});
@@ -61,8 +64,8 @@ void RecordingUI::DrawModeSelection() {
     DrawRectangleLinesEx(wholeBtn, 2, wholeHover ? WHITE : Color{100, 100, 200, 255});
     
     const char* wholeText = "Whole Mix";
-    int wholeTextW = MeasureText(wholeText, 18);
-    DrawText(wholeText, (int)(wholeBtn.x + btnW/2 - wholeTextW/2), (int)(wholeBtn.y + btnH/2 - 9), 18, WHITE);
+    int wholeTextW = MeasureTextApp(wholeText, 18);
+    DrawTextApp(wholeText, (int)(wholeBtn.x + (wholeBtn.width - wholeTextW) / 2), (int)(wholeBtn.y + (wholeBtn.height - 18) / 2), 18, WHITE);
     
     // Stems Button
     Rectangle stemsBtn = {startX + btnW + gap, startY, btnW, btnH};
@@ -71,8 +74,8 @@ void RecordingUI::DrawModeSelection() {
     DrawRectangleLinesEx(stemsBtn, 2, stemsHover ? WHITE : Color{100, 200, 100, 255});
     
     const char* stemsText = "Stems";
-    int stemsTextW = MeasureText(stemsText, 18);
-    DrawText(stemsText, (int)(stemsBtn.x + btnW/2 - stemsTextW/2), (int)(stemsBtn.y + btnH/2 - 9), 18, WHITE);
+    int stemsTextW = MeasureTextApp(stemsText, 18);
+    DrawTextApp(stemsText, (int)(stemsBtn.x + (stemsBtn.width - stemsTextW) / 2), (int)(stemsBtn.y + (stemsBtn.height - 18) / 2), 18, WHITE);
     
     // Cancel Button
     Rectangle cancelBtn = {screenW/2 - 40, panelY + panelH - 40, 80, 28};
@@ -80,8 +83,8 @@ void RecordingUI::DrawModeSelection() {
     DrawRectangleRec(cancelBtn, cancelHover ? Color{80, 80, 85, 255} : Color{60, 60, 65, 255});
     DrawRectangleLinesEx(cancelBtn, 1, GRAY);
     const char* cancelText = "Cancel";
-    int cancelTextW = MeasureText(cancelText, 14);
-    DrawText(cancelText, (int)(cancelBtn.x + 40 - cancelTextW/2), (int)(cancelBtn.y + 7), 14, LIGHTGRAY);
+    int cancelTextW = MeasureTextApp(cancelText, 14);
+    DrawTextApp(cancelText, (int)(cancelBtn.x + (cancelBtn.width - cancelTextW) / 2), (int)(cancelBtn.y + (cancelBtn.height - 14) / 2), 14, LIGHTGRAY);
     
     // Handle Clicks - consume all clicks in this overlay
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -106,134 +109,244 @@ void RecordingUI::DrawReviewUI() {
     float screenW = (float)state.getScreenWidth();
     float screenH = (float)state.getScreenHeight();
     
-    // Full-screen overlay matching app style
+    // Full-screen overlay (Standard Editor Style)
     DrawRectangle(0, 0, (int)screenW, (int)screenH, Color{25, 25, 30, 255});
     
-    // Header panel
+    // Header panel (60px)
     DrawRectangle(0, 0, (int)screenW, 60, Color{35, 35, 40, 255});
-    const char* title = "Recording Review";
-    int titleW = MeasureText(title, 24);
-    DrawText(title, (int)(screenW/2 - titleW/2), 18, 24, WHITE);
     
-    // Info Panel (left side)
-    float infoPanelX = 20;
-    float infoPanelY = 75;
-    float infoPanelW = 200;
-    float infoPanelH = screenH - 170;
+    // Title
+    const char* title = "Review Recording";
+    DrawTextApp(title, 20, 18, 24, WHITE);
     
-    DrawRectangle((int)infoPanelX, (int)infoPanelY, (int)infoPanelW, (int)infoPanelH, Color{35, 35, 40, 255});
-    DrawRectangleLinesEx({infoPanelX, infoPanelY, infoPanelW, infoPanelH}, 1, Color{60, 60, 70, 255});
+    // Filename Input in Header (Right side of title)
+    float titleW = MeasureTextApp(title, 24);
+    DrawTextApp("Name:", 20 + titleW + 30, 22, 16, LIGHTGRAY);
     
-    // Info content
-    int sampleCount = engine.getRecordedSampleCount();
-    double sampleRate = engine.getRecordedSampleRate();
-    double duration = sampleCount > 0 ? (double)sampleCount / sampleRate : 0;
-    
-    DrawText("Recording Info", (int)(infoPanelX + 10), (int)(infoPanelY + 15), 16, WHITE);
-    DrawLine((int)(infoPanelX + 10), (int)(infoPanelY + 38), (int)(infoPanelX + infoPanelW - 10), (int)(infoPanelY + 38), Color{60, 60, 70, 255});
-    
-    // Mode
-    const char* modeLabel = "Mode:";
-    const char* modeValue = state.recorder.recordStems ? "Stems" : "Whole Mix";
-    DrawText(modeLabel, (int)(infoPanelX + 10), (int)(infoPanelY + 50), 14, LIGHTGRAY);
-    DrawText(modeValue, (int)(infoPanelX + 10), (int)(infoPanelY + 68), 14, WHITE);
-    
-    // Duration
-    char durText[32];
-    snprintf(durText, 32, "%.1f sec", duration);
-    DrawText("Duration:", (int)(infoPanelX + 10), (int)(infoPanelY + 95), 14, LIGHTGRAY);
-    DrawText(durText, (int)(infoPanelX + 10), (int)(infoPanelY + 113), 14, WHITE);
-    
-    // Sample Rate
-    char srText[32];
-    snprintf(srText, 32, "%.0f Hz", sampleRate);
-    DrawText("Sample Rate:", (int)(infoPanelX + 10), (int)(infoPanelY + 140), 14, LIGHTGRAY);
-    DrawText(srText, (int)(infoPanelX + 10), (int)(infoPanelY + 158), 14, WHITE);
-    
-    // Samples
-    char samplesText[32];
-    snprintf(samplesText, 32, "%d", sampleCount);
-    DrawText("Samples:", (int)(infoPanelX + 10), (int)(infoPanelY + 185), 14, LIGHTGRAY);
-    DrawText(samplesText, (int)(infoPanelX + 10), (int)(infoPanelY + 203), 14, WHITE);
-    
-    // Filename Input (in info panel)
-    DrawText("Filename:", (int)(infoPanelX + 10), (int)(infoPanelY + 240), 14, LIGHTGRAY);
-    Rectangle nameBox = {infoPanelX + 10, infoPanelY + 260, infoPanelW - 20, 28};
+    Rectangle nameBox = {20 + titleW + 85, 16, 250, 28};
     DrawRectangleRec(nameBox, Color{50, 50, 55, 255});
     DrawRectangleLinesEx(nameBox, 1, Color{80, 80, 90, 255});
     DrawTextInput(nameBox, state.recorder.filenameBuffer, 63, 600, state.focusedFieldId, state.getMousePosition());
     
-    // Waveform Area (right side)
-    float waveX = infoPanelX + infoPanelW + 15;
-    float waveY = 75;
-    float waveW = screenW - waveX - 20;
-    float waveH = screenH - 170;
+    // Main Waveform Area (Full Screen minus Header/Footer)
+    float waveX = 10;
+    float waveY = 70;
+    float waveW = screenW - 20;
+    float waveH = screenH - 140; // Leave room for footer
     
     Rectangle waveArea = {waveX, waveY, waveW, waveH};
-    DrawRectangleRec(waveArea, Color{30, 30, 35, 255});
-    DrawRectangleLinesEx(waveArea, 1, Color{60, 60, 70, 255});
+    DrawRectangleRec(waveArea, BLACK);
+    DrawRectangleLinesEx(waveArea, 1, GRAY);
+    
+    // Footer Background
+    float footerY = screenH - 60;
+    DrawRectangle(0, (int)footerY, (int)screenW, 60, Color{30, 30, 30, 255});
     
     // Draw waveform
     const auto& masterBuffer = engine.getRecordedMaster();
+    int sampleCount = engine.getRecordedSampleCount();
     int64_t playhead = state.recorder.previewPosition;
     
     if (sampleCount > 0) {
+        // Zoom/Scroll Logic (Slicer Style)
+        float zoom = state.recorder.waveformZoom;
+        if (zoom < 1.0f) zoom = 1.0f;
+        
+        // Handle Mouse Wheel Zoom
+        float wheel = GetMouseWheelMove();
+        if (wheel != 0) {
+            float mouseRelX = (state.getMousePosition().x - waveArea.x) / waveArea.width;
+            if (mouseRelX < 0) mouseRelX = 0; if (mouseRelX > 1) mouseRelX = 1;
+            
+            float oldZoom = state.recorder.waveformZoom;
+            if (wheel > 0) state.recorder.waveformZoom *= 1.1f;
+            else state.recorder.waveformZoom /= 1.1f;
+            
+            if (state.recorder.waveformZoom < 1.0f) state.recorder.waveformZoom = 1.0f;
+            
+            // Center zoom on mouse
+            float viewW = 1.0f / state.recorder.waveformZoom;
+            float oldViewW = 1.0f / oldZoom;
+            float centerRatio = state.recorder.waveformScrollX + (mouseRelX * oldViewW);
+            state.recorder.waveformScrollX = centerRatio - (mouseRelX * viewW);
+        }
+        
+        // Clamp Scroll
+        float viewWidth = 1.0f / state.recorder.waveformZoom;
+        float maxScroll = 1.0f - viewWidth;
+        if (state.recorder.waveformScrollX < 0) state.recorder.waveformScrollX = 0;
+        if (state.recorder.waveformScrollX > maxScroll) state.recorder.waveformScrollX = maxScroll;
+        
+        // Draw Waveform
         DrawWaveform(waveArea, masterBuffer, sampleCount, playhead);
+        
+        // Scrollbar (if zoomed)
+        if (state.recorder.waveformZoom > 1.01f) {
+            Rectangle scrollBarBg = {waveArea.x, waveArea.y + waveArea.height - 15, waveArea.width, 15};
+            DrawRectangleRec(scrollBarBg, Color{40, 40, 40, 200});
+            
+            float thumbW = scrollBarBg.width * viewWidth;
+            float thumbX = scrollBarBg.x + (state.recorder.waveformScrollX / (maxScroll + 0.0001f)) * (scrollBarBg.width - thumbW);
+            
+            Rectangle thumb = {thumbX, scrollBarBg.y + 2, thumbW, 11};
+            DrawRectangleRec(thumb, LIGHTGRAY);
+            
+            // Drag Scrollbar Logic
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(state.getMousePosition(), scrollBarBg)) {
+                state.recorder.isDraggingScroll = true;
+                state.recorder.dragStartX = state.getMousePosition().x;
+                state.recorder.dragStartScrollX = state.recorder.waveformScrollX;
+            }
+        }
+        
     } else {
         const char* noData = "No recording data";
-        int noDataW = MeasureText(noData, 18);
-        DrawText(noData, (int)(waveArea.x + waveArea.width/2 - noDataW/2), (int)(waveArea.y + waveArea.height/2 - 9), 18, GRAY);
+        int noDataW = MeasureTextApp(noData, 20);
+        DrawTextApp(noData, (int)(waveArea.x + waveArea.width/2 - noDataW/2), (int)(waveArea.y + waveArea.height/2), 20, GRAY);
     }
     
-    // Footer with buttons
-    float footerY = screenH - 75;
-    DrawRectangle(0, (int)footerY, (int)screenW, 75, Color{35, 35, 40, 255});
+    // --- Footer Controls (Slicer Style) ---
+    float btnH = 40;
+    float btnY = footerY + 10;
     
-    float btnH = 45;
-    float btnW = 110;
-    float gap = 15;
-    float totalBtnW = btnW * 3 + gap * 2;
-    float btnStartX = screenW/2 - totalBtnW/2;
-    float btnY = footerY + 15;
+    // Left: Recording Info (Mini)
+    char infoText[64];
+    double dur = sampleCount > 0 ? (double)sampleCount / engine.getRecordedSampleRate() : 0;
+    snprintf(infoText, 64, "Len: %.1fs  Samples: %d  Rate: %.0fHz", dur, sampleCount, engine.getRecordedSampleRate());
+    DrawTextApp(infoText, 20, btnY + 10, 16, GRAY);
     
-    // Preview Button
-    Rectangle previewBtn = {btnStartX, btnY, btnW, btnH};
-    bool previewHover = CheckCollisionPointRec(state.getMousePosition(), previewBtn);
+    // Right: Action Buttons
+    float btnX = screenW - 350;
+    
+    // Preview / Stop
+    Rectangle previewBtn = {btnX, btnY, 100, btnH};
     bool isPreviewing = state.recorder.isPreviewing;
-    DrawRectangleRec(previewBtn, isPreviewing ? Color{200, 120, 50, 255} : (previewHover ? Color{70, 70, 170, 255} : Color{50, 50, 130, 255}));
-    DrawRectangleLinesEx(previewBtn, 1, isPreviewing ? ORANGE : Color{100, 100, 200, 255});
-    const char* previewText = isPreviewing ? "Stop" : "Preview";
-    int previewTextW = MeasureText(previewText, 16);
-    DrawText(previewText, (int)(previewBtn.x + btnW/2 - previewTextW/2), (int)(previewBtn.y + 14), 16, WHITE);
     
-    // Save Button
-    Rectangle saveBtn = {btnStartX + btnW + gap, btnY, btnW, btnH};
-    bool saveHover = CheckCollisionPointRec(state.getMousePosition(), saveBtn);
-    DrawRectangleRec(saveBtn, saveHover ? Color{70, 170, 70, 255} : Color{50, 130, 50, 255});
-    DrawRectangleLinesEx(saveBtn, 1, Color{100, 200, 100, 255});
-    const char* saveText = state.recorder.recordStems ? "Save All" : "Save";
-    int saveTextW = MeasureText(saveText, 16);
-    DrawText(saveText, (int)(saveBtn.x + btnW/2 - saveTextW/2), (int)(saveBtn.y + 14), 16, WHITE);
+    if (isPreviewing) {
+        DrawRectangleRec(previewBtn, RED);
+        const char* stopTxt = "Stop";
+        int stopTxtW = MeasureTextApp(stopTxt, 20);
+        DrawTextApp(stopTxt, (int)(previewBtn.x + (previewBtn.width - stopTxtW) / 2), (int)(previewBtn.y + (previewBtn.height - 20) / 2), 20, WHITE);
+    } else {
+        DrawRectangleRec(previewBtn, LIME);
+        const char* prevTxt = "Preview";
+        int prevTxtW = MeasureTextApp(prevTxt, 20);
+        DrawTextApp(prevTxt, (int)(previewBtn.x + (previewBtn.width - prevTxtW) / 2), (int)(previewBtn.y + (previewBtn.height - 20) / 2), 20, BLACK);
+    }
     
-    // Discard Button
-    Rectangle discardBtn = {btnStartX + (btnW + gap) * 2, btnY, btnW, btnH};
-    bool discardHover = CheckCollisionPointRec(state.getMousePosition(), discardBtn);
-    DrawRectangleRec(discardBtn, discardHover ? Color{170, 70, 70, 255} : Color{130, 50, 50, 255});
-    DrawRectangleLinesEx(discardBtn, 1, Color{200, 100, 100, 255});
-    const char* discardText = "Discard";
-    int discardTextW = MeasureText(discardText, 16);
-    DrawText(discardText, (int)(discardBtn.x + btnW/2 - discardTextW/2), (int)(discardBtn.y + 14), 16, WHITE);
+    // Save
+    Rectangle saveBtn = {btnX + 110, btnY, 100, btnH};
+    DrawRectangleRec(saveBtn, BLUE);
+    const char* saveLabel = state.recorder.recordStems ? "Save All" : "Save";
+    int saveLabelW = MeasureTextApp(saveLabel, 20);
+    DrawTextApp(saveLabel, (int)(saveBtn.x + (saveBtn.width - saveLabelW) / 2), (int)(saveBtn.y + (saveBtn.height - 20) / 2), 20, WHITE);
     
-    // Handle Clicks - consume ALL clicks when this overlay is open
-    // Clear justOpened flag on first frame to prevent click-through
+    // Discard
+    Rectangle discardBtn = {btnX + 220, btnY, 100, btnH};
+    DrawRectangleRec(discardBtn, Color{150, 50, 50, 255});
+    const char* discardLabel = "Discard";
+    int discardLabelW = MeasureTextApp(discardLabel, 20);
+    DrawTextApp(discardLabel, (int)(discardBtn.x + (discardBtn.width - discardLabelW) / 2), (int)(discardBtn.y + (discardBtn.height - 20) / 2), 20, WHITE);
+    
+    
+    // Handle Input
     if (state.recorder.justOpenedReview) {
         state.recorder.justOpenedReview = false;
-        return; // Skip click handling on first frame
+        return; 
+    }
+    
+    // --- Waveform Overlay Controls (Zoom) ---
+    // Floating buttons top-right of waveform
+    float zoomBtnSize = 40;
+    float zoomBtnMargin = 10;
+    float zoomX = waveArea.x + waveArea.width - zoomBtnSize - zoomBtnMargin;
+    float zoomY = waveArea.y + zoomBtnMargin;
+    
+    Rectangle zoomInBtn = {zoomX, zoomY, zoomBtnSize, zoomBtnSize};
+    Rectangle zoomOutBtn = {zoomX - zoomBtnSize - 10, zoomY, zoomBtnSize, zoomBtnSize};
+    
+    // Draw Zoom Buttons
+    DrawRectangleRec(zoomInBtn, Color{60, 60, 60, 200});
+    DrawRectangleLinesEx(zoomInBtn, 1, WHITE);
+    const char* plusTxt = "+";
+    int plusTxtW = MeasureTextApp(plusTxt, 30);
+    DrawTextApp(plusTxt, (int)(zoomInBtn.x + (zoomInBtn.width - plusTxtW) / 2), (int)(zoomInBtn.y + (zoomInBtn.height - 30) / 2), 30, WHITE);
+    
+    DrawRectangleRec(zoomOutBtn, Color{60, 60, 60, 200});
+    DrawRectangleLinesEx(zoomOutBtn, 1, WHITE);
+    const char* minusTxt = "-";
+    int minusTxtW = MeasureTextApp(minusTxt, 30);
+    DrawTextApp(minusTxt, (int)(zoomOutBtn.x + (zoomOutBtn.width - minusTxtW) / 2), (int)(zoomOutBtn.y + (zoomOutBtn.height - 30) / 2), 30, WHITE);
+
+    // --- Interaction Logic ---
+    
+    // Handle Input
+    if (state.recorder.justOpenedReview) {
+        state.recorder.justOpenedReview = false;
+        return; 
+    }
+    
+    // Scrollbar Dragging (Explicit scrollbar)
+    if (state.recorder.isDraggingScroll && !state.recorder.isDraggingWaveform) {
+        if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+            float delta = state.getMousePosition().x - state.recorder.dragStartX;
+            float viewWidth = 1.0f / state.recorder.waveformZoom;
+            float maxScroll = 1.0f - viewWidth;
+            float tracksWidth = waveArea.width - (waveArea.width * viewWidth); // Width of track area
+            
+            if (tracksWidth > 0.1f) { 
+                float scrollDelta = delta / tracksWidth * maxScroll;
+                state.recorder.waveformScrollX = state.recorder.dragStartScrollX + scrollDelta;
+                // Clamp
+                if (state.recorder.waveformScrollX < 0) state.recorder.waveformScrollX = 0;
+                if (state.recorder.waveformScrollX > maxScroll) state.recorder.waveformScrollX = maxScroll;
+            }
+        } else {
+            state.recorder.isDraggingScroll = false;
+        }
+    }
+    
+    // Waveform Dragging (Drag to Scroll)
+    if (state.recorder.isDraggingWaveform) {
+        if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+            float deltaPix = state.recorder.dragStartX - state.getMousePosition().x; // Drag LEFT to move view RIGHT (scroll increases)
+            
+            // Convert pixel delta to normalized scroll delta
+            // Total width in pixels = waveArea.width * zoom
+            // Scroll delta = deltaPix / TotalWidth
+            float totalWidth = waveArea.width * state.recorder.waveformZoom;
+            float scrollDelta = deltaPix / totalWidth; 
+            
+            state.recorder.waveformScrollX = state.recorder.dragStartScrollX + scrollDelta;
+            
+            float viewWidth = 1.0f / state.recorder.waveformZoom;
+            float maxScroll = 1.0f - viewWidth;
+            
+            if (state.recorder.waveformScrollX < 0) state.recorder.waveformScrollX = 0;
+            if (state.recorder.waveformScrollX > maxScroll) state.recorder.waveformScrollX = maxScroll;
+            
+        } else {
+            state.recorder.isDraggingWaveform = false;
+        }
     }
     
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        state.consumeClick(); // Consume click for this overlay
-        if (previewHover) {
+        state.consumeClick();
+        
+        // Check Zoom Buttons first
+        if (CheckCollisionPointRec(state.getMousePosition(), zoomInBtn)) {
+            state.recorder.waveformZoom *= 1.5f;
+             // Clamp center? Simple zoom in is fine.
+        }
+        else if (CheckCollisionPointRec(state.getMousePosition(), zoomOutBtn)) {
+            state.recorder.waveformZoom /= 1.5f;
+            if (state.recorder.waveformZoom < 1.0f) state.recorder.waveformZoom = 1.0f;
+            // Re-clamp scroll if we zoomed out
+            float viewWidth = 1.0f / state.recorder.waveformZoom;
+            float maxScroll = 1.0f - viewWidth;
+            if (state.recorder.waveformScrollX > maxScroll) state.recorder.waveformScrollX = maxScroll;
+        }
+        else if (CheckCollisionPointRec(state.getMousePosition(), previewBtn)) {
             if (isPreviewing) {
                 engine.stopRecordingPreview();
                 state.recorder.isPreviewing = false;
@@ -241,72 +354,135 @@ void RecordingUI::DrawReviewUI() {
                 engine.startRecordingPreview();
                 state.recorder.isPreviewing = true;
             }
-        } else if (saveHover) {
-            // Save recording to recordings folder
-            std::string recordingsDir = "recordings";
+        }
+        else if (CheckCollisionPointRec(state.getMousePosition(), saveBtn)) {
+             // Save Logic
+             std::string recordingsDir = "recordings";
+             
+             std::string filename = state.recorder.filenameBuffer;
+             if (filename.empty()) filename = "recording";
+             
+             #if defined(__ANDROID__)
+            // ANDROID: Direct Export (Bypass File Browser)
+            // 1. Save locally to app-specific cache
+            std::string cacheDir = "/data/data/com.quadracollision.blacklang/get_files/cache"; // standard cache location
+            // Actually better to use the safe path we found before, but treat as temp
+            std::string tempPath = "/storage/emulated/0/Android/data/com.quadracollision.blacklang/files/Recordings/" + filename + ".wav";
             
-            #if defined(__ANDROID__)
-            recordingsDir = "/storage/emulated/0/Music";
+            // Ensure dir exists
+            std::filesystem::create_directories("/storage/emulated/0/Android/data/com.quadracollision.blacklang/files/Recordings");
+
+            if (engine.saveRecordingWrapper(tempPath)) {
+                 platform::LaunchFileSaver(tempPath, filename + ".wav");
+                 // platform::ShowToast("Saving..."); // Optional, system picker is obvious enough
+                 
+                 // Clear buffers immediately as we are done
+                 engine.clearRecordedBuffers();
+            } else {
+                 platform::ShowToast("Internal Save Failed!");
+            }
             #else
-            std::filesystem::create_directories(recordingsDir);
+            // DESKTOP: Use File Browser
+            // Open File Browser for Save (Master Mix)
+            FileBrowser::Open(state, PatternEditorState::BrowserMode::RecordingSave);
+             
+            // CRITICAL: DO NOT clear buffers here. The FileBrowser needs the data to save!
+            // We will clear them in FileBrowser::Draw after successful save.
             #endif
             
-            std::string filename = state.recorder.filenameBuffer;
-            if (filename.empty()) filename = "recording";
-            
-            if (state.recorder.recordStems) {
-                engine.saveRecordedStems(recordingsDir, filename);
-            } else {
-                engine.saveRecordedAudio(recordingsDir + "/" + filename + ".wav");
-            }
-            
-            engine.clearRecordedBuffers();
             state.recorder.showReview = false;
             state.recorder.isPreviewing = false;
             engine.stopRecordingPreview();
             
-            // Disarm recording after saving (User Request: "not-recording mode")
             engine.disarmRecording();
             state.recorder.isArmed = false;
             state.recorder.isRecording = false;
-        } else if (discardHover) {
-            engine.clearRecordedBuffers();
-            state.recorder.showReview = false;
-            state.recorder.isPreviewing = false;
-            engine.stopRecordingPreview();
-            
-            // Disarm on discard too, per user request
-            engine.disarmRecording();
-            state.recorder.isArmed = false;
-            state.recorder.isRecording = false;
-        } else if (CheckCollisionPointRec(state.getMousePosition(), waveArea) && sampleCount > 0) {
-            // Waveform click for seeking
-            float clickX = state.getMousePosition().x - waveArea.x;
-            float norm = clickX / waveArea.width;
-            int64_t seekSample = (int64_t)(norm * sampleCount);
-            engine.seekRecordingPreview(seekSample);
-            state.recorder.previewPosition = seekSample;
         }
-        // All clicks consumed - overlay is modal
+        else if (CheckCollisionPointRec(state.getMousePosition(), discardBtn)) {
+            engine.clearRecordedBuffers();
+            state.recorder.showReview = false;
+            state.recorder.isPreviewing = false;
+            engine.stopRecordingPreview();
+            
+            engine.disarmRecording();
+            state.recorder.isArmed = false;
+            state.recorder.isRecording = false;
+        }
+        else if (CheckCollisionPointRec(state.getMousePosition(), waveArea) && sampleCount > 0) {
+            // Start Drag on Waveform
+            state.recorder.isDraggingWaveform = true;
+            state.recorder.dragStartX = state.getMousePosition().x;
+            state.recorder.dragStartScrollX = state.recorder.waveformScrollX;
+        }
+    }
+    
+    // Release Logic (Seek if it was a Tap)
+    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+         if (CheckCollisionPointRec(state.getMousePosition(), waveArea) && sampleCount > 0 && !state.recorder.isDraggingScroll) {
+             // If we were dragging waveform but didn't move much, treat as seek
+             // Or better: If `isDraggingWaveform` was true, check distance
+             // But simpler: If state.recorder.isDraggingWaveform is true, we check if mouse moved.
+             
+             if (state.recorder.isDraggingWaveform) {
+                 float dist = fabs(state.getMousePosition().x - state.recorder.dragStartX);
+                 if (dist < 5.0f) { // Threshold for Tap vs Drag
+                     // It was a Tap -> Seek
+                     float clickX = state.getMousePosition().x - waveArea.x;
+                     float normX = clickX / waveArea.width;
+                     
+                     float viewWidth = 1.0f / state.recorder.waveformZoom;
+                     float actualPosNorm = state.recorder.waveformScrollX + (normX * viewWidth);
+                     
+                     int64_t seekSample = (int64_t)(actualPosNorm * sampleCount);
+                     if (seekSample < 0) seekSample = 0;
+                     if (seekSample >= sampleCount) seekSample = sampleCount - 1;
+                     
+                     engine.seekRecordingPreview(seekSample);
+                     state.recorder.previewPosition = seekSample;
+                 }
+                 state.recorder.isDraggingWaveform = false;
+             }
+         }
     }
 }
 
 void RecordingUI::DrawWaveform(Rectangle area, const juce::AudioBuffer<float>& buffer, int sampleCount, int64_t playhead) {
     if (sampleCount <= 0 || buffer.getNumSamples() == 0) return;
     
+    // Calculate visible range based on Zoom/Scroll
+    float zoom = state.recorder.waveformZoom;
+    if (zoom < 1.0f) zoom = 1.0f;
+    
+    float viewWidth = 1.0f / zoom;
+    int visibleSampleCount = (int)(sampleCount * viewWidth);
+    int startOffsetSample = (int)(state.recorder.waveformScrollX * sampleCount);
+    
+    // Clamp
+    if (startOffsetSample < 0) startOffsetSample = 0;
+    if (startOffsetSample + visibleSampleCount > sampleCount) startOffsetSample = sampleCount - visibleSampleCount;
+    
     int width = (int)area.width;
-    int samplesPerPixel = std::max(1, sampleCount / width);
+    int samplesPerPixel = std::max(1, visibleSampleCount / width);
     
     float centerY = area.y + area.height / 2;
     float halfHeight = area.height / 2 - 5;
     
-    // Draw waveform
+    // Draw visible waveform
     for (int x = 0; x < width; ++x) {
-        int startSample = x * samplesPerPixel;
-        int endSample = std::min(startSample + samplesPerPixel, sampleCount);
+        int startSample = startOffsetSample + (x * samplesPerPixel);
+        int endSample = std::min(startSample + samplesPerPixel, startOffsetSample + visibleSampleCount);
+        
+        if (endSample > sampleCount) endSample = sampleCount;
+        if (startSample >= endSample) continue;
         
         float minVal = 0, maxVal = 0;
-        for (int s = startSample; s < endSample; ++s) {
+        // Simple peak preservation
+        // Optimization: Don't iterate all samples if zoomed out too far, but here we prioritize accuracy for now
+        // For performance on huge files we might need mipmaps, but for recording it's fine.
+        int step = 1;
+        if (samplesPerPixel > 100) step = samplesPerPixel / 50; // Skip some for perf if very zoomed out
+        
+        for (int s = startSample; s < endSample; s += step) {
             float sample = buffer.getSample(0, s); // Left channel
             if (sample < minVal) minVal = sample;
             if (sample > maxVal) maxVal = sample;
@@ -316,12 +492,16 @@ void RecordingUI::DrawWaveform(Rectangle area, const juce::AudioBuffer<float>& b
         int y2 = (int)(centerY - minVal * halfHeight);
         if (y2 < y1) std::swap(y1, y2);
         
+        // Ensure at least 1px height
+        if (y2 == y1) y2++;
+        
         DrawLine((int)(area.x + x), y1, (int)(area.x + x), y2, Color{100, 150, 255, 255});
     }
     
-    // Draw playhead
-    if (playhead >= 0 && playhead < sampleCount) {
-        float playheadX = area.x + ((float)playhead / sampleCount) * area.width;
+    // Draw playhead relative to view
+    if (playhead >= startOffsetSample && playhead < startOffsetSample + visibleSampleCount) {
+        float relPositions = (float)(playhead - startOffsetSample) / visibleSampleCount;
+        float playheadX = area.x + relPositions * area.width;
         DrawLine((int)playheadX, (int)area.y, (int)playheadX, (int)(area.y + area.height), RED);
     }
 }

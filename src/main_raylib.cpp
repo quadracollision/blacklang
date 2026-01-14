@@ -4,6 +4,7 @@
 #include <iostream>
 #include <algorithm>
 
+
 // Design resolution - UI is authored at this size
 static const int DESIGN_WIDTH = 960;
 static const int DESIGN_HEIGHT = 540;

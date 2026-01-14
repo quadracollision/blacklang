@@ -94,6 +94,7 @@ public:
     // Save recorded audio to file
     bool saveRecordedAudio(const std::string& filepath);
     bool saveRecordedStems(const std::string& directory, const std::string& baseName);
+    bool saveRecordingWrapper(const std::string& filepath);
     
     // AudioIODeviceCallback
     void audioDeviceIOCallbackWithContext(
@@ -155,6 +156,7 @@ private:
         int64_t endPosition = 0;
         bool active = false;
         Pattern* sourcePattern = nullptr;
+        int fadeInSamplesRemaining = 0;
     } previewState;
     
     // FX

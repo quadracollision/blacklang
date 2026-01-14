@@ -2,6 +2,15 @@
 #include <juce_core/juce_core.h>
 #include <fstream>
 #include <iostream>
+#include <cerrno>
+#include <cstring>
+
+#if defined(__ANDROID__)
+#include <android/log.h>
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, "ProjectFile", __VA_ARGS__)
+#else
+#define LOGD(...) 
+#endif
 
 bool ProjectFile::save(const std::string& filename,
                        const std::map<std::string, Pattern>& patterns,
@@ -15,6 +24,8 @@ bool ProjectFile::save(const std::string& filename,
         juce::DynamicObject::Ptr cObj = new juce::DynamicObject();
         cObj->setProperty("title", juce::String(col.title));
         cObj->setProperty("trackName", juce::String(col.trackName));
+        cObj->setProperty("volume", col.volume);
+        cObj->setProperty("pan", col.pan);
         
         juce::Array<juce::var> pNames;
         for (const auto& pName : col.patternNames) {
@@ -28,6 +39,21 @@ bool ProjectFile::save(const std::string& filename,
             syncFlags.add(sync);
         }
         cObj->setProperty("slotSync", syncFlags);
+        
+        // Save FX Chain
+        juce::Array<juce::var> fxArray;
+        for (const auto& fx : col.fxChain) {
+            juce::DynamicObject::Ptr fxObj = new juce::DynamicObject();
+            fxObj->setProperty("type", fx.type);
+            fxObj->setProperty("enabled", fx.enabled);
+            
+            juce::Array<juce::var> params;
+            for (float val : fx.params) params.add(val);
+            fxObj->setProperty("params", params);
+            
+            fxArray.add(juce::var(fxObj.get()));
+        }
+        cObj->setProperty("fxChain", fxArray);
         
         colsArray.add(juce::var(cObj.get()));
     }
@@ -108,6 +134,8 @@ bool ProjectFile::save(const std::string& filename,
     std::ofstream file(filename);
     if (!file.is_open()) {
         std::cerr << "Cannot write to: " << filename << std::endl;
+        LOGD("Failed to open file for writing: %s", filename.c_str());
+        LOGD("Error: %s", std::strerror(errno));
         return false;
     }
     
@@ -244,6 +272,9 @@ bool ProjectFile::load(const std::string& filename,
                     col.trackName = "Track_" + std::to_string(i);
                 }
                 
+                col.volume = c.hasProperty("volume") ? (float)c["volume"] : 1.0f;
+                col.pan = c.hasProperty("pan") ? (float)c["pan"] : 0.5f;
+                
                 juce::var pNames = c["patterns"];
                 if (pNames.isArray()) {
                     for (int j=0; j < pNames.size(); ++j) {
@@ -261,6 +292,25 @@ bool ProjectFile::load(const std::string& filename,
                 // Ensure slotSyncEnabled matches patternNames size
                 while (col.slotSyncEnabled.size() < col.patternNames.size()) {
                     col.slotSyncEnabled.push_back(false);
+                }
+                
+                // Load FX Chain
+                juce::var fxVar = c["fxChain"];
+                if (fxVar.isArray()) {
+                    for (int j = 0; j < fxVar.size(); ++j) {
+                        SerializedFX sfx;
+                        juce::var fxObj = fxVar[j];
+                        sfx.type = (int)fxObj["type"];
+                        sfx.enabled = (bool)fxObj["enabled"];
+                        
+                        juce::var paramsVar = fxObj["params"];
+                        if (paramsVar.isArray()) {
+                            for (int k = 0; k < paramsVar.size(); ++k) {
+                                sfx.params.push_back((float)paramsVar[k]);
+                            }
+                        }
+                        col.fxChain.push_back(sfx);
+                    }
                 }
                 
                 columns.push_back(col);

@@ -14,7 +14,7 @@ namespace gui {
 FXControls::FXControls(GuiState& s, AudioEngine& e) : state(s), engine(e) {}
 
 void FXControls::DrawFXSlider(Rectangle rect, const char* label, float* value, float min, float max) {
-    DrawText(label, rect.x - 100, rect.y, 16, WHITE);
+    DrawTextApp(label, rect.x - 100, rect.y, 16, WHITE);
     
     DrawRectangleRec(rect, DARKGRAY);
     DrawRectangleLinesEx(rect, 1, WHITE);
@@ -35,17 +35,17 @@ void FXControls::DrawFXSlider(Rectangle rect, const char* label, float* value, f
         }
     }
     
-    DrawText(TextFormat("%.2f", *value), rect.x + rect.width + 10, rect.y, 10, WHITE);
+    DrawTextApp(TextFormat("%.2f", *value), rect.x + rect.width + 10, rect.y, 10, WHITE);
 }
 
 float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor) {
     float startY = area.y;
     Pattern& p = pattern;
     
-    DrawText(TextFormat("Step: %d", state.editor.selectedStep + 1), area.x, startY + 10, 24, WHITE);
+    DrawTextApp(TextFormat("Step: %d", state.editor.selectedStep + 1), area.x, startY + 10, 24, WHITE);
     
     if (state.editor.selectedStep != -1 && state.editor.stepStates[state.editor.selectedStep]) {
-        DrawText("FX Selection:", area.x, startY + 40, 22, WHITE);
+        DrawTextApp("FX Selection:", area.x, startY + 40, 22, WHITE);
         
         // Dynamic FX List from system
         struct FxOption { int id; std::string name; };
@@ -72,12 +72,12 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
         // Draw Available Box
         DrawRectangleRec(availBox, BLACK);
         DrawRectangleLinesEx(availBox, 2, WHITE);
-        DrawText("Available", availBox.x, availBox.y - 18, 16, LIGHTGRAY);
+        DrawTextApp("Available", availBox.x, availBox.y - 18, 16, LIGHTGRAY);
         
         // Draw Applied Box
         DrawRectangleRec(appliedBox, BLACK);
         DrawRectangleLinesEx(appliedBox, 2, WHITE);
-        DrawText("Applied", appliedBox.x, appliedBox.y - 18, 16, LIGHTGRAY);
+        DrawTextApp("Applied", appliedBox.x, appliedBox.y - 18, 16, LIGHTGRAY);
 
         // Filter lists
         std::vector<FxOption> listAvailable;
@@ -143,7 +143,7 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
                     DrawRectangleRec(itemRect, {50, 50, 50, 255});
                 }
                 
-                DrawText(opt.name.c_str(), itemRect.x + 8, itemRect.y + 8, 16, isSelected ? BLACK : WHITE);
+                DrawTextApp(opt.name.c_str(), itemRect.x + 8, itemRect.y + 8, 16, isSelected ? BLACK : WHITE);
                 
                 if (CheckCollisionPointRec(state.getMousePosition(), itemRect) && CheckCollisionPointRec(state.getMousePosition(), availBox) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                     state.editor.selectedAvailableFxId = opt.id;
@@ -214,7 +214,7 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
                     DrawRectangleRec(itemRect, {50, 50, 50, 255});
                 }
                 
-                DrawText(opt.name.c_str(), itemRect.x + 8, itemRect.y + 8, 16, isSelected ? BLACK : WHITE);
+                DrawTextApp(opt.name.c_str(), itemRect.x + 8, itemRect.y + 8, 16, isSelected ? BLACK : WHITE);
                 
                 if (CheckCollisionPointRec(state.getMousePosition(), itemRect) && CheckCollisionPointRec(state.getMousePosition(), appliedBox) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                     state.editor.selectedAppliedFxId = opt.id;
@@ -238,7 +238,9 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
         // Add Button - touch friendly
         Rectangle addBtn = {availBox.x, availBox.y + boxH + 10, boxW, 45};
         DrawRectangleRec(addBtn, BLUE);
-        DrawText("Add FX", addBtn.x + boxW/2 - 30, addBtn.y + 12, 18, WHITE);
+        const char* addTxt = "Add FX";
+        int addW = MeasureTextApp(addTxt, 18);
+        DrawTextApp(addTxt, addBtn.x + (addBtn.width - addW)/2, addBtn.y + 12, 18, WHITE);
         
         if (CheckCollisionPointRec(state.getMousePosition(), addBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             if (state.editor.selectedAvailableFxId != -1) {
@@ -254,7 +256,9 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
         // Remove Button - touch friendly
         Rectangle removeBtn = {appliedBox.x, appliedBox.y + boxH + 10, boxW, 45};
         DrawRectangleRec(removeBtn, RED);
-        DrawText("Remove", removeBtn.x + boxW/2 - 35, removeBtn.y + 12, 18, WHITE);
+        const char* remTxt = "Remove";
+        int remW = MeasureTextApp(remTxt, 18);
+        DrawTextApp(remTxt, removeBtn.x + (removeBtn.width - remW)/2, removeBtn.y + 12, 18, WHITE);
         
         if (CheckCollisionPointRec(state.getMousePosition(), removeBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             if (state.editor.selectedAppliedFxId != -1) {
@@ -267,7 +271,7 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
         // Parameter Panel
         if (state.editor.selectedAppliedFxId != -1) {
             float paramPanelY = removeBtn.y + removeBtn.height + 15;
-            DrawText("FX Params:", area.x, paramPanelY, 20, WHITE);
+            DrawTextApp("FX Params:", area.x, paramPanelY, 20, WHITE);
             
             int step = state.editor.selectedStep + 1;
             
@@ -280,7 +284,7 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
             } else if (state.editor.selectedAppliedFxId == Pattern::FX_ADSR) {
                 DrawADSRParams(area.x, paramPanelY, p, step);
             } else {
-                DrawText("No params", area.x + 120, paramPanelY, 20, GRAY);
+                DrawTextApp("No params", area.x + 120, paramPanelY, 20, GRAY);
             }
         }
         
@@ -301,7 +305,7 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
              }
         }
     } else {
-        DrawText("Select an active step to edit FX", area.x, startY + 30, 22, GRAY);
+        DrawTextApp("Select an active step to edit FX", area.x, startY + 30, 22, GRAY);
         startY += 60;
     }
     
@@ -311,14 +315,14 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
 
 void FXControls::DrawStutterParams(float x, float paramPanelY, Pattern& p, int step) {
     // Rate Control
-    DrawText("Rate:", x + 120, paramPanelY, 20, WHITE);
+    DrawTextApp("Rate:", x + 160, paramPanelY, 20, WHITE);
     
     float currentRate = 4.0f;
     if (p.stepFXParams[step].count(Pattern::PAR_STUTTER_RATE)) {
         currentRate = p.stepFXParams[step][Pattern::PAR_STUTTER_RATE];
     }
     
-    Rectangle rateSlider = {x + 230, paramPanelY + 5, 150, 10};
+    Rectangle rateSlider = {x + 280, paramPanelY + 5, 150, 10};
     DrawRectangleRec(rateSlider, DARKGRAY);
     DrawRectangleLinesEx(rateSlider, 1, WHITE);
     
@@ -342,19 +346,19 @@ void FXControls::DrawStutterParams(float x, float paramPanelY, Pattern& p, int s
         engine.addPattern(p);
     }
     
-    DrawText(TextFormat("%.1f", p.stepFXParams[step].count(Pattern::PAR_STUTTER_RATE) ? 
+    DrawTextApp(TextFormat("%.1f", p.stepFXParams[step].count(Pattern::PAR_STUTTER_RATE) ? 
         p.stepFXParams[step][Pattern::PAR_STUTTER_RATE] : 4.0f), rateSlider.x + rateSlider.width + 10, paramPanelY, 10, WHITE);
 
     // Speed Control
     paramPanelY += 35;
-    DrawText("Speed:", x + 120, paramPanelY, 20, WHITE);
+    DrawTextApp("Speed:", x + 160, paramPanelY, 20, WHITE);
     
     float currentSpeed = 1.0f;
     if (p.stepFXParams[step].count(Pattern::PAR_STUTTER_SPEED)) {
         currentSpeed = p.stepFXParams[step][Pattern::PAR_STUTTER_SPEED];
     }
     
-    Rectangle speedSlider = {x + 230, paramPanelY + 5, 150, 10};
+    Rectangle speedSlider = {x + 280, paramPanelY + 5, 150, 10};
     DrawRectangleRec(speedSlider, DARKGRAY);
     DrawRectangleLinesEx(speedSlider, 1, WHITE);
     
@@ -378,20 +382,20 @@ void FXControls::DrawStutterParams(float x, float paramPanelY, Pattern& p, int s
         engine.addPattern(p);
     }
     
-    DrawText(TextFormat("%.2f", p.stepFXParams[step].count(Pattern::PAR_STUTTER_SPEED) ? 
+    DrawTextApp(TextFormat("%.2f", p.stepFXParams[step].count(Pattern::PAR_STUTTER_SPEED) ? 
         p.stepFXParams[step][Pattern::PAR_STUTTER_SPEED] : 1.0f), speedSlider.x + speedSlider.width + 10, paramPanelY, 10, WHITE);
 }
 
 void FXControls::DrawSlideParams(float x, float paramPanelY, Pattern& p, int step) {
     // Time Control
-    DrawText("Time:", x + 120, paramPanelY, 20, WHITE);
+    DrawTextApp("Time:", x + 160, paramPanelY, 20, WHITE);
     
     float currentTime = 1.0f;
     if (p.stepFXParams[step].count(Pattern::PAR_SLIDE_TIME)) {
         currentTime = p.stepFXParams[step][Pattern::PAR_SLIDE_TIME];
     }
     
-    Rectangle timeSlider = {x + 230, paramPanelY + 5, 150, 10};
+    Rectangle timeSlider = {x + 280, paramPanelY + 5, 150, 10};
     DrawRectangleRec(timeSlider, DARKGRAY);
     DrawRectangleLinesEx(timeSlider, 1, WHITE);
     
@@ -415,19 +419,19 @@ void FXControls::DrawSlideParams(float x, float paramPanelY, Pattern& p, int ste
         engine.addPattern(p);
     }
     
-    DrawText(TextFormat("%.2f", p.stepFXParams[step].count(Pattern::PAR_SLIDE_TIME) ? 
+    DrawTextApp(TextFormat("%.2f", p.stepFXParams[step].count(Pattern::PAR_SLIDE_TIME) ? 
         p.stepFXParams[step][Pattern::PAR_SLIDE_TIME] : 1.0f), timeSlider.x + timeSlider.width + 10, paramPanelY, 10, WHITE);
 
     // Squelch Control
     paramPanelY += 35;
-    DrawText("Squelch:", x + 120, paramPanelY, 20, WHITE);
+    DrawTextApp("Squelch:", x + 160, paramPanelY, 20, WHITE);
     
     float currentSquelch = 0.0f;
     if (p.stepFXParams[step].count(Pattern::PAR_SLIDE_SQUELCH)) {
         currentSquelch = p.stepFXParams[step][Pattern::PAR_SLIDE_SQUELCH];
     }
     
-    Rectangle squelchSlider = {x + 230, paramPanelY + 5, 150, 10};
+    Rectangle squelchSlider = {x + 280, paramPanelY + 5, 150, 10};
     DrawRectangleRec(squelchSlider, DARKGRAY);
     DrawRectangleLinesEx(squelchSlider, 1, WHITE);
     
@@ -451,12 +455,12 @@ void FXControls::DrawSlideParams(float x, float paramPanelY, Pattern& p, int ste
         engine.addPattern(p);
     }
     
-    DrawText(TextFormat("%.2f", p.stepFXParams[step].count(Pattern::PAR_SLIDE_SQUELCH) ? 
+    DrawTextApp(TextFormat("%.2f", p.stepFXParams[step].count(Pattern::PAR_SLIDE_SQUELCH) ? 
         p.stepFXParams[step][Pattern::PAR_SLIDE_SQUELCH] : 0.0f), squelchSlider.x + squelchSlider.width + 10, paramPanelY, 10, WHITE);
 }
 
 void FXControls::DrawNudgeParams(float x, float paramPanelY, Pattern& p, int step) {
-    DrawText("Nudge (Start/End):", x + 170, paramPanelY + 5, 10, WHITE);
+    DrawTextApp("Nudge (Start/End):", x + 170, paramPanelY + 5, 10, WHITE);
     
     float currentOffset = 0.5f;
     if (p.stepFXParams[step].count(Pattern::PAR_NUDGE_OFFSET)) {
@@ -495,24 +499,24 @@ void FXControls::DrawNudgeParams(float x, float paramPanelY, Pattern& p, int ste
     float offset = p.stepFXParams[step].count(Pattern::PAR_NUDGE_OFFSET) ? 
         p.stepFXParams[step][Pattern::PAR_NUDGE_OFFSET] : 0.5f;
     if (offset > 0.55f) {
-        DrawText(TextFormat("Start +%.0f%%", (offset-0.5f)*200), offsetSlider.x + offsetSlider.width + 10, paramPanelY, 10, WHITE);
+        DrawTextApp(TextFormat("Start +%.0f%%", (offset-0.5f)*200), offsetSlider.x + offsetSlider.width + 10, paramPanelY, 10, WHITE);
     } else if (offset < 0.45f) {
-        DrawText(TextFormat("Len %.0f%%", offset*200), offsetSlider.x + offsetSlider.width + 10, paramPanelY, 10, WHITE);
+        DrawTextApp(TextFormat("Len %.0f%%", offset*200), offsetSlider.x + offsetSlider.width + 10, paramPanelY, 10, WHITE);
     } else {
-        DrawText("Full", offsetSlider.x + offsetSlider.width + 10, paramPanelY, 10, WHITE);
+        DrawTextApp("Full", offsetSlider.x + offsetSlider.width + 10, paramPanelY, 10, WHITE);
     }
 }
 
 void FXControls::DrawADSRParams(float x, float y, Pattern& p, int step) {
     auto drawSlider = [&](const char* label, int paramId, float defaultVal, float min, float max, float yOffset) {
-        DrawText(label, x + 120, y + yOffset, 20, WHITE);
+        DrawTextApp(label, x + 160, y + yOffset, 20, WHITE);
         
         float currentVal = defaultVal;
         if (p.stepFXParams[step].count(paramId)) {
             currentVal = p.stepFXParams[step][paramId];
         }
         
-        Rectangle slider = {x + 200, y + yOffset + 5, 150, 10};
+        Rectangle slider = {x + 280, y + yOffset + 5, 150, 10};
         DrawRectangleRec(slider, DARKGRAY);
         DrawRectangleLinesEx(slider, 1, WHITE);
         
@@ -538,7 +542,7 @@ void FXControls::DrawADSRParams(float x, float y, Pattern& p, int step) {
             engine.addPattern(p);
         }
         
-        DrawText(TextFormat("%.2f", currentVal), slider.x + slider.width + 10, y + yOffset, 10, WHITE);
+        DrawTextApp(TextFormat("%.2f", currentVal), slider.x + slider.width + 10, y + yOffset, 10, WHITE);
     };
     
     drawSlider("Attack", Pattern::PAR_ATTACK_TIME, 0.05f, 0.0f, 1.0f, 0);

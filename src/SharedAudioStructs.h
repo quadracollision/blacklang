@@ -32,10 +32,12 @@ struct PatternPlayState {
     // Filter State
     struct SimpleFilter {
         float low = 0.0f, band = 0.0f, high = 0.0f;
-        void reset() { low=0; band=0; high=0; }
+        bool active = false;
+        void reset() { low=0; band=0; high=0; active=false; }
         
         // Simple SVF (State Variable Filter)
         float process(float input, float cutoff, float res) {
+            active = true;
             cutoff = (cutoff > 0.99f) ? 0.99f : cutoff;
             // f = 2 * sin(pi * cutoff / sampleRate) -> approx for low cutoffs: 2*pi*fc/fs
             // We'll treat 'cutoff' as the generic f coefficient directly for simplicity here
@@ -47,6 +49,10 @@ struct PatternPlayState {
             return low;
         }
     } filter;
+
+    // Cache for per-sample processing
+    float currentStepSquelch = 0.0f;
+    bool hasStepSquelch = false;
 
     // ADSR State
     bool useADSR = false;

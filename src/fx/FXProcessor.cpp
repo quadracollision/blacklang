@@ -61,24 +61,17 @@ void FXProcessor::processStepFX(PatternPlayState& state, const Pattern& pattern,
 
 float FXProcessor::processSampleFX(PatternPlayState& state, float sample, double sampleRate, int step, const Pattern& pattern) {
     // Apply Filter (Slide Squelch)
-    if (pattern.stepFXParams.count(step) && 
-        pattern.stepFXParams.at(step).count(Pattern::PAR_SLIDE_SQUELCH)) {
-        
-        float squelch = pattern.stepFXParams.at(step).at(Pattern::PAR_SLIDE_SQUELCH);
-        if (squelch > 0.01f) {
-            float baseFreq = 440.0f; 
-            float currentFreq = baseFreq * (float)state.currentSpeedRatio;
-            float cutoffNorm = currentFreq / (float)sampleRate * 2.0f * 3.14159f;
-            cutoffNorm *= 2.0f; 
-            if (cutoffNorm > 0.8f) cutoffNorm = 0.8f;
+    if (state.hasStepSquelch) {
+        float baseFreq = 440.0f; 
+        float currentFreq = baseFreq * (float)state.currentSpeedRatio;
+        float cutoffNorm = currentFreq / (float)sampleRate * 2.0f * 3.14159f;
+        cutoffNorm *= 2.0f; 
+        if (cutoffNorm > 0.8f) cutoffNorm = 0.8f;
 
-            float res = 1.0f + (squelch * 4.0f); // 1.0 .. 5.0
-            sample = state.filter.process(sample, cutoffNorm, 1.0f / res);
-        } else {
-            state.filter.reset();
-        }
+        float res = 1.0f + (state.currentStepSquelch * 4.0f); // 1.0 .. 5.0
+        sample = state.filter.process(sample, cutoffNorm, 1.0f / res);
     } else {
-        state.filter.reset();
+        if (state.filter.active) state.filter.reset();
     }
     
     // ADSR Envelope
@@ -175,6 +168,9 @@ void FXProcessor::handleStutter(PatternPlayState& state, const Pattern& pattern,
 
     state.stutterIntervalSamples = (int)(stepDur / rate);
     if (state.stutterIntervalSamples < 100) state.stutterIntervalSamples = 100;
+    
+    // Trigger anti-click fade for the start of stutter
+    state.fadeInSamplesRemaining = 88;
 }
 
 void FXProcessor::handleSlice(PatternPlayState& state, const Pattern& pattern, int currentStep) {
@@ -193,6 +189,9 @@ void FXProcessor::handleSlice(PatternPlayState& state, const Pattern& pattern, i
                     state.sampleEndPosition = pattern.sliceMarkers[sliceIdx + 1];
                 }
             }
+            
+            // Trigger anti-click fade for slice jump
+            state.fadeInSamplesRemaining = 88;
         }
     }
 }

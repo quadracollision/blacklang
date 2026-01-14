@@ -70,7 +70,7 @@ void DrawDragGhost(GuiState& state) {
     };
     DrawRectangleRec(ghostRect, Color{100, 100, 255, 180});
     DrawRectangleLinesEx(ghostRect, 2, WHITE);
-    DrawText(state.drag.patternName.c_str(), ghostRect.x + 5, ghostRect.y + 12, 14, WHITE);
+    DrawTextApp(state.drag.patternName.c_str(), ghostRect.x + 5, ghostRect.y + 12, 14, WHITE);
 }
 
 } // namespace gui

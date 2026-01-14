@@ -3,7 +3,7 @@
 #include "../AudioEngine.h"
 
 namespace FileBrowser {
-    void Init(GuiState& state);
+    void Open(GuiState& state, PatternEditorState::BrowserMode mode);
     bool Draw(GuiState& state, AudioEngine& engine);
     void Refresh(GuiState& state);
     void NavigateTo(GuiState& state, const std::string& path);

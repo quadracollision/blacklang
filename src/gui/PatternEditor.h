@@ -35,7 +35,7 @@ private:
     void DrawSlicerControls(Rectangle& area);
     void DrawModeButtons(Rectangle& area);
     void DrawSaveButton(Rectangle winRect);
-    bool DrawFileBrowser(Rectangle winRect);
+
     
     void SavePattern();
     void LoadPatternIntoEditor(Pattern* p);

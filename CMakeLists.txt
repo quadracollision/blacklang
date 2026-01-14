@@ -38,9 +38,10 @@ if (ANDROID)
     add_library(blacklang SHARED
         src/main_raylib.cpp
         src/GuiRenderer.cpp
+        src/gui/FontManager.cpp
         src/FilePicker.cpp
         src/gui/FileBrowser.cpp
-        src/gui/ProjectBrowser.cpp
+
 
         src/AudioEngine.cpp
         src/AudioRecorder.cpp
@@ -57,6 +58,7 @@ if (ANDROID)
         src/gui/TrackFX.cpp
         src/gui/RecordingUI.cpp
         src/fx/FXProcessor.cpp
+        src/platform/AndroidBridge.cpp
     )
     
     target_include_directories(blacklang PRIVATE src)
@@ -97,9 +99,10 @@ else()
     add_executable(blacklang-raylib
         src/main_raylib.cpp
         src/GuiRenderer.cpp
+        src/gui/FontManager.cpp
         src/FilePicker.cpp
         src/gui/FileBrowser.cpp
-        src/gui/ProjectBrowser.cpp
+
 
         src/AudioEngine.cpp
         src/AudioRecorder.cpp
@@ -116,6 +119,7 @@ else()
         src/gui/TrackFX.cpp
         src/gui/RecordingUI.cpp
         src/fx/FXProcessor.cpp
+        src/platform/AndroidBridge.cpp
     )
 
     target_include_directories(blacklang-raylib PRIVATE src)

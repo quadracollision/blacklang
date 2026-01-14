@@ -386,6 +386,242 @@ private:
     }
 };
 
+// ==========================================
+// SATURATION EFFECT (Smooth Tanh)
+// ==========================================
+class SaturationEffect : public TrackEffect {
+public:
+    SaturationEffect() {
+        params.push_back({"Drive", 3.0f, 1.0f, 20.0f, 3.0f, ""});
+        params.push_back({"Output", 0.8f, 0.0f, 1.5f, 0.8f, ""});
+    }
+    
+    std::string getName() const override { return "Saturation"; }
+    FXType getType() const override { return FX_SATURATION; }
+    
+    void process(juce::AudioBuffer<float>& buffer) override {
+        float drive = params[0].value;
+        float outLevel = params[1].value;
+        
+        int numSamples = buffer.getNumSamples();
+        int numChannels = buffer.getNumChannels();
+        
+        for (int c = 0; c < numChannels; ++c) {
+            float* data = buffer.getWritePointer(c);
+            for (int i = 0; i < numSamples; ++i) {
+                // Tanh Soft Clip
+                data[i] = std::tanh(data[i] * drive) * outLevel;
+            }
+        }
+    }
+};
+
+// ==========================================
+// OVERDRIVE EFFECT (Aggressive)
+// ==========================================
+class OverdriveEffect : public TrackEffect {
+public:
+    OverdriveEffect() {
+        params.push_back({"Drive", 5.0f, 1.0f, 50.0f, 5.0f, ""});
+        params.push_back({"Tone", 0.5f, 0.05f, 0.95f, 0.5f, "Hz"}); // Simple LP coeff
+        params.push_back({"Level", 0.5f, 0.0f, 1.0f, 0.5f, ""});
+    }
+    
+    std::string getName() const override { return "Overdrive"; }
+    FXType getType() const override { return FX_OVERDRIVE; }
+    
+    void process(juce::AudioBuffer<float>& buffer) override {
+        float drive = params[0].value;
+        float tone = params[1].value; // Smoothing factor (1 = unfiltered, 0 = heavy)
+        float level = params[2].value;
+        
+        int numSamples = buffer.getNumSamples();
+        int numChannels = buffer.getNumChannels();
+        
+        for (int c = 0; c < numChannels; ++c) {
+            float* data = buffer.getWritePointer(c);
+            float lpState = 0.0f;
+            
+            for (int i = 0; i < numSamples; ++i) {
+                float in = data[i] * drive;
+                
+                // Hard Clip / Foldback
+                float out;
+                if (in > 1.0f) out = 0.666f; // 2/3
+                else if (in < -1.0f) out = -0.666f;
+                else out = in - (in * in * in) / 3.0f;
+                
+                // Simple LP Tone
+                lpState += tone * (out - lpState);
+                
+                data[i] = lpState * level;
+            }
+        }
+    }
+};
+
+// ==========================================
+// CHORUS EFFECT (Modulated Delay)
+// ==========================================
+class ChorusEffect : public TrackEffect {
+public:
+    ChorusEffect() {
+        params.push_back({"Rate", 1.5f, 0.1f, 10.0f, 1.5f, "Hz"});
+        params.push_back({"Depth", 2.0f, 0.0f, 10.0f, 2.0f, "ms"});
+        params.push_back({"Mix", 0.5f, 0.0f, 1.0f, 0.5f, "%"});
+        
+        delayBufferSize = 192000;
+        delayBuffer.setSize(2, delayBufferSize);
+        delayBuffer.clear();
+    }
+    
+    std::string getName() const override { return "Chorus"; }
+    FXType getType() const override { return FX_CHORUS; }
+    
+    void process(juce::AudioBuffer<float>& buffer) override {
+        float rate = params[0].value;
+        float depthMs = params[1].value;
+        float mix = params[2].value;
+        
+        float depthSamples = depthMs * 0.001f * sampleRate;
+        float lfoInc = (2.0f * 3.14159f * rate) / sampleRate;
+        
+        int numSamples = buffer.getNumSamples();
+        int numChannels = buffer.getNumChannels();
+        
+        if (delayBuffer.getNumChannels() < numChannels) {
+            delayBuffer.setSize(numChannels, delayBufferSize, true, true, true);
+        }
+        
+        for (int c = 0; c < numChannels; ++c) {
+            const float* inputData = buffer.getReadPointer(c);
+            float* outputData = buffer.getWritePointer(c);
+            float* delayData = delayBuffer.getWritePointer(c);
+            
+            // Stereo Phase offset
+            float currentPhase = phase + (c * 3.14159f / 2.0f);
+            
+            for (int i = 0; i < numSamples; ++i) {
+                // Determine read pos with LFO
+                float lfoVal = (std::sin(currentPhase) + 1.0f) * 0.5f; // 0..1
+                float currentDelay = 0.005f * sampleRate + (lfoVal * depthSamples); // Base 5ms delay + mod
+                
+                // Circular Read with Interpolation
+                float readIndex = (writePos + i) - currentDelay;
+                while (readIndex < 0) readIndex += delayBufferSize;
+                while (readIndex >= delayBufferSize) readIndex -= delayBufferSize;
+                
+                int i1 = (int)readIndex;
+                int i2 = (i1 + 1) % delayBufferSize;
+                float frac = readIndex - i1;
+                
+                float delayedSample = delayData[i1] * (1.0f - frac) + delayData[i2] * frac;
+                
+                // Write Input
+                int wPos = (writePos + i) % delayBufferSize;
+                delayData[wPos] = inputData[i];
+                
+                // Output
+                outputData[i] = inputData[i] * (1.0f - mix) + delayedSample * mix;
+                
+                currentPhase += lfoInc;
+            }
+        }
+        
+        phase += lfoInc * numSamples;
+        while (phase > 2.0f * 3.14159f) phase -= 2.0f * 3.14159f;
+        
+        writePos = (writePos + numSamples) % delayBufferSize;
+    }
+    
+private:
+    juce::AudioBuffer<float> delayBuffer;
+    int delayBufferSize;
+    int writePos = 0;
+    float phase = 0.0f;
+};
+
+// ==========================================
+// FLANGER EFFECT (Feed-back Modulated Delay)
+// ==========================================
+class FlangerEffect : public TrackEffect {
+public:
+    FlangerEffect() {
+        params.push_back({"Rate", 0.5f, 0.01f, 5.0f, 0.5f, "Hz"});
+        params.push_back({"Depth", 1.0f, 0.0f, 5.0f, 1.0f, "ms"});
+        params.push_back({"Feed", 0.6f, 0.0f, 0.95f, 0.6f, ""});
+        params.push_back({"Mix", 0.5f, 0.0f, 1.0f, 0.5f, "%"});
+        
+        delayBufferSize = 19200; // Small buffer fine for Flanger
+        delayBuffer.setSize(2, delayBufferSize);
+        delayBuffer.clear();
+    }
+    
+    std::string getName() const override { return "Flanger"; }
+    FXType getType() const override { return FX_FLANGER; }
+    
+    void process(juce::AudioBuffer<float>& buffer) override {
+        float rate = params[0].value;
+        float depthMs = params[1].value;
+        float feedback = params[2].value;
+        float mix = params[3].value;
+        
+        float depthSamples = depthMs * 0.001f * sampleRate;
+        float lfoInc = (2.0f * 3.14159f * rate) / sampleRate;
+        
+        int numSamples = buffer.getNumSamples();
+        int numChannels = buffer.getNumChannels();
+        
+        if (delayBuffer.getNumChannels() < numChannels) {
+            delayBuffer.setSize(numChannels, delayBufferSize, true, true, true);
+        }
+        
+        for (int c = 0; c < numChannels; ++c) {
+            const float* inputData = buffer.getReadPointer(c);
+            float* outputData = buffer.getWritePointer(c);
+            float* delayData = delayBuffer.getWritePointer(c);
+            
+            float currentPhase = phase; 
+            
+            for (int i = 0; i < numSamples; ++i) {
+                // Short modulation delay (1-5ms)
+                float lfoVal = (std::sin(currentPhase) + 1.0f) * 0.5f; 
+                float currentDelay = 0.001f * sampleRate + (lfoVal * depthSamples); // Base 1ms
+                
+                // Read
+                float readIndex = (writePos + i) - currentDelay;
+                while (readIndex < 0) readIndex += delayBufferSize;
+                while (readIndex >= delayBufferSize) readIndex -= delayBufferSize;
+                
+                int i1 = (int)readIndex;
+                int i2 = (i1 + 1) % delayBufferSize;
+                float frac = readIndex - i1;
+                float delayedSample = delayData[i1] * (1.0f - frac) + delayData[i2] * frac;
+                
+                // Feedback write
+                int wPos = (writePos + i) % delayBufferSize;
+                delayData[wPos] = inputData[i] + (delayedSample * feedback);
+                
+                // Output
+                outputData[i] = inputData[i] * (1.0f - mix) + delayedSample * mix;
+                
+                currentPhase += lfoInc;
+            }
+        }
+        
+        phase += lfoInc * numSamples;
+        while (phase > 2.0f * 3.14159f) phase -= 2.0f * 3.14159f;
+        
+        writePos = (writePos + numSamples) % delayBufferSize;
+    }
+
+private:
+    juce::AudioBuffer<float> delayBuffer;
+    int delayBufferSize;
+    int writePos = 0;
+    float phase = 0.0f;
+};
+
 // Factory
 inline std::shared_ptr<TrackEffect> CreateTrackEffect(FXType type) {
     switch (type) {
@@ -393,6 +629,10 @@ inline std::shared_ptr<TrackEffect> CreateTrackEffect(FXType type) {
         case FX_REVERB: return std::make_shared<ReverbEffect>();
         case FX_COMPRESSOR: return std::make_shared<CompressorEffect>();
         case FX_EQ: return std::make_shared<EQEffect>();
+        case FX_SATURATION: return std::make_shared<SaturationEffect>();
+        case FX_OVERDRIVE: return std::make_shared<OverdriveEffect>();
+        case FX_CHORUS: return std::make_shared<ChorusEffect>();
+        case FX_FLANGER: return std::make_shared<FlangerEffect>();
         default: return nullptr;
     }
 }

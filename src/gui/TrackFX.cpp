@@ -49,54 +49,8 @@ static bool DrawGenericFXEditor(const Rectangle& bounds, const Rectangle& clipRe
     bool anyInteraction = false;
     
     // FX Title
-    int nameWidth = MeasureText(effect->getName().c_str(), 20);
-    DrawText(effect->getName().c_str(), bounds.x + 20, currentY, 20, ORANGE);
-    
-    // On/Off Toggle (Styled like Recording Menu but larger)
-    float switchW = 100.0f;
-    float switchH = 30.0f;
-    Rectangle switchRect = {bounds.x + 20.0f + nameWidth + 20.0f, currentY - 5, switchW, switchH};
-    
-    DrawRectangleRec(switchRect, GRAY);
-    
-    Rectangle offRect = {switchRect.x, switchRect.y, switchW/2, switchH};
-    Rectangle onRect = {switchRect.x + switchW/2, switchRect.y, switchW/2, switchH};
-    
-    bool isActive = effect->isActive();
-    
-    if (!isActive) {
-        // OFF is Selected (White)
-        DrawRectangleRec(offRect, WHITE);
-        DrawText("OFF", offRect.x + 10, offRect.y + 8, 10, BLACK);
-        
-        // ON is Unselected (Gray)
-        DrawText("ON", onRect.x + 15, onRect.y + 8, 10, WHITE);
-    } else {
-        // OFF is Unselected (Gray)
-        DrawText("OFF", offRect.x + 10, offRect.y + 8, 10, WHITE);
-        
-        // ON is Selected (White)
-        DrawRectangleRec(onRect, WHITE);
-        DrawText("ON", onRect.x + 15, onRect.y + 8, 10, BLACK);
-    }
-    
-    // Interaction
-    if (state.editor.isOpen == false && !col.isDragging) {
-        if (CheckCollisionPointRec(state.getMousePosition(), offRect) && CheckCollisionRecs(offRect, clipRect)) {
-            if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) anyInteraction = true;
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                state.consumeClick();
-                effect->setActive(false);
-            }
-        }
-        if (CheckCollisionPointRec(state.getMousePosition(), onRect) && CheckCollisionRecs(onRect, clipRect)) {
-            if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) anyInteraction = true;
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                state.consumeClick();
-                effect->setActive(true);
-            }
-        }
-    }
+    int nameWidth = MeasureTextApp(effect->getName().c_str(), 20);
+    DrawTextApp(effect->getName().c_str(), bounds.x + 20, currentY, 20, ORANGE);
 
     currentY += 40;
     
@@ -105,7 +59,7 @@ static bool DrawGenericFXEditor(const Rectangle& bounds, const Rectangle& clipRe
         fx::TrackFXParam& param = effect->getParam(i);
         
         // Label
-        DrawText(param.name.c_str(), bounds.x + 20, currentY, 10, GRAY);
+        DrawTextApp(param.name.c_str(), bounds.x + 20, currentY, 16, GRAY);
         
         // Slider Background
         Rectangle sliderRect = {bounds.x + 20, currentY + 15, bounds.width - 40, 30};
@@ -120,7 +74,7 @@ static bool DrawGenericFXEditor(const Rectangle& bounds, const Rectangle& clipRe
         // Value Text
         char buf[32];
         sprintf(buf, "%.1f%s", param.value, param.suffix.c_str());
-        DrawText(buf, sliderRect.x + sliderRect.width - MeasureText(buf, 10) - 5, currentY, 10, WHITE);
+        DrawTextApp(buf, sliderRect.x + sliderRect.width - MeasureTextApp(buf, 14) - 5, currentY, 14, WHITE);
         
         // Interaction - only start drag if click was available
         Rectangle hitTest = {sliderRect.x - 10, sliderRect.y - 10, sliderRect.width + 20, sliderRect.height + 20};
@@ -180,7 +134,7 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
     
     Rectangle backBtn = {bounds.x + 5, bounds.y + 5, 30, 30};
     DrawRectangleRec(backBtn, Color{50, 50, 50, 255});
-    DrawText("<", backBtn.x + 10, backBtn.y + 5, 20, WHITE);
+    DrawTextApp("<", backBtn.x + 10, backBtn.y + 5, 20, WHITE);
     
     if (canInteract && state.isClickAvailable() && CheckCollisionPointRec(state.getMousePosition(), backBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.consumeClick();
@@ -189,7 +143,8 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
         return;
     }
     
-    DrawText("Channel Strip", bounds.x + 45, bounds.y + 10, 20, LIGHTGRAY);
+    std::string header = col.title;
+    DrawTextApp(header.c_str(), bounds.x + 45, bounds.y + 10, 20, LIGHTGRAY);
     DrawLine(bounds.x, bounds.y + headerH, bounds.x + bounds.width, bounds.y + headerH, DARKGRAY);
 
     // 3. FX Tabs (Fixed below header)
@@ -210,9 +165,10 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
         if (i == 0) label = "MIX";
         else {
             int fxIndex = i - 1;
+            std::lock_guard<std::mutex> lock(trackBus->effectsMutex);
             if (fxIndex < trackBus->effects.size() && trackBus->effects[fxIndex]) {
                 // Use first 3 chars of name
-                static char nameBuf[4]; 
+                char nameBuf[4]; 
                 std::string n = trackBus->effects[fxIndex]->getName();
                 snprintf(nameBuf, 4, "%s", n.c_str());
                 label = nameBuf;
@@ -222,7 +178,7 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
         }
         
         // Centered Text
-        DrawText(label, tabRect.x + (tabWidth/2) - MeasureText(label, 10)/2, tabRect.y + 12, 10, isSelected ? WHITE : GRAY);
+        DrawTextApp(label, tabRect.x + (tabWidth/2) - MeasureTextApp(label, 12)/2, tabRect.y + 12, 12, isSelected ? WHITE : GRAY);
         
         if (canInteract && state.isClickAvailable() && CheckCollisionPointRec(state.getMousePosition(), tabRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.consumeClick();
@@ -245,7 +201,7 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
         
         // PAN
         Rectangle panRect = {bounds.x + 20, currentY + 15, bounds.width - 40, 30};
-        DrawText("PAN", panRect.x, panRect.y - 15, 10, GRAY);
+        DrawTextApp("PAN", panRect.x, panRect.y - 15, 16, GRAY);
         DrawRectangleRec(panRect, Color{10, 10, 10, 255});
         float panHandleX = panRect.x + (trackBus->pan * panRect.width);
         DrawRectangle(panHandleX - 5, panRect.y, 10, panRect.height, ORANGE);
@@ -276,17 +232,20 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
             
             // Double click reset pan
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && state.isClickAvailable()) {
-                static double lastPanClick = 0;
-                // Simple double click detection (beware static shared across tracks if loop runs fast, but mostly distinct)
-                // Actually need per-track double click? 
-                // Or simply: if we click AND time diff small.
-                // The issue is static lastPanClick is shared.
-                // But for mouse, you can only click one place.
-                if (GetTime() - lastPanClick < 0.3) { 
+                static std::string lastClickId = "";
+                static double lastClickTime = 0;
+                
+                std::string currentId = col.trackName + "_Pan";
+                double now = GetTime();
+                
+                if (currentId == lastClickId && (now - lastClickTime < 0.3)) { 
                     state.consumeClick();
                     col.pan = 0.5f; trackBus->pan = 0.5f; 
+                    lastClickId = ""; // Reset to prevent triple click
+                } else {
+                    lastClickId = currentId;
+                    lastClickTime = now;
                 }
-                lastPanClick = GetTime();
             }
         } 
         else if (state.drag.activeControlId == (col.trackName + "_Pan") && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
@@ -305,7 +264,7 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
         // VOLUME
         float faderHeight = 250.0f; 
         Rectangle volRect = {bounds.x + 40, currentY + 20, bounds.width - 80, faderHeight};
-        DrawText("VOL", volRect.x, volRect.y - 15, 10, GRAY);
+        DrawTextApp("VOL", volRect.x, volRect.y - 15, 16, GRAY);
         DrawRectangleRec(volRect, Color{10, 10, 10, 255});
         
         float fillHeight = trackBus->volume * volRect.height;
@@ -319,7 +278,7 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
         // Value
         char buf[32];
         sprintf(buf, "%d%%", (int)(trackBus->volume * 100));
-        DrawText(buf, volRect.x + 10, volRect.y + volRect.height + 10, 20, Color{255,255,255,100});
+        DrawTextApp(buf, volRect.x + 10, volRect.y + volRect.height + 10, 20, Color{255,255,255,100});
 
         // Track volume slider drag
         Rectangle hitTestVol = {volRect.x - 15, volRect.y, volRect.width + 30, volRect.height};
@@ -360,30 +319,35 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
         // --- FX EDITOR ---
         int fxIndex = col.selectedFXSlot - 1;
         
-        // Ensure vector is big enough (pad with nulls)
-        while (trackBus->effects.size() <= fxIndex) {
-            trackBus->effects.push_back(nullptr);
+        std::shared_ptr<fx::TrackEffect> targetEffect = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(trackBus->effectsMutex);
+            // Ensure vector is big enough (pad with nulls)
+            while (trackBus->effects.size() <= fxIndex) {
+                trackBus->effects.push_back(nullptr);
+            }
+            targetEffect = trackBus->effects[fxIndex];
         }
         
-        if (trackBus->effects[fxIndex]) {
+        if (targetEffect) {
             // Draw Parameters
             Rectangle contentRect = {bounds.x, currentY, bounds.width, 0};
             
             // Branch for EQ vs Generic
-            if (trackBus->effects[fxIndex]->getType() == fx::FX_EQ) {
+            if (targetEffect->getType() == fx::FX_EQ) {
                 // --- EQ EDITOR ---
-                std::shared_ptr<fx::TrackEffect> effect = trackBus->effects[fxIndex];
+                std::shared_ptr<fx::TrackEffect> effect = targetEffect;
                 
                 // 1. Band Selection (Param 0)
                 fx::TrackFXParam& bandsParam = effect->getParam(0);
-                DrawText("Bands:", contentRect.x + 20, currentY, 10, GRAY);
+                DrawTextApp("Bands:", contentRect.x + 20, currentY, 10, GRAY);
                 
                 const char* bandOpt[] = {"3", "6", "12"};
                 for (int i=0; i<3; ++i) {
                      Rectangle optRect = {contentRect.x + 60 + (i*40), currentY - 5, 30, 20};
                      bool isSelected = ((int)bandsParam.value == i);
                      DrawRectangleRec(optRect, isSelected ? WHITE : Color{40, 40, 40, 255});
-                     DrawText(bandOpt[i], optRect.x + 10, optRect.y + 5, 10, isSelected ? BLACK : WHITE);
+                     DrawTextApp(bandOpt[i], optRect.x + 10, optRect.y + 5, 10, isSelected ? BLACK : WHITE);
                      
                      if (canInteract && state.isClickAvailable() && CheckCollisionPointRec(state.getMousePosition(), optRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                          state.consumeClick();
@@ -484,7 +448,7 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
                         // Draw Knob/Slider for this band
                         Rectangle bandRect = {contentRect.x + 20 + (c * 80), currentY, 70, 70};
                         
-                        DrawText(labelBuf, bandRect.x, bandRect.y, 10, GRAY);
+                        DrawTextApp(labelBuf, bandRect.x, bandRect.y, 10, GRAY);
                         
                         // Knob Logic (Vertical Slider visual for EQ gain usually best, or Knob)
                         // Let's do a vertical slider for "Graphic EQ" feel
@@ -513,23 +477,23 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
                         // Value Text
                         char buf[16];
                         sprintf(buf, "%+.0f", param.value);
-                        DrawText(buf, sliderRect.x + 5, sliderRect.y + sliderRect.height + 2, 10, WHITE);
+                        DrawTextApp(buf, sliderRect.x + 5, sliderRect.y + sliderRect.height + 2, 10, WHITE);
                         
                         // Interaction
                         Rectangle hitTest = {sliderRect.x - 5, sliderRect.y - 5, sliderRect.width + 10, sliderRect.height + 10};
                         
-                        // Track drag (using static map/array for state would be overkill, reusing single static is glitchy for multi-touch but ok for mouse)
-                        // Need unique ID for static state. Use pIndex.
-                        static int eqDragParam = -1;
+                        // Track drag
+                        std::string eqParamId = col.trackName + "_EQ_P" + std::to_string(pIndex);
+                        bool isLockedToOther = (!state.drag.activeControlId.empty() && state.drag.activeControlId != eqParamId);
                         
-                        if (canInteract && !col.isDragging && CheckCollisionPointRec(state.getMousePosition(), hitTest) && CheckCollisionRecs(hitTest, scrollArea)) {
-                             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && state.isClickAvailable()) {
-                                 state.consumeClick();
-                                 eqDragParam = pIndex;
-                             }
-                        }
+                        bool startInteract = (!isLockedToOther && !col.isDragging && CheckCollisionPointRec(state.getMousePosition(), hitTest) && CheckCollisionRecs(hitTest, scrollArea) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && state.isClickAvailable());
+                        bool continueInteract = (state.drag.activeControlId == eqParamId && IsMouseButtonDown(MOUSE_LEFT_BUTTON));
                         
-                        if (eqDragParam == pIndex && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+                        if (startInteract || continueInteract) {
+                            if (startInteract) {
+                                state.consumeClick();
+                                state.drag.activeControlId = eqParamId;
+                            }
                             isInteracting = true;
                             float mouseY = state.getMousePosition().y;
                             float rawNorm = 1.0f - ((mouseY - sliderRect.y) / sliderRect.height);
@@ -539,81 +503,188 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
                             if (std::abs(newVal) < 0.5f) newVal = 0.0f;
                             effect->setParam(pIndex, newVal);
                         }
-                        
-                        if (!IsMouseButtonDown(MOUSE_LEFT_BUTTON) && eqDragParam == pIndex) {
-                            eqDragParam = -1;
-                        }
                     }
                     currentY += 80;
                 }
                 
             } else {
                 // Generic Editor
-                if (DrawGenericFXEditor(contentRect, scrollArea, trackBus->effects[fxIndex], col, state)) {
+                if (DrawGenericFXEditor(contentRect, scrollArea, targetEffect, col, state)) {
                     isInteracting = true;
                 }
-                currentY += (trackBus->effects[fxIndex]->getNumParams() * 60); 
+                currentY += (targetEffect->getNumParams() * 60); 
             }
             
             currentY += 50; // Padding before remove parameters 
             
-            // Remove Button
-            Rectangle removeBtn = {bounds.x + bounds.width/2 - 40, currentY, 80, 30};
+            // Remove Button + Toggle (Side by Side)
+            float totalW = 170.0f; // 80 + 10 + 80
+            float startX = bounds.x + (bounds.width - totalW) / 2.0f;
+            
+            Rectangle removeBtn = {startX, currentY, 80, 30};
             DrawRectangleRec(removeBtn, RED);
-            DrawText("Remove", removeBtn.x + 10, removeBtn.y + 8, 10, WHITE);
+            DrawTextApp("Remove", removeBtn.x + 10, removeBtn.y + 8, 10, WHITE);
             if (canInteract && state.isClickAvailable() && CheckCollisionPointRec(state.getMousePosition(), removeBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                  state.consumeClick();
+                 std::lock_guard<std::mutex> lock(trackBus->effectsMutex);
                  trackBus->effects[fxIndex] = nullptr;
                  isInteracting = true; // Button click counts as interaction
+            }
+            
+            // Toggle Switch
+            if (targetEffect) {
+                float switchW = 80.0f;
+                float switchH = 30.0f;
+                Rectangle switchRect = {startX + 90, currentY, switchW, switchH};
+                Rectangle offRect = {switchRect.x, switchRect.y, switchW/2, switchH};
+                Rectangle onRect = {switchRect.x + switchW/2, switchRect.y, switchW/2, switchH};
+                
+                bool isActive = targetEffect->isActive();
+                if (!isActive) {
+                    DrawRectangleRec(offRect, WHITE);
+                    DrawTextApp("OFF", offRect.x + 5, offRect.y + 8, 10, BLACK);
+                    DrawRectangleRec(onRect, GRAY);
+                    DrawTextApp("ON", onRect.x + 10, onRect.y + 8, 10, WHITE);
+                } else {
+                    DrawRectangleRec(offRect, GRAY);
+                    DrawTextApp("OFF", offRect.x + 5, offRect.y + 8, 10, WHITE);
+                    DrawRectangleRec(onRect, WHITE);
+                    DrawTextApp("ON", onRect.x + 10, onRect.y + 8, 10, BLACK);
+                }
+                
+                // Toggle Interaction
+                if (canInteract && state.isClickAvailable()) {
+                    if (CheckCollisionPointRec(state.getMousePosition(), offRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                        state.consumeClick();
+                        targetEffect->setActive(false);
+                        isInteracting = true;
+                    }
+                    if (CheckCollisionPointRec(state.getMousePosition(), onRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                        state.consumeClick();
+                        targetEffect->setActive(true);
+                        isInteracting = true;
+                    }
+                }
             }
             currentY += 50;
             
         } else {
             // Empty Slot -> Add Buttons
-            DrawText("Add Effect:", bounds.x + 20, currentY, 20, GRAY);
+            DrawTextApp("Add Effect:", bounds.x + 20, currentY, 20, GRAY);
             currentY += 40;
             
+            float margin = 10.0f;
+            float btnW = (bounds.width - (3 * margin)) / 2.0f;
+            float col1X = bounds.x + margin;
+            float col2X = bounds.x + (2 * margin) + btnW;
+            
             // Delay Button
-            Rectangle btnDelay = {bounds.x + 20, currentY, 120, 30};
+            Rectangle btnDelay = {col1X, currentY, btnW, 30};
             DrawRectangleRec(btnDelay, DARKGRAY);
-            DrawText("+ Delay", btnDelay.x + 20, btnDelay.y + 8, 10, WHITE);
+            const char* txtDelay = "+ Delay";
+            DrawTextApp(txtDelay, btnDelay.x + (btnDelay.width - MeasureTextApp(txtDelay, 10))/2, btnDelay.y + 8, 10, WHITE);
             
             if (canInteract && state.isClickAvailable() && CheckCollisionPointRec(state.getMousePosition(), btnDelay) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                  state.consumeClick();
+                 std::lock_guard<std::mutex> lock(trackBus->effectsMutex);
                  trackBus->effects[fxIndex] = fx::CreateTrackEffect(fx::FX_DELAY);
                  isInteracting = true;
             }
             
             // Reverb Button
-            Rectangle btnReverb = {bounds.x + 160, currentY, 120, 30};
+            Rectangle btnReverb = {col2X, currentY, btnW, 30};
             DrawRectangleRec(btnReverb, DARKGRAY);
-            DrawText("+ Reverb", btnReverb.x + 20, btnReverb.y + 8, 10, WHITE);
+            const char* txtRev = "+ Reverb";
+            DrawTextApp(txtRev, btnReverb.x + (btnReverb.width - MeasureTextApp(txtRev, 10))/2, btnReverb.y + 8, 10, WHITE);
             
             if (canInteract && state.isClickAvailable() && CheckCollisionPointRec(state.getMousePosition(), btnReverb) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                  state.consumeClick();
+                 std::lock_guard<std::mutex> lock(trackBus->effectsMutex);
                  trackBus->effects[fxIndex] = fx::CreateTrackEffect(fx::FX_REVERB);
                  isInteracting = true;
             }
             
             // Compressor Button
-            Rectangle btnComp = {bounds.x + 20, currentY + 40, 120, 30};
+            Rectangle btnComp = {col1X, currentY + 40, btnW, 30};
             DrawRectangleRec(btnComp, DARKGRAY);
-            DrawText("+ Compressor", btnComp.x + 10, btnComp.y + 8, 10, WHITE);
+            const char* txtComp = "+ Compressor";
+            DrawTextApp(txtComp, btnComp.x + (btnComp.width - MeasureTextApp(txtComp, 10))/2, btnComp.y + 8, 10, WHITE);
             
             if (canInteract && state.isClickAvailable() && CheckCollisionPointRec(state.getMousePosition(), btnComp) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                  state.consumeClick();
+                 std::lock_guard<std::mutex> lock(trackBus->effectsMutex);
                  trackBus->effects[fxIndex] = fx::CreateTrackEffect(fx::FX_COMPRESSOR);
                  isInteracting = true;
             }
             
             // Equalizer Button
-            Rectangle btnEq = {bounds.x + 160, currentY + 40, 120, 30};
+            Rectangle btnEq = {col2X, currentY + 40, btnW, 30};
             DrawRectangleRec(btnEq, DARKGRAY);
-            DrawText("+ Equalizer", btnEq.x + 10, btnEq.y + 8, 10, WHITE);
+            const char* txtEq = "+ Equalizer";
+            DrawTextApp(txtEq, btnEq.x + (btnEq.width - MeasureTextApp(txtEq, 10))/2, btnEq.y + 8, 10, WHITE);
             
             if (canInteract && state.isClickAvailable() && CheckCollisionPointRec(state.getMousePosition(), btnEq) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                  state.consumeClick();
+                 std::lock_guard<std::mutex> lock(trackBus->effectsMutex);
                  trackBus->effects[fxIndex] = fx::CreateTrackEffect(fx::FX_EQ);
+                 isInteracting = true;
+            }
+            
+            // Row 2 Buttons
+            currentY += 40;
+            
+            // Saturation
+            Rectangle btnSat = {col1X, currentY + 40, btnW, 30};
+            DrawRectangleRec(btnSat, DARKGRAY);
+            const char* txtSat = "+ Saturation";
+            DrawTextApp(txtSat, btnSat.x + (btnSat.width - MeasureTextApp(txtSat, 10))/2, btnSat.y + 8, 10, WHITE);
+            
+            if (canInteract && state.isClickAvailable() && CheckCollisionPointRec(state.getMousePosition(), btnSat) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                 state.consumeClick();
+                 std::lock_guard<std::mutex> lock(trackBus->effectsMutex);
+                 trackBus->effects[fxIndex] = fx::CreateTrackEffect(fx::FX_SATURATION);
+                 isInteracting = true;
+            }
+            
+            // Overdrive
+            Rectangle btnOd = {col2X, currentY + 40, btnW, 30};
+            DrawRectangleRec(btnOd, DARKGRAY);
+            const char* txtOd = "+ Overdrive";
+            DrawTextApp(txtOd, btnOd.x + (btnOd.width - MeasureTextApp(txtOd, 10))/2, btnOd.y + 8, 10, WHITE);
+            
+            if (canInteract && state.isClickAvailable() && CheckCollisionPointRec(state.getMousePosition(), btnOd) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                 state.consumeClick();
+                 std::lock_guard<std::mutex> lock(trackBus->effectsMutex);
+                 trackBus->effects[fxIndex] = fx::CreateTrackEffect(fx::FX_OVERDRIVE);
+                 isInteracting = true;
+            }
+            
+            // Row 3 Buttons
+            currentY += 40;
+            
+            // Chorus
+            Rectangle btnCho = {col1X, currentY + 40, btnW, 30};
+            DrawRectangleRec(btnCho, DARKGRAY);
+            const char* txtCho = "+ Chorus";
+            DrawTextApp(txtCho, btnCho.x + (btnCho.width - MeasureTextApp(txtCho, 10))/2, btnCho.y + 8, 10, WHITE);
+            
+            if (canInteract && state.isClickAvailable() && CheckCollisionPointRec(state.getMousePosition(), btnCho) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                 state.consumeClick();
+                 std::lock_guard<std::mutex> lock(trackBus->effectsMutex);
+                 trackBus->effects[fxIndex] = fx::CreateTrackEffect(fx::FX_CHORUS);
+                 isInteracting = true;
+            }
+            
+            // Flanger
+            Rectangle btnFlg = {col2X, currentY + 40, btnW, 30};
+            DrawRectangleRec(btnFlg, DARKGRAY);
+            const char* txtFlg = "+ Flanger";
+            DrawTextApp(txtFlg, btnFlg.x + (btnFlg.width - MeasureTextApp(txtFlg, 10))/2, btnFlg.y + 8, 10, WHITE);
+            
+            if (canInteract && state.isClickAvailable() && CheckCollisionPointRec(state.getMousePosition(), btnFlg) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                 state.consumeClick();
+                 std::lock_guard<std::mutex> lock(trackBus->effectsMutex);
+                 trackBus->effects[fxIndex] = fx::CreateTrackEffect(fx::FX_FLANGER);
                  isInteracting = true;
             }
             

@@ -15,7 +15,7 @@ void DrawPatternBox(const std::string& name, Rectangle bounds, bool selected, in
     DrawRectangleRec(titleBar, Color{20, 20, 20, 255}); // Solid Black Header
     // DrawRectangleLinesEx(titleBar, 1, Color{200, 200, 200, 255}); // No Border requested
     
-    DrawText(name.c_str(), bounds.x + 5, bounds.y + 2, 20, WHITE); // Size 20!
+    DrawTextApp(name.c_str(), bounds.x + 5, bounds.y + 2, 20, WHITE); // Size 20!
 }
 
 void DrawStepGrid(Rectangle bounds, const Pattern& pattern, int activeStep, GuiState& state) {
@@ -68,7 +68,7 @@ void DrawStepGrid(Rectangle bounds, const Pattern& pattern, int activeStep, GuiS
             // Draw cell with pitch
             DrawRectangle(x, y, size, size, c);
             DrawRectangleLinesEx({x, y, size, size}, 1, WHITE);
-            DrawText(pText, x + 2, y + size/2 - 5, 8, WHITE);
+            DrawTextApp(pText, x + 2, y + size/2 - 5, 8, WHITE);
         } else {
             // Check velocity (for display only)
             float vel = 1.0f;

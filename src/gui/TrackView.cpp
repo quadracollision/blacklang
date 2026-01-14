@@ -95,7 +95,7 @@ void TrackView::Draw() {
     // Add Column Button
     Rectangle addColBtn = {colX, (float)state.HEADER_HEIGHT + 20, 40, (float)state.PATTERN_HEIGHT};
     DrawRectangleRec(addColBtn, Color{40, 40, 40, 255});
-    DrawText("+", addColBtn.x + 13, addColBtn.y + 30, 30, GRAY);
+    DrawTextApp("+", addColBtn.x + 13, addColBtn.y + 30, 30, GRAY);
     
     if (state.isClickAvailable() && !state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), addColBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
          state.consumeClick();
@@ -125,7 +125,7 @@ void TrackView::Draw() {
         Rectangle ghostRect = { mouse.x + 10, mouse.y + 10, 140, 45 };
         DrawRectangleRec(ghostRect, Color{60, 60, 60, 200});
         DrawRectangleLinesEx(ghostRect, 1, WHITE);
-        DrawText(state.drag.patternName.c_str(), ghostRect.x + 10, ghostRect.y + 15, 10, WHITE);
+        DrawTextApp(state.drag.patternName.c_str(), ghostRect.x + 10, ghostRect.y + 15, 10, WHITE);
 
         // Handle Release
         if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
@@ -251,7 +251,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
             state.focusedFieldId = -1;
         }
     } else {
-        DrawText(col.title.c_str(), headerRect.x + 5, headerRect.y + 4, 18, WHITE);
+        DrawTextApp(col.title.c_str(), headerRect.x + 5, headerRect.y + 4, 18, WHITE);
         
         // Double-click to rename
         if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), headerRect)) {
@@ -282,7 +282,10 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
     // Auto-fill grid to visible height to prevent "popping into existence" or empty space
     int visibleCells = (int)(contentArea.height / (state.PATTERN_HEIGHT + 5)) + 2; 
     int minCells = std::max(16, visibleCells);
-    if (col.patternNames.size() < (size_t)minCells) col.patternNames.resize((size_t)minCells, "");
+    if (col.patternNames.size() < (size_t)minCells) {
+        col.patternNames.resize((size_t)minCells, "");
+        col.slotSyncEnabled.resize((size_t)minCells, true); // Default Sync ON
+    }
 
     // Clamp Scroll (Recalculate after resize)
     totalContentHeight = (float)col.patternNames.size() * (float)(state.PATTERN_HEIGHT + 5);
@@ -312,7 +315,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
                 // Empty Cell
                 DrawRectangleRec(cellRect, Color{30, 30, 30, 255});
                 DrawRectangleLinesEx(cellRect, 1, Color{50, 50, 50, 255});
-                DrawText("-", cellRect.x + cellRect.width/2 - 5, cellRect.y + cellRect.height/2 - 10, 20, DARKGRAY);
+                DrawTextApp("-", cellRect.x + cellRect.width/2 - 5, cellRect.y + cellRect.height/2 - 10, 20, DARKGRAY);
                 
                 // Allow interaction
                 HandlePatternClick(index, (int)i, "", cellRect);
@@ -331,7 +334,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
                     float badgeSize = 16;
                     Rectangle syncBadge = {cellRect.x + cellRect.width - badgeSize - 2, cellRect.y + 2, badgeSize, badgeSize};
                     DrawRectangleRec(syncBadge, Color{0, 180, 0, 255});
-                    DrawText("S", (int)(syncBadge.x + 4), (int)(syncBadge.y + 1), 12, WHITE);
+                    DrawTextApp("S", (int)(syncBadge.x + 4), (int)(syncBadge.y + 1), 12, WHITE);
                 }
 
                 
@@ -486,12 +489,12 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
 
     // Add Button (Small, Left) - Drawn using pre-calculated rect
     DrawRectangleRec(addBtnRect, Color{50, 50, 50, 255});
-    DrawText("+", addBtnRect.x + 13, addBtnRect.y + 2, 24, WHITE);
+    DrawTextApp("+", addBtnRect.x + 13, addBtnRect.y + 2, 24, WHITE);
     
     // Delete Button (Next to Add)
     Rectangle delBtnRect = {addBtnRect.x + addBtnRect.width + 5, btnY, 40, 30};
     DrawRectangleRec(delBtnRect, Color{80, 20, 20, 255});  // Dark red
-    DrawText("-", delBtnRect.x + 15, delBtnRect.y + 2, 24, WHITE);
+    DrawTextApp("-", delBtnRect.x + 15, delBtnRect.y + 2, 24, WHITE);
     
     // Delete button action
     if (state.isClickAvailable() && !state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), delBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -509,7 +512,11 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
     // Mixer Button (Rest)
     Rectangle mixBtnRect = {col.bounds.x + 95, btnY, col.bounds.width - 100, 30};
     DrawRectangleRec(mixBtnRect, Color{30, 30, 40, 255});
-    DrawText("MIXER", mixBtnRect.x + mixBtnRect.width/2 - 25, mixBtnRect.y + 8, 14, GRAY);
+    // Centered "MIXER" text
+    const char* mixText = "MIXER";
+    int fontSize = 20; // Larger font
+    int textW = MeasureText(mixText, fontSize);
+    DrawTextApp(mixText, mixBtnRect.x + (mixBtnRect.width - textW)/2, mixBtnRect.y + 6, fontSize, GRAY);
     
     if (state.isClickAvailable() && !state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), mixBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.consumeClick();
@@ -559,6 +566,13 @@ void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::strin
                 if (state.trackClipboard.isSelectingSource) {
                     state.trackClipboard.patternName = patternName;
                     state.trackClipboard.hasData = true;
+                    // FIX: Capture Sync Status from Source
+                    if (state.columns[(size_t)colIndex].slotSyncEnabled.size() > (size_t)slotIndex) {
+                        state.trackClipboard.syncEnabled = state.columns[(size_t)colIndex].slotSyncEnabled[(size_t)slotIndex];
+                    } else {
+                        state.trackClipboard.syncEnabled = false; // Default
+                    }
+                    
                     state.trackClipboard.isSelectingSource = false;
                     state.trackClipboard.isPasting = true; // Enter paste mode immediately
                     // Global Unlock done by Draw()
@@ -579,6 +593,11 @@ void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::strin
                                 
                                 // FIX: Register track assignment
                                 engine.assignPatternToTrack(copy.name, state.columns[(size_t)colIndex].title);
+                                
+                                // FIX: Apply Copied Sync Mode status
+                                if (state.columns[(size_t)colIndex].slotSyncEnabled.size() > (size_t)slotIndex) {
+                                     state.columns[(size_t)colIndex].slotSyncEnabled[(size_t)slotIndex] = state.trackClipboard.syncEnabled;
+                                }
                                 
                                 // Assign to slot
                                 state.columns[(size_t)colIndex].patternNames[(size_t)slotIndex] = copy.name;
@@ -623,6 +642,12 @@ void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::strin
                         state.editor.currentPattern = *p;
                         state.editor.isOpen = true;
                         state.editor.justOpened = true;
+                        state.editor.sourceColumnIndex = colIndex; // Set Source
+                        state.editor.sourceSlotIndex = -1; // Pattern click doesn't map to single slot easily here? 
+                        // Actually HandlePatternClick has slotIndex.
+                        // Wait, shift edit uses patternName lookup. But we are in HandlePatternClick which HAS slotIndex.
+                        // So we should use it.
+                        state.editor.sourceSlotIndex = slotIndex;
                         strcpy(state.editor.nameBuffer, p->name.c_str());
                         strcpy(state.editor.originalName, p->name.c_str());
                         strcpy(state.editor.samplePathBuffer, p->samplePath.c_str());
@@ -782,6 +807,13 @@ void TrackView::HandleAddPattern(int colIndex, PatternColumn& col) {
             // FIX: Register track assignment logic
             engine.assignPatternToTrack(p.name, col.title);
             col.patternNames[(size_t)targetSlot] = p.name;
+            // Explicitly Enable Sync for new patterns
+            if (targetSlot >= (int)col.slotSyncEnabled.size()) {
+                col.slotSyncEnabled.resize(targetSlot + 1, false);
+            }
+            col.slotSyncEnabled[(size_t)targetSlot] = true;
+            
+            // Editor logic removed per request - user stays in grid view
         }
         // Otherwise, do nothing (user tried to add on occupied slot)
     }

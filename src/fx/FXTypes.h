@@ -35,8 +35,12 @@ enum FXType : int {
     FX_RELEASE  = 19,  // ADSR Release
     FX_ADSR     = 20,  // Consolidated ADSR
     FX_EQ       = 21,  // Parametric EQ
+    FX_SATURATION = 22,
+    FX_OVERDRIVE = 23,
+    FX_CHORUS   = 24,
+    FX_FLANGER  = 25,
     
-    FX_COUNT    = 22   // Total count
+    FX_COUNT    = 26   // Total count
 };
 
 // ============================================
@@ -130,6 +134,10 @@ inline const char* GetFXName(FXType type) {
         case FX_RELEASE:  return "Release";
         case FX_ADSR:     return "ADSR";
         case FX_EQ:       return "EQ";
+        case FX_SATURATION: return "Saturation";
+        case FX_OVERDRIVE: return "Overdrive";
+        case FX_CHORUS:   return "Chorus";
+        case FX_FLANGER:  return "Flanger";
         case FX_COUNT:    return "Count";
         default:          return "Unknown";
     }
@@ -158,6 +166,10 @@ inline const char* GetFXShortName(FXType type) {
         case FX_RELEASE:  return "REL";
         case FX_ADSR:     return "ENV";
         case FX_EQ:       return "EQ";
+        case FX_SATURATION: return "SAT";
+        case FX_OVERDRIVE: return "OD";
+        case FX_CHORUS:   return "CHO";
+        case FX_FLANGER:  return "FLG";
         case FX_COUNT:    return "CNT";
         default:          return "???";
     }

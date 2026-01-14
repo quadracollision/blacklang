@@ -5,6 +5,8 @@
 #include <juce_audio_basics/juce_audio_basics.h>
 
 #include <memory>
+#include <mutex>
+#include <vector>
 #include "fx/TrackEffect.h"
 
 namespace fx {
@@ -19,6 +21,12 @@ struct AudioBus {
     
     // Track-level FX chain
     std::vector<std::shared_ptr<fx::TrackEffect>> effects;
+    mutable std::mutex effectsMutex;
+    
+    // AudioBus is not copyable due to mutex
+    AudioBus() = default;
+    AudioBus(const AudioBus&) = delete;
+    AudioBus& operator=(const AudioBus&) = delete;
     
     void prepareBuffer(int numSamples, int numChannels);
     void clearBuffer();
@@ -49,7 +57,8 @@ public:
     void clearAllBuffers();
     
 private:
-    std::map<std::string, AudioBus> tracks;
+    std::map<std::string, std::unique_ptr<AudioBus>> tracks;
+    mutable std::mutex busMutex;
     AudioBus masterBus;
     double sampleRate = 44100.0;
     int numChannels = 2;
