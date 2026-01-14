@@ -1052,13 +1052,6 @@ void PatternEditor::Draw() {
             state.editor.showFileBrowser = false;
             state.editor.focusedFieldId = -1;
         }
-        
-        // Draw Sample Name in header (optional, but requested in layout)
-        if (strlen(state.editor.samplePathBuffer) > 0) {
-            std::string fullPath = state.editor.samplePathBuffer;
-            std::string name = fs::path(fullPath).filename().string();
-            DrawTextApp(name.c_str(), winRect.x + 180, winRect.y + 20, 16, GRAY);
-        }
     }
 
     // 2. Footer Bar

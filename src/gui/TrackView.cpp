@@ -3,6 +3,7 @@
 #include <raymath.h>
 #include "Widgets.h"
 #include "StepGrid.h"
+#include "../FilePicker.h"
 #include "../GuiState.h"
 #include "../AudioEngine.h"
 #include <algorithm>
@@ -264,6 +265,9 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
                     state.renamingColumnIndex = index;
                     strcpy(state.columnRenameBuffer, col.title.c_str());
                     state.focusedFieldId = 1000 + index;
+#if defined(__ANDROID__)
+                    FilePicker::showKeyboard();
+#endif
                 }
                 lastHeaderClickTime = now;
                 lastHeaderClickIndex = index;
