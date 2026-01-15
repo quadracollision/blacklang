@@ -152,6 +152,8 @@ struct PatternEditorState {
     float waveformZoom = 1.0f;    // 1.0 = fit to view, >1 = zoomed in
     float waveformScrollX = 0.0f; // 0.0-1.0 scroll position (normalized)
     bool slicerPlayModeEnabled = false; // Toggle for preview/record mode
+    bool isResampleArmed = false; // Waiting for playback to start recording
+    bool isResampling = false; // When true, sequencer output is being captured for slicing
     
     // Unified File Browser
     enum class BrowserMode {

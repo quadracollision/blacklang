@@ -804,6 +804,7 @@ void AudioEngine::triggerStep(PatternPlayState& state, Pattern& pattern) {
     state.stopAtSliceEnd = false;
     state.isStuttering = false; // Reset start of step
     state.stutterIntervalSamples = 0;
+    state.isReverse = false; // Reset reverse mode for this step
     
     // Reset ADSR
     state.useADSR = false;

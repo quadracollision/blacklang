@@ -1155,6 +1155,66 @@ void PatternEditor::Draw() {
             state.editor.isPreviewing = true;
         }
     }
+    
+    // Resample Button - arms/records master output for slicing
+    // User spec: click → arm, any audio plays → record, click again → stop + transfer
+    Rectangle resampleRect = {previewRect.x + previewRect.width + 10, winRect.y + winRect.height - 45, 100, 40};
+    
+    // Color: Armed=Orange, Recording=Red, Idle=Purple
+    Color resampleColor = state.editor.isResampling ? RED : 
+                          (state.editor.isResampleArmed ? ORANGE : Color{100, 100, 180, 255});
+    DrawRectangleRec(resampleRect, resampleColor);
+    const char* resampleTxt = state.editor.isResampling ? "Stop Rec" : 
+                              (state.editor.isResampleArmed ? "Armed" : "Resample");
+    int resampleW = MeasureTextApp(resampleTxt, 14);
+    DrawTextApp(resampleTxt, resampleRect.x + (resampleRect.width - resampleW)/2, resampleRect.y + (resampleRect.height - 14)/2, 14, WHITE);
+    
+    // While armed, check if playback started → begin recording
+    if (state.editor.isResampleArmed && engine.isPlaying() && !state.editor.isResampling) {
+        engine.startInMemoryRecording();
+        state.editor.isResampling = true;
+        state.editor.isResampleArmed = false;
+    }
+    
+    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), resampleRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (state.editor.isResampling) {
+            // STOP: Stop recording and transfer buffer to pattern
+            engine.stopInMemoryRecording();
+            state.editor.isResampling = false;
+            
+            // Copy recorded buffer to pattern's sampleBuffer
+            int sampleCount = engine.getRecordedSampleCount();
+            if (sampleCount > 0) {
+                const juce::AudioBuffer<float>& srcBuffer = engine.getRecordedMaster();
+                p.sampleBuffer.setSize(srcBuffer.getNumChannels(), sampleCount, false, true, false);
+                for (int ch = 0; ch < srcBuffer.getNumChannels(); ++ch) {
+                    p.sampleBuffer.copyFrom(ch, 0, srcBuffer, ch, 0, sampleCount);
+                }
+                p.sampleRate = engine.getRecordedSampleRate();
+                
+                // Clear existing slice markers
+                p.sliceMarkers.clear();
+                
+                // Sync to audio engine
+                engine.addPattern(p);
+                
+                // Reset zoom/scroll for new sample
+                state.editor.waveformZoom = 1.0f;
+                state.editor.waveformScrollX = 0.0f;
+            }
+            
+            // Disarm
+            engine.disarmRecording();
+        } else if (state.editor.isResampleArmed) {
+            // Click while armed → Disarm
+            state.editor.isResampleArmed = false;
+            engine.disarmRecording();
+        } else {
+            // ARM: Prepare to record (will start when any playback begins)
+            engine.armRecording(false); // no stems
+            state.editor.isResampleArmed = true;
+        }
+    }
 
     // Per-Slot Sync Toggle - in footer for easy touch access
     // Find which slot this pattern is in and toggle that slot's sync
