@@ -17,19 +17,33 @@ TrackView::TrackView(GuiState& s, AudioEngine& e) : state(s), engine(e) {}
 
 void TrackView::Draw() {
     // 1. Manage Drag State Promotion (Hold -> Drag)
-    // Movement-based: if user drags more than 25px while holding on a pattern, start drag
+    // Long Press Logic:
+    // - If held for > 0.4s without moving much: Promote to DRAG
+    // - If moved > 10px BEFORE 0.4s: Cancel HOLD, Enforce SCROLL
     if (state.drag.isHolding) {
         float dist = Vector2Distance(state.getMousePosition(), state.drag.initialClickPos);
+        double holdDuration = GetTime() - state.drag.holdStartTime;
         
-        if (dist > 25) {
-            // Promote to drag - user moved enough while holding a pattern
+        // Thresholds
+        float moveThreshold = 10.0f; // px
+        double longPressTime = 0.4;  // seconds
+        
+        if (holdDuration > longPressTime && dist < moveThreshold) {
+            // HELD LONG ENOUGH -> START DRAGGING
             state.drag.isDragging = true;
             state.drag.isHolding = false;
-            state.drag.isScrolling = false;  // Stop scroll when starting drag
+            state.drag.isScrolling = false; // Kill scroll
             state.drag.scrollDirection = 0;
+            
+            // Haptic Feedback (simulated or real if available)
+            // TODO: Add haptic trigger if possible
+        } else if (dist > moveThreshold) {
+            // MOVED TOO SOON -> IS SCROLLING
+            state.drag.isHolding = false; 
+            // state.drag.isScrolling remains true (was set on press)
         } else if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-            // Released without moving much - just a click
-            state.drag.isHolding = false;
+             // Released early without moving -> This is a CLICK (Handled in HandlePatternClick)
+             state.drag.isHolding = false;
         }
     }
 
