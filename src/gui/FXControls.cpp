@@ -54,6 +54,9 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
         auto allFX = fx::GetAllFX();
         for (auto id : allFX) {
              if (fx::IsFXImplemented(id)) {
+                 // Hide ADSR per user request (broken)
+                 if (id == Pattern::FX_ADSR) continue;
+                 
                  availableFX.push_back({id, std::string(fx::GetFXName(id))});
              }
         }
@@ -271,20 +274,23 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
         // Parameter Panel
         if (state.editor.selectedAppliedFxId != -1) {
             float paramPanelY = removeBtn.y + removeBtn.height + 15;
-            DrawTextApp("FX Params:", area.x, paramPanelY, 20, WHITE);
+            // Use boxStartX to align params with the boxes (centered)
+            DrawTextApp("FX Params:", boxStartX, paramPanelY, 20, WHITE);
             
             int step = state.editor.selectedStep + 1;
             
             if (state.editor.selectedAppliedFxId == Pattern::FX_STUTTER) {
-                DrawStutterParams(area.x, paramPanelY, p, step);
+                DrawStutterParams(boxStartX, paramPanelY, p, step);
             } else if (state.editor.selectedAppliedFxId == Pattern::FX_SLIDE) {
-                DrawSlideParams(area.x, paramPanelY, p, step);
+                DrawSlideParams(boxStartX, paramPanelY, p, step);
             } else if (state.editor.selectedAppliedFxId == Pattern::FX_NUDGE) {
-                DrawNudgeParams(area.x, paramPanelY, p, step);
+                DrawNudgeParams(boxStartX, paramPanelY, p, step);
             } else if (state.editor.selectedAppliedFxId == Pattern::FX_ADSR) {
-                DrawADSRParams(area.x, paramPanelY, p, step);
+                DrawADSRParams(boxStartX, paramPanelY, p, step);
+            } else if (state.editor.selectedAppliedFxId == Pattern::FX_EQ) {
+                DrawEQParams(boxStartX, paramPanelY, p, step);
             } else {
-                DrawTextApp("No params", area.x + 120, paramPanelY, 20, GRAY);
+                DrawTextApp("No params", boxStartX + 120, paramPanelY, 20, GRAY);
             }
         }
         
@@ -300,6 +306,8 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
         if (state.editor.selectedAppliedFxId != -1) {
              if (state.editor.selectedAppliedFxId == Pattern::FX_ADSR) {
                  startY += 120; // 4 sliders
+             } else if (state.editor.selectedAppliedFxId == Pattern::FX_EQ) {
+                 startY += 200; // EQ graph panel
              } else {
                  startY += 60; // Standard Params
              }
@@ -551,4 +559,98 @@ void FXControls::DrawADSRParams(float x, float y, Pattern& p, int step) {
     drawSlider("Release", Pattern::PAR_RELEASE_TIME, 0.2f, 0.0f, 1.0f, 105);
 }
 
+void FXControls::DrawEQParams(float x, float y, Pattern& p, int step) {
+    // Constants
+    const char* bandLabels[5] = { "60", "250", "1K", "4K", "12K" };
+    const int bandParams[5] = {
+        Pattern::PAR_EQ_BAND1, Pattern::PAR_EQ_BAND2, Pattern::PAR_EQ_BAND3,
+        Pattern::PAR_EQ_BAND4, Pattern::PAR_EQ_BAND5
+    };
+    
+    // Graph dimensions - centered to match FX panel width (420px = 200 + 20 + 200)
+    float panelWidth = 420;
+    float graphW = 360;
+    float graphH = 130;
+    float graphX = x + (panelWidth - graphW) / 2;  // Center horizontally
+    float graphY = y + 20;
+    float barW = 40;
+    float barGap = (graphW - barW * 5) / 6;
+    float centerY = graphY + graphH / 2;
+    
+    // Draw dB labels on left side (outside graph)
+    DrawTextApp("+12", graphX - 28, graphY, 10, GRAY);
+    DrawTextApp("0", graphX - 12, centerY - 5, 10, GRAY);
+    DrawTextApp("-12", graphX - 28, graphY + graphH - 10, 10, GRAY);
+    
+    // Draw background grid
+    DrawRectangle(graphX, graphY, graphW, graphH, {20, 20, 30, 255});
+    DrawRectangleLinesEx({graphX, graphY, graphW, graphH}, 2, GRAY);
+    
+    // Draw horizontal reference lines (0dB, +6dB, -6dB)
+    DrawLine(graphX, centerY, graphX + graphW, centerY, {80, 80, 80, 255});  // 0dB
+    DrawLine(graphX, graphY + graphH * 0.25f, graphX + graphW, graphY + graphH * 0.25f, {50, 50, 50, 255});  // +6dB
+    DrawLine(graphX, graphY + graphH * 0.75f, graphX + graphW, graphY + graphH * 0.75f, {50, 50, 50, 255});  // -6dB
+    
+    // Use scissor mode to clip bars within graph bounds
+    BeginScissorMode((int)graphX, (int)graphY, (int)graphW, (int)graphH);
+    
+    // Draw 5 bars (inside scissor)
+    for (int i = 0; i < 5; ++i) {
+        float barX = graphX + barGap + i * (barW + barGap);
+        
+        // Get current value
+        float gain = 0.0f;  // -1 to 1
+        if (p.stepFXParams[step].count(bandParams[i])) {
+            gain = p.stepFXParams[step][bandParams[i]];
+        }
+        
+        // Calculate bar position (gain maps to Y position)
+        float gainNorm = (1.0f - gain) / 2.0f;  // 0 (top) to 1 (bottom)
+        float handleY = graphY + gainNorm * graphH;
+        
+        // Draw bar from center
+        Color barColor = gain >= 0 ? Color{60, 180, 100, 255} : Color{180, 80, 80, 255};
+        if (gain >= 0) {
+            DrawRectangle(barX, handleY, barW, centerY - handleY, barColor);
+        } else {
+            DrawRectangle(barX, centerY, barW, handleY - centerY, barColor);
+        }
+        
+        // Draw handle (draggable) - now clipped by scissor
+        Rectangle handleRect = {barX, handleY - 5, barW, 10};
+        DrawRectangleRec(handleRect, WHITE);
+    }
+    
+    EndScissorMode();
+    
+    // Draw frequency labels below graph (outside scissor)
+    for (int i = 0; i < 5; ++i) {
+        float barX = graphX + barGap + i * (barW + barGap);
+        int labelW = MeasureTextApp(bandLabels[i], 12);
+        DrawTextApp(bandLabels[i], barX + (barW - labelW) / 2, graphY + graphH + 5, 12, WHITE);
+    }
+    
+    // Handle drag interaction (for all bars)
+    for (int i = 0; i < 5; ++i) {
+        float barX = graphX + barGap + i * (barW + barGap);
+        Rectangle hitArea = {barX - 5, graphY, barW + 10, graphH};
+        
+        if (CheckCollisionPointRec(state.getMousePosition(), hitArea) && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+            state.editor.scrollConsumed = true;
+            
+            float mouseY = state.getMousePosition().y;
+            float newGainNorm = (mouseY - graphY) / graphH;  // 0 to 1
+            if (newGainNorm < 0) newGainNorm = 0;
+            if (newGainNorm > 1) newGainNorm = 1;
+            float newGain = 1.0f - newGainNorm * 2.0f;  // -1 to 1
+            p.stepFXParams[step][bandParams[i]] = newGain;
+        }
+        
+        if (CheckCollisionPointRec(state.getMousePosition(), hitArea) && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+            engine.addPattern(p);
+        }
+    }
+}
+
 } // namespace gui
+

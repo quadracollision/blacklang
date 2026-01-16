@@ -96,7 +96,14 @@ enum FXParam : int {
     PAR_ATTACK_TIME    = 1300, // 0-1 (mapped to time)
     PAR_DECAY_TIME     = 1301, // 0-1 (mapped to time)
     PAR_SUSTAIN_LEVEL  = 1302, // 0-1 (level)
-    PAR_RELEASE_TIME   = 1303  // 0-1 (mapped to time)
+    PAR_RELEASE_TIME   = 1303, // 0-1 (mapped to time)
+    
+    // EQ Params (1400-1499)
+    PAR_EQ_BAND1       = 1400, // 60Hz gain (-1 to 1)
+    PAR_EQ_BAND2       = 1401, // 250Hz
+    PAR_EQ_BAND3       = 1402, // 1kHz
+    PAR_EQ_BAND4       = 1403, // 4kHz
+    PAR_EQ_BAND5       = 1404  // 12kHz
 };
 
 // ============================================
@@ -183,6 +190,7 @@ inline bool IsFXImplemented(FXType type) {
         case FX_NUDGE:
         case FX_REVERSE:
         case FX_ADSR:
+        case FX_EQ:
             return true;
         default:
             return false;

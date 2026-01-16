@@ -621,6 +621,173 @@ private:
     int writePos = 0;
     float phase = 0.0f;
 };
+// ==========================================
+// BITCRUSHER EFFECT (Lo-Fi)
+// ==========================================
+class BitCrushEffect : public TrackEffect {
+public:
+    BitCrushEffect() {
+        // Param 0: Bits (24 down to 1)
+        params.push_back({"Bits", 8.0f, 1.0f, 24.0f, 8.0f, "bit"});
+        // Param 1: Rate Div (1 to 50) - Sample Hold Factor
+        params.push_back({"Rate", 4.0f, 1.0f, 50.0f, 4.0f, "x"});
+        // Param 2: Mix
+        params.push_back({"Mix", 1.0f, 0.0f, 1.0f, 1.0f, "%"});
+    }
+    
+    std::string getName() const override { return "Bitcrush"; }
+    FXType getType() const override { return FX_BITCRUSH; }
+    
+    void process(juce::AudioBuffer<float>& buffer) override {
+        float bits = params[0].value;
+        float rateDiv = params[1].value;
+        float mix = params[2].value;
+        
+        // Quantization step size
+        // If bits = 8, steps = 256. Step size = 1/256.
+        float steps = std::pow(2.0f, bits);
+        float stepSize = 1.0f / steps;
+        
+        int numSamples = buffer.getNumSamples();
+        int numChannels = buffer.getNumChannels();
+        
+        // Ensure state vector size
+        if (channelPhasors.size() < numChannels) {
+            channelPhasors.resize(numChannels, 0.0f);
+            heldSamples.resize(numChannels, 0.0f);
+        }
+        
+        for (int c = 0; c < numChannels; ++c) {
+            float* data = buffer.getWritePointer(c);
+            float phasor = channelPhasors[c];
+            float currentHold = heldSamples[c];
+            
+            for (int i = 0; i < numSamples; ++i) {
+                float in = data[i];
+                
+                // Downsampling Logic
+                phasor += 1.0f;
+                if (phasor >= rateDiv) {
+                    phasor -= rateDiv;
+                    currentHold = in;
+                }
+                
+                // Bit Reduction (Quantize the held sample)
+                // Range -1 to 1.
+                // Scale to 0..1? No, audio is bipolar -1..1
+                // Quantize: floor(x / step + 0.5) * step
+                
+                float crushed = std::floor(currentHold / stepSize + 0.5f) * stepSize;
+                
+                // Mix
+                data[i] = in * (1.0f - mix) + crushed * mix;
+            }
+            channelPhasors[c] = phasor;
+            heldSamples[c] = currentHold;
+        }
+    }
+
+private:
+    std::vector<float> channelPhasors;
+    std::vector<float> heldSamples;
+};
+
+// ==========================================
+// FILTER EFFECT (Resonant LP/HP/BP)
+// ==========================================
+class FilterEffect : public TrackEffect {
+public:
+    FilterEffect() {
+        // Param 0: Cutoff (Hz)
+        params.push_back({"Cutoff", 1000.0f, 20.0f, 20000.0f, 1000.0f, "Hz"});
+        // Param 1: Resonance (Q)
+        params.push_back({"Reso", 1.0f, 0.1f, 10.0f, 1.0f, ""});
+        // Param 2: Type (0=LP, 1=HP, 2=BP)
+        params.push_back({"Type", 0.0f, 0.0f, 2.0f, 0.0f, ""});
+        
+        updateInternalParams();
+    }
+    
+    std::string getName() const override { return "Filter"; }
+    FXType getType() const override { return FX_FILTER; }
+    
+    void process(juce::AudioBuffer<float>& buffer) override {
+        int numSamples = buffer.getNumSamples();
+        int numChannels = buffer.getNumChannels();
+        
+        // Ensure state vectors
+        if (z1.size() < numChannels) {
+            z1.resize(numChannels, 0.0);
+            z2.resize(numChannels, 0.0);
+        }
+        
+        for (int c = 0; c < numChannels; ++c) {
+            float* data = buffer.getWritePointer(c);
+            
+            for (int i = 0; i < numSamples; ++i) {
+                double in = (double)data[i];
+                
+                // Direct Form I Biquad
+                // y[n] = b0*x[n] + b1*x[n-1] + b2*x[n-2] - a1*y[n-1] - a2*y[n-2]
+                // (normalized a0)
+                
+                double out = in * b0 + z1[c];
+                z1[c] = in * b1 + z2[c] - a1 * out;
+                z2[c] = in * b2 - a2 * out;
+                
+                data[i] = (float)out;
+            }
+        }
+    }
+    
+protected:
+    void updateInternalParams() override {
+        float cutoff = params[0].value;
+        float reso = params[1].value; // Q
+        int type = (int)params[2].value;
+        
+        const double pi = 3.14159265358979323846;
+        double w0 = 2.0 * pi * cutoff / sampleRate;
+        double alpha = std::sin(w0) / (2.0 * reso);
+        double cosW0 = std::cos(w0);
+        
+        double A0, A1, A2, B0, B1, B2;
+        
+        if (type == 0) { // Low Pass
+            B0 = (1.0 - cosW0) / 2.0;
+            B1 = 1.0 - cosW0;
+            B2 = (1.0 - cosW0) / 2.0;
+            A0 = 1.0 + alpha;
+            A1 = -2.0 * cosW0;
+            A2 = 1.0 - alpha;
+        } else if (type == 1) { // High Pass
+            B0 = (1.0 + cosW0) / 2.0;
+            B1 = -(1.0 + cosW0);
+            B2 = (1.0 + cosW0) / 2.0;
+            A0 = 1.0 + alpha;
+            A1 = -2.0 * cosW0;
+            A2 = 1.0 - alpha;
+        } else { // Band Pass (Constant Skirt Gain, peak gain = Q)
+            B0 = alpha;
+            B1 = 0.0;
+            B2 = -alpha;
+            A0 = 1.0 + alpha;
+            A1 = -2.0 * cosW0;
+            A2 = 1.0 - alpha;
+        }
+        
+        // Normalize
+        b0 = B0 / A0;
+        b1 = B1 / A0;
+        b2 = B2 / A0;
+        a1 = A1 / A0;
+        a2 = A2 / A0;
+    }
+
+private:
+    double b0, b1, b2, a1, a2;
+    std::vector<double> z1, z2;
+};
 
 // Factory
 inline std::shared_ptr<TrackEffect> CreateTrackEffect(FXType type) {
@@ -633,6 +800,8 @@ inline std::shared_ptr<TrackEffect> CreateTrackEffect(FXType type) {
         case FX_OVERDRIVE: return std::make_shared<OverdriveEffect>();
         case FX_CHORUS: return std::make_shared<ChorusEffect>();
         case FX_FLANGER: return std::make_shared<FlangerEffect>();
+        case FX_BITCRUSH: return std::make_shared<BitCrushEffect>();
+        case FX_FILTER: return std::make_shared<FilterEffect>();
         default: return nullptr;
     }
 }

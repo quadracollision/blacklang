@@ -52,6 +52,9 @@ void FXProcessor::processStepFX(PatternPlayState& state, const Pattern& pattern,
                     handleSustain(state, pattern, step);
                     handleRelease(state, pattern, step);
                     break;
+                case Pattern::FX_EQ:
+                    handleEQ(state, pattern, step, sampleRate);
+                    break;
                 default:
                     break;
             }
@@ -111,6 +114,11 @@ float FXProcessor::processSampleFX(PatternPlayState& state, float sample, double
         }
         
         sample *= state.adsrCurrentValue;
+    }
+    
+    // Apply EQ if active
+    if (eqActive) {
+        sample = applyEQ(sample);
     }
 
     return sample;
@@ -181,6 +189,9 @@ void FXProcessor::handleSlice(PatternPlayState& state, const Pattern& pattern, i
         
         if (sliceIdx >= 0 && sliceIdx < (int)pattern.sliceMarkers.size()) {
             state.samplePlaybackPosition = (double)pattern.sliceMarkers[sliceIdx];
+            // Track start position for Fade In calculations
+            state.playbackStartPosition = state.samplePlaybackPosition;
+            state.currentSliceIndex = sliceIdx; // Track which slice is playing
             
             // Set end position for cutoff mode
             if (pattern.stepFXParams.at(currentStep).count(Pattern::PAR_SLICE_CUTOFF)) {
@@ -329,4 +340,103 @@ void FXProcessor::handleRelease(PatternPlayState& state, const Pattern& pattern,
     }
 }
 
+// ============================================
+// 5-Band EQ Implementation
+// ============================================
+
+// Frequency centers for each band
+static const float EQ_FREQUENCIES[5] = { 60.0f, 250.0f, 1000.0f, 4000.0f, 12000.0f };
+static const float EQ_Q = 1.4f;  // Filter Q (bandwidth)
+
+void FXProcessor::handleEQ(PatternPlayState& state, const Pattern& pattern, int currentStep, double sampleRate) {
+    // Read EQ band gains from pattern parameters
+    const int bandParams[5] = {
+        Pattern::PAR_EQ_BAND1,
+        Pattern::PAR_EQ_BAND2,
+        Pattern::PAR_EQ_BAND3,
+        Pattern::PAR_EQ_BAND4,
+        Pattern::PAR_EQ_BAND5
+    };
+    
+    eqActive = false;
+    
+    for (int i = 0; i < 5; ++i) {
+        eqGains[i] = 0.0f;  // Default: no change
+        
+        if (pattern.stepFXParams.count(currentStep) && 
+            pattern.stepFXParams.at(currentStep).count(bandParams[i])) {
+            eqGains[i] = pattern.stepFXParams.at(currentStep).at(bandParams[i]);
+        }
+        
+        // If any gain is non-zero, activate EQ
+        if (std::abs(eqGains[i]) > 0.01f) {
+            eqActive = true;
+        }
+    }
+    
+    // Reset filter states on step start
+    for (int i = 0; i < 5; ++i) {
+        eqState[i].z1 = 0;
+        eqState[i].z2 = 0;
+    }
+    
+    // Store sample rate for use in applyEQ
+    eqSampleRate = sampleRate;
+}
+
+float FXProcessor::applyEQ(float sample) {
+    // Apply 5 cascaded biquad peak/shelf filters
+    float out = sample;
+    
+    for (int i = 0; i < 5; ++i) {
+        float gainDB = eqGains[i] * 12.0f;  // -1 to 1 -> -12dB to +12dB
+        
+        if (std::abs(gainDB) < 0.1f) continue;  // Skip near-zero bands
+        
+        // Compute biquad coefficients for peaking EQ
+        float A = std::pow(10.0f, gainDB / 40.0f);
+        float w0 = 2.0f * 3.14159265f * EQ_FREQUENCIES[i] / (float)eqSampleRate;
+        float sinw0 = std::sin(w0);
+        float cosw0 = std::cos(w0);
+        float alpha = sinw0 / (2.0f * EQ_Q);
+        
+        float b0 = 1.0f + alpha * A;
+        float b1 = -2.0f * cosw0;
+        float b2 = 1.0f - alpha * A;
+        float a0 = 1.0f + alpha / A;
+        float a1 = -2.0f * cosw0;
+        float a2 = 1.0f - alpha / A;
+        
+        // Normalize
+        b0 /= a0; b1 /= a0; b2 /= a0;
+        a1 /= a0; a2 /= a0;
+        
+        // Apply biquad (Direct Form II Transposed)
+        float y = b0 * out + eqState[i].z1;
+        eqState[i].z1 = b1 * out - a1 * y + eqState[i].z2;
+        eqState[i].z2 = b2 * out - a2 * y;
+        
+        out = y;
+    }
+    
+    return out;
+}
+
+void FXProcessor::computeBiquadCoeffs(float freq, float gain, float q, double sampleRate,
+                                       float& b0, float& b1, float& b2, float& a1, float& a2) {
+    float A = std::pow(10.0f, gain / 40.0f);
+    float w0 = 2.0f * 3.14159265f * freq / (float)sampleRate;
+    float sinw0 = std::sin(w0);
+    float cosw0 = std::cos(w0);
+    float alpha = sinw0 / (2.0f * q);
+    
+    float a0 = 1.0f + alpha / A;
+    b0 = (1.0f + alpha * A) / a0;
+    b1 = (-2.0f * cosw0) / a0;
+    b2 = (1.0f - alpha * A) / a0;
+    a1 = (-2.0f * cosw0) / a0;
+    a2 = (1.0f - alpha / A) / a0;
+}
+
 } // namespace fx
+

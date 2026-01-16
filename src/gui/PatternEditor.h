@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include "FXControls.h"
+#include "SampleSlicer.h"
 
 // Forward declarations
 class AudioEngine;
@@ -25,7 +26,8 @@ public:
 private:
     GuiState& state;
     AudioEngine& engine;
-    FXControls fxControls;  // FX controls component
+    FXControls fxControls;        // FX controls component
+    SampleSlicer sampleSlicer;    // Sample slicer component
     
     void DrawHeader(Rectangle winRect);
     void DrawNameSampleFields(Rectangle& area);

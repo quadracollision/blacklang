@@ -5,6 +5,7 @@
 #include <vector>
 #include <algorithm>
 #include <cstring>
+#include <mutex>
 
 #if defined(__ANDROID__)
 #include <android/log.h>
@@ -317,7 +318,39 @@ bool Draw(GuiState& state, AudioEngine& engine) {
                 // Convert layout for serialization
                 std::vector<SerializedColumn> cols;
                 for (const auto& col : state.columns) {
-                    cols.push_back({col.title, col.trackName, col.patternNames, col.slotSyncEnabled});
+                    SerializedColumn sCol;
+                    sCol.title = col.title;
+                    sCol.trackName = col.trackName;
+                    sCol.patternNames = col.patternNames;
+                    sCol.slotSyncEnabled = col.slotSyncEnabled;
+                    
+                    // Fetch live audio state
+                    AudioBus* bus = engine.getTrackBus(col.trackName);
+                    if (bus) {
+                         sCol.volume = bus->volume;
+                         sCol.pan = bus->pan;
+                         
+                         std::lock_guard<std::mutex> lock(bus->effectsMutex);
+                         for (const auto& effect : bus->effects) {
+                             SerializedFX sFx;
+                             if (effect) {
+                                 sFx.type = (int)effect->getType();
+                                 sFx.enabled = effect->isActive();
+                                 for (int i=0; i<effect->getNumParams(); ++i) {
+                                     sFx.params.push_back(effect->getParam(i).value);
+                                 }
+                             } else {
+                                 sFx.type = 0; // FX_NONE
+                                 sFx.enabled = false;
+                             }
+                             sCol.fxChain.push_back(sFx);
+                         }
+                    } else {
+                        // Fallback defaults
+                        sCol.volume = 1.0f;
+                        sCol.pan = 0.5f;
+                    }
+                    cols.push_back(sCol);
                 }
                 
                 ProjectFile::save(fullPath.string(), engine.getPatterns(), state.activeChain, cols);

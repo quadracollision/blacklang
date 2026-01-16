@@ -341,6 +341,72 @@ void TransportBar::DrawSettingsPopup() {
             state.settings.activePopup = PopupType::None;
             state.settings.showSettingsMenu = false;
         }
+        
+        // New Project Button
+        currentY += 50;
+        Rectangle newBtn = {popX + 20, currentY, popW - 40, 30};
+        DrawRectangleRec(newBtn, Color{100, 50, 50, 255});  // Reddish to indicate destructive action
+        const char* newTxt = "NEW PROJECT";
+        int newW = MeasureTextApp(newTxt, 14);
+        DrawTextApp(newTxt, newBtn.x + (newBtn.width - newW)/2, newBtn.y + 8, 14, WHITE);
+        
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(state.getMousePosition(), newBtn)) {
+            state.consumeClick();
+            state.settings.activePopup = PopupType::NewProjectConfirm;
+        }
+    }
+    else if (state.settings.activePopup == PopupType::NewProjectConfirm) {
+        // --- New Project Confirmation ---
+        DrawTextApp("Start a new project?", popX + 20, currentY, 16, WHITE);
+        currentY += 25;
+        DrawTextApp("This will clear all patterns and tracks.", popX + 20, currentY, 12, GRAY);
+        currentY += 40;
+        
+        // Yes Button
+        Rectangle yesBtn = {popX + 60, currentY, 120, 35};
+        DrawRectangleRec(yesBtn, Color{150, 50, 50, 255});  // Red for destructive
+        const char* yesTxt = "YES";
+        int yesW = MeasureTextApp(yesTxt, 16);
+        DrawTextApp(yesTxt, yesBtn.x + (yesBtn.width - yesW)/2, yesBtn.y + 10, 16, WHITE);
+        
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(state.getMousePosition(), yesBtn)) {
+            state.consumeClick();
+            
+            // Clear the project
+            engine.stop();
+            engine.clearAllPatterns();
+            state.columns.clear();
+            state.activePatternSlots.clear();
+            
+            // Create one default track
+            state.columns.push_back({
+                "Track 1",
+                std::vector<std::string>(16, ""),
+                std::vector<bool>(16, false),
+                {0, 0, 0, 0},
+                0.0f,
+                false,
+                "Track_0",
+                1.0f,
+                0.5f
+            });
+            
+            state.settings.activePopup = PopupType::None;
+            state.settings.showSettingsMenu = false;
+        }
+        
+        // No Button
+        Rectangle noBtn = {popX + 270, currentY, 120, 35};
+        DrawRectangleRec(noBtn, DARKGRAY);
+        const char* noTxt = "NO";
+        int noW = MeasureTextApp(noTxt, 16);
+        DrawTextApp(noTxt, noBtn.x + (noBtn.width - noW)/2, noBtn.y + 10, 16, WHITE);
+        
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(state.getMousePosition(), noBtn)) {
+            state.consumeClick();
+            state.settings.activePopup = PopupType::None;
+            state.settings.showSettingsMenu = false;
+        }
     }
     else if (state.settings.activePopup == PopupType::Audio) {
         // --- Audio Menu ---

@@ -17,24 +17,24 @@ TrackView::TrackView(GuiState& s, AudioEngine& e) : state(s), engine(e) {}
 
 void TrackView::Draw() {
     // 1. Manage Drag State Promotion (Hold -> Drag)
+    // Movement-based: if user drags more than 25px while holding on a pattern, start drag
     if (state.drag.isHolding) {
         float dist = Vector2Distance(state.getMousePosition(), state.drag.initialClickPos);
-        double holdDuration = GetTime() - state.drag.holdStartTime;
         
-        // Only promote to drag after long hold (0.4s) - quick drags are for scrolling
-        if (holdDuration > 0.4) {
+        if (dist > 25) {
+            // Promote to drag - user moved enough while holding a pattern
             state.drag.isDragging = true;
             state.drag.isHolding = false;
             state.drag.isScrolling = false;  // Stop scroll when starting drag
             state.drag.scrollDirection = 0;
         } else if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-            // Released before dragging - just a click, already handled by HandlePatternClick
+            // Released without moving much - just a click
             state.drag.isHolding = false;
         }
     }
 
     // 1.5 Touch Scroll Logic with direction detection
-    if (state.drag.isScrolling) {
+    if (state.drag.isScrolling && !state.drag.isDragging) {
         if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
             Vector2 mouse = state.getMousePosition();
             Vector2 delta = Vector2Subtract(mouse, state.drag.lastMousePos);
@@ -51,8 +51,7 @@ void TrackView::Draw() {
                     } else {
                         state.drag.scrollDirection = 1;  // Vertical
                     }
-                    // Cancel holding since we are now definitely scrolling
-                    state.drag.isHolding = false;
+                    // NOTE: Don't cancel isHolding here - let the distance check handle it
                 }
             }
             

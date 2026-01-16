@@ -34,6 +34,7 @@ private:
     void DrawSlideParams(float x, float y, Pattern& pattern, int step);
     void DrawNudgeParams(float x, float y, Pattern& pattern, int step);
     void DrawADSRParams(float x, float y, Pattern& pattern, int step);
+    void DrawEQParams(float x, float y, Pattern& pattern, int step);
     
     // Apply FX to selected step
     void ApplyFXToStep(Pattern& pattern, int step, fx::FXType fxType, bool add);

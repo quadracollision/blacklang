@@ -6,6 +6,7 @@
 #include "BusManager.h"
 #include "fx/FXProcessor.h"
 #include "AudioRecorder.h"
+#include "ResampleManager.h"
 #include <juce_audio_devices/juce_audio_devices.h>
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <map>
@@ -38,6 +39,7 @@ public:
     void queuePatternSwitch(const std::string& trackName, const std::string& newPatternName); // Per-slot sync: queue pattern to switch at end of current
     int getPatternProgress(const std::string& name); // Visual feedback
     void stop();
+    void clearAllPatterns();  // Clear all patterns for new project
     void pause();
     void resume();
     bool isPlaying() const { return playing.load(); }
@@ -107,6 +109,9 @@ public:
     
     void audioDeviceAboutToStart(juce::AudioIODevice* device) override;
     void audioDeviceStopped() override;
+    
+    // Resample Manager (public for PatternEditor access)
+    ResampleManager resampleManager;
 
 private:
     juce::AudioDeviceManager deviceManager;

@@ -65,18 +65,35 @@ void GuiRenderer::Draw() {
     // BPM Display in header (top right)
     float bpmX = state.getScreenWidth() - 170; // Moved left (was 150)
     DrawTextApp("BPM:", bpmX, 15, 20, LIGHTGRAY);
+    
+    bool bpmCommitted = false;
+    int bpmFieldId = 999;
+    
     if (!state.editor.isOpen) {
-        DrawTextInput({bpmX + 60, 10, 80, 35}, state.globalBpmBuffer, 5, 999, state.focusedFieldId, state.getMousePosition());
+        // DrawTextInput returns true if clicked or Enter pressed
+        if (DrawTextInput({bpmX + 60, 10, 80, 35}, state.globalBpmBuffer, 5, bpmFieldId, state.focusedFieldId, state.getMousePosition())) {
+            // Only commit if focus was cleared (indicating Enter)
+            if (state.focusedFieldId == -1) {
+                bpmCommitted = true;
+            }
+        }
     } else {
         DrawRectangleRec({bpmX + 60, 10, 80, 35}, LIGHTGRAY);
         DrawTextApp(state.globalBpmBuffer, bpmX + 70, 18, 20, BLACK);
     }
     
-    // Update BPM if changed
-    int newBpm = atoi(state.globalBpmBuffer);
-    if (newBpm > 20 && newBpm < 300 && newBpm != state.bpm) {
-        state.bpm = newBpm;
-        engine.setBPM(newBpm);
+    // Update BPM if committed
+    if (bpmCommitted) {
+        int newBpm = atoi(state.globalBpmBuffer);
+        if (newBpm > 20 && newBpm < 300) {
+            state.bpm = newBpm;
+            engine.setBPM(newBpm);
+        }
+    }
+    
+    // Sync buffer from state if not editing (reverts on cancel)
+    if (state.focusedFieldId != bpmFieldId) {
+        snprintf(state.globalBpmBuffer, 8, "%d", state.bpm);
     }
     
     // Main View Area

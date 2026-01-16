@@ -507,6 +507,86 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
                     currentY += 80;
                 }
                 
+            } else if (targetEffect->getType() == fx::FX_FILTER) {
+                // --- FILTER EDITOR (Custom UI) ---
+                
+                // 1. Cutoff (Param 0) & Reso (Param 1) - Draw as Sliders
+                for (int i=0; i<2; ++i) {
+                     fx::TrackFXParam& param = targetEffect->getParam(i);
+                     DrawTextApp(param.name.c_str(), contentRect.x + 20, currentY, 16, GRAY);
+                     
+                     // Slider
+                     Rectangle sliderRect = {contentRect.x + 20, currentY + 15, contentRect.width - 40, 30};
+                     DrawRectangleRec(sliderRect, Color{10, 10, 10, 255});
+                     DrawRectangleLinesEx(sliderRect, 1, DARKGRAY);
+                     
+                     float range = param.max - param.min;
+                     // Use log scale for cutoff? For now linear to match backend expectations unless we change mapping
+                     float norm = (param.value - param.min) / range;
+                     
+                     float handleX = sliderRect.x + (norm * sliderRect.width);
+                     DrawRectangle(handleX - 5, sliderRect.y, 10, sliderRect.height, ORANGE);
+                     
+                     // Text
+                     char buf[32];
+                     if (i==0) sprintf(buf, "%.0f%s", param.value, param.suffix.c_str());
+                     else sprintf(buf, "%.1f", param.value);
+                     DrawTextApp(buf, sliderRect.x + sliderRect.width - MeasureTextApp(buf, 14) - 5, currentY, 14, WHITE);
+                     
+                     // Interaction
+                     std::string paramId = col.trackName + "_Filt_P" + std::to_string(i);
+                     Rectangle hitTest = {sliderRect.x - 10, sliderRect.y - 10, sliderRect.width + 20, sliderRect.height + 20};
+                     
+                     bool isLockedToOther = (!state.drag.activeControlId.empty() && state.drag.activeControlId != paramId);
+                     bool startInteract = (!isLockedToOther && !col.isDragging && CheckCollisionPointRec(state.getMousePosition(), hitTest) && CheckCollisionRecs(hitTest, scrollArea) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && state.isClickAvailable());
+                     bool continueInteract = (state.drag.activeControlId == paramId && IsMouseButtonDown(MOUSE_LEFT_BUTTON));
+                     
+                     if (startInteract || continueInteract) {
+                         if (startInteract) {
+                             state.consumeClick();
+                             state.drag.activeControlId = paramId;
+                         }
+                         isInteracting = true;
+                         float mouseX = state.getMousePosition().x;
+                         float rawNorm = (mouseX - sliderRect.x) / sliderRect.width;
+                         if (rawNorm < 0.0f) rawNorm = 0.0f; if (rawNorm > 1.0f) rawNorm = 1.0f;
+                         float newVal = param.min + (rawNorm * range);
+                         targetEffect->setParam(i, newVal);
+                     }
+                     currentY += 60;
+                }
+                
+                // 2. Filter Type (Param 2) - CYCLIC SELECTOR (StepFX Style)
+                fx::TrackFXParam& typeParam = targetEffect->getParam(2);
+                DrawTextApp("Type:", contentRect.x + 20, currentY, 16, GRAY);
+                currentY += 25;
+                
+                const char* types[] = {"Low Pass", "High Pass", "Band Pass"};
+                int currentType = (int)typeParam.value;
+                if (currentType < 0) currentType = 0; if (currentType > 2) currentType = 2;
+                
+                Rectangle selectorRect = {contentRect.x + 20, currentY, 200.0f, 35.0f};
+                
+                // Draw Black Box (StepFX Style)
+                DrawRectangleRec(selectorRect, BLACK);
+                DrawRectangleLinesEx(selectorRect, 2, WHITE);
+                
+                const char* typeText = types[currentType];
+                DrawTextApp(typeText, selectorRect.x + 20, selectorRect.y + 10, 16, WHITE);
+                
+                // Draw Arrow
+                DrawTextApp("v", selectorRect.x + selectorRect.width - 20, selectorRect.y + 10, 12, LIGHTGRAY);
+                
+                if (canInteract && state.isClickAvailable() && CheckCollisionPointRec(state.getMousePosition(), selectorRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                    state.consumeClick();
+                    // Cycle: 0 -> 1 -> 2 -> 0
+                    int nextType = (currentType + 1) % 3;
+                    targetEffect->setParam(2, (float)nextType);
+                    isInteracting = true;
+                }
+                
+                currentY += 60;
+
             } else {
                 // Generic Editor
                 if (DrawGenericFXEditor(contentRect, scrollArea, targetEffect, col, state)) {
@@ -685,6 +765,35 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
                  state.consumeClick();
                  std::lock_guard<std::mutex> lock(trackBus->effectsMutex);
                  trackBus->effects[fxIndex] = fx::CreateTrackEffect(fx::FX_FLANGER);
+                 isInteracting = true;
+            }
+            
+            // Row 4 Buttons
+            currentY += 40;
+            
+            // Bitcrush
+            Rectangle btnBit = {col1X, currentY + 40, btnW, 30};
+            DrawRectangleRec(btnBit, DARKGRAY);
+            const char* txtBit = "+ Bitcrush";
+            DrawTextApp(txtBit, btnBit.x + (btnBit.width - MeasureTextApp(txtBit, 10))/2, btnBit.y + 8, 10, WHITE);
+            
+            if (canInteract && state.isClickAvailable() && CheckCollisionPointRec(state.getMousePosition(), btnBit) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                 state.consumeClick();
+                 std::lock_guard<std::mutex> lock(trackBus->effectsMutex);
+                 trackBus->effects[fxIndex] = fx::CreateTrackEffect(fx::FX_BITCRUSH);
+                 isInteracting = true;
+            }
+            
+            // Filter
+            Rectangle btnFilt = {col2X, currentY + 40, btnW, 30};
+            DrawRectangleRec(btnFilt, DARKGRAY);
+            const char* txtFilt = "+ Filter";
+            DrawTextApp(txtFilt, btnFilt.x + (btnFilt.width - MeasureTextApp(txtFilt, 10))/2, btnFilt.y + 8, 10, WHITE);
+            
+            if (canInteract && state.isClickAvailable() && CheckCollisionPointRec(state.getMousePosition(), btnFilt) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                 state.consumeClick();
+                 std::lock_guard<std::mutex> lock(trackBus->effectsMutex);
+                 trackBus->effects[fxIndex] = fx::CreateTrackEffect(fx::FX_FILTER);
                  isInteracting = true;
             }
             

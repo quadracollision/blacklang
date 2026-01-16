@@ -244,6 +244,18 @@ void AudioEngine::stop() {
     patternStates.clear();
 }
 
+void AudioEngine::clearAllPatterns() {
+    std::lock_guard<std::mutex> lock(patternMutex);
+    playing.store(false);
+    paused.store(false);
+    sampleIsPlaying = false;
+    activePatternNames.clear();
+    patternStates.clear();
+    patterns.clear();
+    currentPatternName.clear();
+    pendingPatternQueues.clear();
+}
+
 void AudioEngine::pause() {
     if (playing.load()) {
         paused.store(true);
@@ -629,6 +641,76 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
                         // Per-Sample FX (Filter, etc.)
                         sample = fxProcessor.processSampleFX(state, sample, currentSR, state.currentStep, pattern);
                         
+                        // --- USER FADE SETTINGS ---
+                        float fadeEnv = 1.0f;
+                        
+                        // Calculate fade duration in samples (based on percentage)
+                        // If Slice Mode is active (detected by playback starting > 0 or slice params), use slice duration?
+                        // User Request: "fade in either the entire sample or just the slices"
+                        // Since we track playbackStartPosition, we can calculate relatively.
+                        // "Duration" for fade calc:
+                        double totalDur = (double)pattern.sampleBuffer.getNumSamples();
+                        double effectiveStart = 0.0;
+                        double effectiveEnd = totalDur;
+                        
+                        if (pattern.fadeSlices && state.playbackStartPosition > 0) {
+                            effectiveStart = state.playbackStartPosition;
+                            // Estimate end? If sliceEndPosition is set (Cutoff or Reverse), use it.
+                            // If just playing through, maybe use next marker?
+                            // For simplicity/robustness: Use a reasonable duration or just relative to start.
+                            // If Cutoff is active, we have state.sampleEndPosition.
+                            if (state.sampleEndPosition > 0) effectiveEnd = (double)state.sampleEndPosition;
+                            // Else we don't strictly knwo when "slice" ends if playing through.
+                            // But usually "Fade Slice" implies fading the slice itself.
+                        }
+                        
+                        double duration = effectiveEnd - effectiveStart;
+                        if (duration < 100.0) duration = 100.0; // Safety floor
+                        
+                        // Determine active Fade Params
+                        float activeFadeIn = 0.0f;
+                        float activeFadeOut = 0.0f;
+                        
+                        if (pattern.fadeSlices) {
+                            // Slice Mode: Default 0, check for overrides
+                            if (state.currentSliceIndex >= 0) {
+                                if (pattern.sliceFadeIns.count(state.currentSliceIndex)) {
+                                    activeFadeIn = pattern.sliceFadeIns.at(state.currentSliceIndex);
+                                }
+                                if (pattern.sliceFadeOuts.count(state.currentSliceIndex)) {
+                                    activeFadeOut = pattern.sliceFadeOuts.at(state.currentSliceIndex);
+                                }
+                            }
+                        } else {
+                            // Global Mode
+                            activeFadeIn = pattern.fadeIn;
+                            activeFadeOut = pattern.fadeOut;
+                        }
+                        
+                        // Apply Fade In
+                        if (activeFadeIn > 0.001f) {
+                            double fadeInLen = duration * activeFadeIn;
+                            double posInFade = state.samplePlaybackPosition - effectiveStart;
+                            if (state.isReverse) posInFade = effectiveEnd - state.samplePlaybackPosition; // In reverse, start is end
+                            
+                            if (posInFade < fadeInLen && posInFade >= 0) {
+                                fadeEnv *= (float)(posInFade / fadeInLen);
+                            }
+                        }
+                        
+                        // Apply Fade Out
+                        if (activeFadeOut > 0.001f) {
+                            double fadeOutLen = duration * activeFadeOut;
+                            double distFromEnd = effectiveEnd - state.samplePlaybackPosition;
+                            if (state.isReverse) distFromEnd = state.samplePlaybackPosition - effectiveStart;
+                            
+                            if (distFromEnd < fadeOutLen && distFromEnd >= 0) {
+                                fadeEnv *= (float)(distFromEnd / fadeOutLen);
+                            }
+                        }
+                        
+                        sample *= fadeEnv;
+
                         // --- ANTI-CLICK ENVELOPE (2ms fade-in/out) ---
                         const double fadeLen = 88.0;
                         float envelope = 1.0f;
@@ -718,6 +800,11 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
     }
     } // End Playback Scope
     
+    // Feed resample manager if active (isolated from other recording)
+    if (resampleManager.isRecording()) {
+        resampleManager.feedSamples(outputChannelData, numSamples, numOutputChannels);
+    }
+    
     // Send to Recorder - now recording from buses!
     recording_block:
     {
@@ -801,10 +888,16 @@ void AudioEngine::triggerStep(PatternPlayState& state, Pattern& pattern) {
     state.fadeInSamplesRemaining = 88; // 2ms fade-in
     state.sampleEndPosition = 0;       // Reset boundaries for logic check
     state.sliceEndPosition = -1;
+    state.sampleEndPosition = 0;       // Reset boundaries for logic check
+    state.sliceEndPosition = -1;
+    state.sampleEndPosition = 0;       // Reset boundaries for logic check
+    state.sliceEndPosition = -1;
     state.stopAtSliceEnd = false;
+    state.playbackStartPosition = 0.0; // Reset start pos (default 0 or updated by Slice FX)
+    state.currentSliceIndex = -1;      // Reset slice tracker
     state.isStuttering = false; // Reset start of step
     state.stutterIntervalSamples = 0;
-    state.isReverse = false; // Reset reverse mode for this step
+    state.isReverse = false;   // Reset reverse mode - only applies if FX_REVERSE is on current step
     
     // Reset ADSR
     state.useADSR = false;

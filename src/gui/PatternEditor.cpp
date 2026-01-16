@@ -14,7 +14,7 @@ namespace fs = std::filesystem;
 
 namespace gui {
 
-PatternEditor::PatternEditor(GuiState& s, AudioEngine& e) : state(s), engine(e), fxControls(s, e) {}
+PatternEditor::PatternEditor(GuiState& s, AudioEngine& e) : state(s), engine(e), fxControls(s, e), sampleSlicer(s, e) {}
 
 bool PatternEditor::IsOpen() const {
     return state.editor.isOpen;
@@ -227,6 +227,24 @@ void PatternEditor::Draw() {
             state.editor.showMelodicControls = false;
             state.editor.showFxControls = false;
         }
+    }
+    
+    // Check for resample cycle completion (button moved to footer)
+    // Handle both: UI-detected completion (via update) AND audio-thread completion (buffer full)
+    if (engine.resampleManager.isRecording()) {
+        int progress = engine.getPatternProgress(state.editor.currentPattern.name);
+        engine.resampleManager.update(progress);  // Update state even if not completing
+    }
+    
+    // Check if resampling completed (either way)
+    if (engine.resampleManager.isComplete()) {
+        // Cycle completed - transfer audio to pattern
+        engine.resampleManager.transferToPattern(state.editor.currentPattern);
+        engine.addPattern(state.editor.currentPattern);  // Sync to engine
+        engine.stop();
+        
+        // Update sample path display
+        strncpy(state.editor.samplePathBuffer, "[resampled]", 255);
     }
     
     startY += toggleH + 15; // Spacing before grid 
@@ -706,330 +724,11 @@ void PatternEditor::Draw() {
         startY += heightUsed;
     }
 
-    // Slicer Controls
+    // Slicer Controls (now extracted to SampleSlicer component)
     if (state.editor.showSlicerControls) {
-        // Define safe viewport for interaction (exclude header and footer)
-        // Header ~60px, Footer ~55px
-        Rectangle viewportRect = {winRect.x, winRect.y + 60, winRect.width, winRect.height - 110};
-        bool isInViewport = CheckCollisionPointRec(state.getMousePosition(), viewportRect);
-        
-        DrawTextApp("Sample Slicer", winRect.x + 20, startY + 10, 24, WHITE);
-        startY += 45;
-
-        // Waveform Viewer - larger for touch
-        Rectangle waveRect = {winRect.x + 20, startY, winRect.width - 40, 150};
-        DrawRectangleRec(waveRect, BLACK);
-        DrawRectangleLinesEx(waveRect, 2, GRAY);
-        
-        // Use editor's pattern buffer (loaded when Load button is clicked)
-        if (p.sampleBuffer.getNumSamples() > 0) {
-            int numSamples = p.sampleBuffer.getNumSamples();
-            const float* data = p.sampleBuffer.getReadPointer(0);
-            
-            // Calculate visible sample range based on zoom and scroll
-            float zoom = state.editor.waveformZoom;
-            float viewWidth = 1.0f / zoom; // Fraction of total visible
-            float scrollMax = 1.0f - viewWidth;
-            if (scrollMax < 0) scrollMax = 0;
-            state.editor.waveformScrollX = std::min(std::max(state.editor.waveformScrollX, 0.0f), scrollMax);
-            
-            int startSample = (int)(state.editor.waveformScrollX * numSamples);
-            int endSample = (int)((state.editor.waveformScrollX + viewWidth) * numSamples);
-            if (endSample > numSamples) endSample = numSamples;
-            int visibleSamples = endSample - startSample;
-            
-            float midY = waveRect.y + waveRect.height / 2;
-            float halfH = waveRect.height / 2.0f;
-            
-            // Draw Waveform (visible portion only)
-            for (int x = 0; x < (int)waveRect.width; ++x) {
-                float minVal = 0.0f;
-                float maxVal = 0.0f;
-                
-                int sIdx = startSample + (int)((float)x / waveRect.width * visibleSamples);
-                int eIdx = startSample + (int)((float)(x+1) / waveRect.width * visibleSamples);
-                if (eIdx > endSample) eIdx = endSample;
-                
-                int step = std::max(1, (eIdx - sIdx) / 4);
-                for (int s = sIdx; s < eIdx; s += step) {
-                    if (s >= 0 && s < numSamples) {
-                        float val = data[s];
-                        if (val < minVal) minVal = val;
-                        if (val > maxVal) maxVal = val;
-                    }
-                }
-                
-                DrawLine(waveRect.x + x, midY + minVal * halfH, waveRect.x + x, midY + maxVal * halfH, DARKGREEN);
-            }
-            
-            // Draw Markers (only visible ones)
-            for (int mFn = 0; mFn < (int)p.sliceMarkers.size(); ++mFn) {
-                int sampleIdx = p.sliceMarkers[mFn];
-                if (sampleIdx >= startSample && sampleIdx <= endSample) {
-                    float xPos = (float)(sampleIdx - startSample) / visibleSamples * waveRect.width;
-                    DrawLine(waveRect.x + xPos, waveRect.y, waveRect.x + xPos, waveRect.y + waveRect.height, RED);
-                    int textWidth = MeasureTextApp(TextFormat("%d", mFn), 10);
-                    DrawTextApp(TextFormat("%d", mFn), waveRect.x + xPos + 2, waveRect.y + 2, 10, YELLOW);
-                    
-                    // Handle Delete (Click on Number)
-                    // Only active if NOT in Play Mode
-                    if (!inputBlocked && isInViewport && !state.editor.slicerPlayModeEnabled && CheckCollisionPointRec(state.getMousePosition(), {waveRect.x + xPos, waveRect.y, (float)textWidth + 4, 15}) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                        p.sliceMarkers.erase(p.sliceMarkers.begin() + mFn);
-                        mFn--; 
-                        engine.addPattern(p); // SYNC 
-                    }
-                    
-                    // Handle Delete (Right Click near marker - kept for alt method)
-                    if (!inputBlocked && isInViewport && CheckCollisionPointRec(state.getMousePosition(), {waveRect.x + xPos - 5, waveRect.y, 10, waveRect.height}) && IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
-                        p.sliceMarkers.erase(p.sliceMarkers.begin() + mFn);
-                        mFn--; 
-                        engine.addPattern(p); // SYNC 
-                    }
-                }
-            }
-            
-            // Interaction: Left Click to Add Marker (Only if NOT in Play Mode)
-            if (!inputBlocked && isInViewport && !state.editor.slicerPlayModeEnabled && CheckCollisionPointRec(state.getMousePosition(), waveRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                float localX = state.getMousePosition().x - waveRect.x;
-                int sampleIdx = startSample + (int)(localX / waveRect.width * visibleSamples);
-                
-                // Add and Sort
-                p.sliceMarkers.push_back(sampleIdx);
-                std::sort(p.sliceMarkers.begin(), p.sliceMarkers.end());
-                engine.addPattern(p); // SYNC
-            }
-            
-            // Horizontal Scrollbar (only if zoomed) - touch friendly
-            if (zoom > 1.0f) {
-                Rectangle scrollBarBg = {waveRect.x, waveRect.y + waveRect.height + 5, waveRect.width, 25};
-                DrawRectangleRec(scrollBarBg, DARKGRAY);
-                
-                float thumbWidth = scrollBarBg.width / zoom;
-                float thumbX = scrollBarBg.x + state.editor.waveformScrollX / (1.0f - viewWidth + 0.001f) * (scrollBarBg.width - thumbWidth);
-                Rectangle scrollThumb = {thumbX, scrollBarBg.y + 3, thumbWidth, 19};
-                DrawRectangleRec(scrollThumb, LIGHTGRAY);
-                
-                // Drag scrollbar
-                static bool isDraggingScroll = false;
-                static float dragStartX = 0;
-                static float dragStartScroll = 0;
-                
-                if (!inputBlocked && isInViewport && CheckCollisionPointRec(state.getMousePosition(), scrollBarBg) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                    isDraggingScroll = true;
-                    dragStartX = state.getMousePosition().x;
-                    dragStartScroll = state.editor.waveformScrollX;
-                }
-                if (isDraggingScroll && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-                    float deltaX = state.getMousePosition().x - dragStartX;
-                    float deltaScroll = deltaX / (scrollBarBg.width - thumbWidth) * scrollMax;
-                    state.editor.waveformScrollX = std::min(std::max(dragStartScroll + deltaScroll, 0.0f), scrollMax);
-                }
-                if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-                    isDraggingScroll = false;
-                }
-            }
-            
-        } else {
-            DrawTextApp("No Sample Loaded", waveRect.x + 10, waveRect.y + 60, 20, DARKGRAY);
-        }
-        
-        // Move past the waveform (150px) and scrollbar area
-        startY += (p.sampleBuffer.getNumSamples() > 0 && state.editor.waveformZoom > 1.0f) ? 185 : 165;
-        
-        // Controls: Clear Markers - touch friendly
-        Rectangle clearBtn = {winRect.x + 20, startY, 140, 45};
-        DrawRectangleRec(clearBtn, RED);
-        const char* clearTxt = "Clear";
-        int clearW = MeasureTextApp(clearTxt, 16);
-        DrawTextApp(clearTxt, clearBtn.x + (clearBtn.width - clearW)/2, clearBtn.y + 12, 16, WHITE);
-        if (!inputBlocked && isInViewport && CheckCollisionPointRec(state.getMousePosition(), clearBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            p.sliceMarkers.clear();
-            
-            // UX SYNC: Remove entire steps that have FX_SLICE
-            std::vector<int> stepsToRemove;
-            for (auto& stepPair : p.stepFX) {
-                const auto& fxList = stepPair.second;
-                if (std::find(fxList.begin(), fxList.end(), Pattern::FX_SLICE) != fxList.end()) {
-                    stepsToRemove.push_back(stepPair.first);
-                }
-            }
-            
-            for (int step : stepsToRemove) {
-                p.stepPitches.erase(step);
-                p.stepVelocities.erase(step);
-                p.stepFX.erase(step);
-                p.stepFXParams.erase(step);
-                
-                // Update UI state
-                state.editor.stepStates[step - 1] = false;
-                if (state.editor.selectedStep == step - 1) {
-                    state.editor.selectedStep = -1;
-                }
-            }
-            
-            engine.addPattern(p); // SYNC
-        }
-        
-        // Cutoff Toggle - touch friendly
-        Rectangle cutBtn = {winRect.x + 170, startY, 80, 45};
-        DrawRectangleRec(cutBtn, state.editor.slicerCutoffEnabled ? GREEN : DARKGRAY);
-        const char* cutTxt = "Cut";
-        int cutW = MeasureTextApp(cutTxt, 16);
-        DrawTextApp(cutTxt, cutBtn.x + (cutBtn.width - cutW)/2, cutBtn.y + 12, 16, WHITE);
-        if (!inputBlocked && isInViewport && CheckCollisionPointRec(state.getMousePosition(), cutBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            state.editor.slicerCutoffEnabled = !state.editor.slicerCutoffEnabled;
-        }
-        
-        // Play/Slice Mode Switch - touch friendly
-        float switchStartX = winRect.x + 260;
-        Rectangle sliceRect = {switchStartX, startY, 70, 45};
-        Rectangle playRect = {switchStartX + 70, startY, 70, 45};
-        
-        if (!state.editor.slicerPlayModeEnabled) {
-            DrawRectangleRec(sliceRect, WHITE);
-            DrawRectangleRec(playRect, GRAY);
-            const char* sliceTxt = "Slice";
-            int sliceW = MeasureTextApp(sliceTxt, 16);
-            DrawTextApp(sliceTxt, sliceRect.x + (sliceRect.width - sliceW)/2, sliceRect.y + 12, 16, BLACK);
-            const char* playTxt = "Play";
-            int playW = MeasureTextApp(playTxt, 16);
-            DrawTextApp(playTxt, playRect.x + (playRect.width - playW)/2, playRect.y + 12, 16, WHITE);
-        } else {
-            DrawRectangleRec(sliceRect, GRAY);
-            DrawRectangleRec(playRect, WHITE);
-            const char* sliceTxt = "Slice";
-            int sliceW = MeasureTextApp(sliceTxt, 16);
-            DrawTextApp(sliceTxt, sliceRect.x + (sliceRect.width - sliceW)/2, sliceRect.y + 12, 16, WHITE);
-            const char* playTxt = "Play";
-            int playW = MeasureTextApp(playTxt, 16);
-            DrawTextApp(playTxt, playRect.x + (playRect.width - playW)/2, playRect.y + 12, 16, BLACK);
-        }
-        
-        if (!inputBlocked && isInViewport && CheckCollisionPointRec(state.getMousePosition(), sliceRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            state.editor.slicerPlayModeEnabled = false;
-        }
-        if (!inputBlocked && isInViewport && CheckCollisionPointRec(state.getMousePosition(), playRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            state.editor.slicerPlayModeEnabled = true;
-        }
-        
-        // Play Mode Interaction: Right Click or Click in Mode
-        if (!inputBlocked && isInViewport && state.editor.slicerPlayModeEnabled && CheckCollisionPointRec(state.getMousePosition(), waveRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-             if (p.sampleBuffer.getNumSamples() > 0) {
-                 int64_t totalSamples = p.sampleBuffer.getNumSamples();
-                 float zoom = state.editor.waveformZoom;
-                 float viewWidth = 1.0f / zoom;
-                 int64_t visibleSamples = (int64_t)(totalSamples * viewWidth);
-                 // Scroll mapping
-                 float scrollMax = 1.0f - viewWidth;
-                 if (scrollMax < 0) scrollMax = 0;
-                 // Clamp scroll
-                 if (state.editor.waveformScrollX > scrollMax) state.editor.waveformScrollX = scrollMax;
-                 
-                 int64_t startSample = (int64_t)(state.editor.waveformScrollX / (scrollMax + 0.001f) * (totalSamples - visibleSamples));
-                 if (startSample < 0) startSample = 0;
-                 
-                 float localX = state.getMousePosition().x - waveRect.x;
-                 int sampleIdx = startSample + (int)(localX / waveRect.width * visibleSamples);
-                 
-                 // Find Slice
-                 int foundSlice = -1;
-                 if (sampleIdx >= 0) {
-                     // Check if valid start
-                     if (!p.sliceMarkers.empty()) {
-                         for (size_t i = 0; i < p.sliceMarkers.size(); ++i) {
-                             int64_t sStart = p.sliceMarkers[i];
-                             int64_t sEnd = (i + 1 < p.sliceMarkers.size()) ? p.sliceMarkers[i+1] : p.sampleBuffer.getNumSamples();
-                             
-                             if (sampleIdx >= sStart && sampleIdx < sEnd) {
-                                 foundSlice = (int)i;
-                                 break;
-                             }
-                         }
-                     }
-                 }
-                 
-                 if (foundSlice != -1) {
-                     // Preview
-                     engine.previewSlice(p, foundSlice, !state.editor.slicerCutoffEnabled);
-                     
-                     // Record if Live Edit Mode is ON
-                     if (state.isLiveEditMode && state.editor.selectedStep >= 0 && state.editor.selectedStep < 64) {
-                          // Assign slice to selected step
-                          int step = state.editor.selectedStep + 1;
-                          
-                          // Add Slice FX
-                          if (std::find(p.stepFX[step].begin(), p.stepFX[step].end(), Pattern::FX_SLICE) == p.stepFX[step].end()) {
-                              p.stepFX[step].push_back(Pattern::FX_SLICE);
-                          }
-                          
-                          // Set Index Param
-                          p.stepFXParams[step][Pattern::PAR_SLICE_INDEX] = (float)foundSlice;
-                          if (state.editor.slicerCutoffEnabled) {
-                              p.stepFXParams[step][Pattern::PAR_SLICE_CUTOFF] = 1.0f;
-                          } else {
-                              p.stepFXParams[step].erase(Pattern::PAR_SLICE_CUTOFF);
-                          }
-                          
-                          // Activate step if not active?
-                          state.editor.stepStates[state.editor.selectedStep] = true;
-                          p.stepPitches[step] = 0; // Default C
-                          p.stepVelocities[step] = 1.0f;
-                          
-                          engine.addPattern(p);
-                     }
-                 }
-             }
-        }
-
-        
-        // Zoom buttons (to the right of Play Mode) - touch friendly
-        Rectangle zoomOutBtn = {winRect.x + 410, startY, 45, 45};
-        Rectangle zoomInBtn = {winRect.x + 460, startY, 45, 45};
-        DrawRectangleRec(zoomOutBtn, DARKGRAY);
-        DrawRectangleRec(zoomInBtn, DARKGRAY);
-        DrawTextApp("-", zoomOutBtn.x + 16, zoomOutBtn.y + 10, 24, WHITE);
-        DrawTextApp("+", zoomInBtn.x + 14, zoomInBtn.y + 10, 24, WHITE);
-        
-        if (!inputBlocked && isInViewport && CheckCollisionPointRec(state.getMousePosition(), zoomInBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            state.editor.waveformZoom = std::min(state.editor.waveformZoom * 1.5f, 20.0f);
-        }
-        if (!inputBlocked && isInViewport && CheckCollisionPointRec(state.getMousePosition(), zoomOutBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            state.editor.waveformZoom = std::max(state.editor.waveformZoom / 1.5f, 1.0f);
-            if (state.editor.waveformZoom <= 1.0f) state.editor.waveformScrollX = 0.0f;
-        }
-        
-        startY += 55;
-        
-        // Bookend Button (Add Start & End Markers) - touch friendly
-        if (p.sampleBuffer.getNumSamples() > 0) {
-             Rectangle bookendBtn = {winRect.x + 20, startY, 150, 45};
-             DrawRectangleRec(bookendBtn, BLUE);
-             const char* bookTxt = "Bookend";
-             int bookW = MeasureTextApp(bookTxt, 16);
-             DrawTextApp(bookTxt, bookendBtn.x + (bookendBtn.width - bookW)/2, bookendBtn.y + 12, 16, WHITE);
-             if (!inputBlocked && isInViewport && CheckCollisionPointRec(state.getMousePosition(), bookendBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                 bool changed = false;
-                 // Add Start (0)
-                 if (std::find(p.sliceMarkers.begin(), p.sliceMarkers.end(), 0) == p.sliceMarkers.end()) {
-                     p.sliceMarkers.push_back(0);
-                     changed = true;
-                 }
-                 // Add End (Total Samples)
-                 int64_t total = p.sampleBuffer.getNumSamples();
-                 if (std::find(p.sliceMarkers.begin(), p.sliceMarkers.end(), total) == p.sliceMarkers.end()) {
-                     p.sliceMarkers.push_back(total);
-                     changed = true;
-                 }
-                 
-                 if (changed) {
-                     std::sort(p.sliceMarkers.begin(), p.sliceMarkers.end());
-                     engine.addPattern(p);
-                 }
-             }
-             startY += 55;
-        }
-
-        startY += 10;
+        Rectangle slicerArea = {winRect.x, startY, winRect.width, winRect.height - startY - 60};
+        float heightUsed = sampleSlicer.Draw(slicerArea, p, inputBlocked);
+        startY += heightUsed;
     }
     
     // Update Content Height
@@ -1156,63 +855,33 @@ void PatternEditor::Draw() {
         }
     }
     
-    // Resample Button - arms/records master output for slicing
-    // User spec: click → arm, any audio plays → record, click again → stop + transfer
-    Rectangle resampleRect = {previewRect.x + previewRect.width + 10, winRect.y + winRect.height - 45, 100, 40};
+    // Resample Button - next to Preview (records one pattern cycle to sample buffer)
+    Rectangle resampleRect = {previewRect.x + previewRect.width + 8, previewRect.y, 90, 40};
+    bool isResampling = engine.resampleManager.isRecording();
     
-    // Color: Armed=Orange, Recording=Red, Idle=Purple
-    Color resampleColor = state.editor.isResampling ? RED : 
-                          (state.editor.isResampleArmed ? ORANGE : Color{100, 100, 180, 255});
-    DrawRectangleRec(resampleRect, resampleColor);
-    const char* resampleTxt = state.editor.isResampling ? "Stop Rec" : 
-                              (state.editor.isResampleArmed ? "Armed" : "Resample");
-    int resampleW = MeasureTextApp(resampleTxt, 14);
-    DrawTextApp(resampleTxt, resampleRect.x + (resampleRect.width - resampleW)/2, resampleRect.y + (resampleRect.height - 14)/2, 14, WHITE);
-    
-    // While armed, check if playback started → begin recording
-    if (state.editor.isResampleArmed && engine.isPlaying() && !state.editor.isResampling) {
-        engine.startInMemoryRecording();
-        state.editor.isResampling = true;
-        state.editor.isResampleArmed = false;
+    if (isResampling) {
+        DrawRectangleRec(resampleRect, RED);
+        const char* recTxt = "REC...";
+        int recW = MeasureTextApp(recTxt, 14);
+        DrawTextApp(recTxt, resampleRect.x + (resampleRect.width - recW)/2, resampleRect.y + (resampleRect.height - 14)/2, 14, WHITE);
+    } else {
+        DrawRectangleRec(resampleRect, Color{255, 140, 0, 255}); // Orange
+        const char* resTxt = "Resamp";
+        int resW = MeasureTextApp(resTxt, 14);
+        DrawTextApp(resTxt, resampleRect.x + (resampleRect.width - resW)/2, resampleRect.y + (resampleRect.height - 14)/2, 14, WHITE);
     }
     
     if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), resampleRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        if (state.editor.isResampling) {
-            // STOP: Stop recording and transfer buffer to pattern
-            engine.stopInMemoryRecording();
-            state.editor.isResampling = false;
-            
-            // Copy recorded buffer to pattern's sampleBuffer
-            int sampleCount = engine.getRecordedSampleCount();
-            if (sampleCount > 0) {
-                const juce::AudioBuffer<float>& srcBuffer = engine.getRecordedMaster();
-                p.sampleBuffer.setSize(srcBuffer.getNumChannels(), sampleCount, false, true, false);
-                for (int ch = 0; ch < srcBuffer.getNumChannels(); ++ch) {
-                    p.sampleBuffer.copyFrom(ch, 0, srcBuffer, ch, 0, sampleCount);
-                }
-                p.sampleRate = engine.getRecordedSampleRate();
-                
-                // Clear existing slice markers
-                p.sliceMarkers.clear();
-                
-                // Sync to audio engine
-                engine.addPattern(p);
-                
-                // Reset zoom/scroll for new sample
-                state.editor.waveformZoom = 1.0f;
-                state.editor.waveformScrollX = 0.0f;
-            }
-            
-            // Disarm
-            engine.disarmRecording();
-        } else if (state.editor.isResampleArmed) {
-            // Click while armed → Disarm
-            state.editor.isResampleArmed = false;
-            engine.disarmRecording();
+        if (!isResampling) {
+            // Start resample: arm recording and start playback
+            int steps = atoi(state.editor.stepsBuffer);
+            if (steps <= 0) steps = 16;
+            engine.resampleManager.start(steps, engine.getBPM(), 44100.0);
+            engine.playPattern(state.editor.currentPattern.name);
         } else {
-            // ARM: Prepare to record (will start when any playback begins)
-            engine.armRecording(false); // no stems
-            state.editor.isResampleArmed = true;
+            // Cancel resample if clicked while recording
+            engine.resampleManager.stop();
+            engine.stop();
         }
     }
 

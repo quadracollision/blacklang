@@ -19,6 +19,15 @@ struct Pattern {
     // Mixer Properties
     float volume = 1.0f;
     float pan = 0.5f; // 0.0=Left, 0.5=Center, 1.0=Right
+    
+    // Sample Fade Settings
+    float fadeIn = 0.0f; // Global Fade In (0.0-0.5)
+    float fadeOut = 0.0f; // Global Fade Out (0.0-0.5)
+    bool fadeSlices = false; // If true, use per-slice settings (or slice mode logic)
+    
+    // Per-Slice Fade Overrides (Index -> Value)
+    std::map<int, float> sliceFadeIns; 
+    std::map<int, float> sliceFadeOuts;
 
     std::map<int, int> stepPitches; // Step (1-indexed) -> Semitone Offset (relative to C4/Root)
     std::map<int, float> stepVelocities; // Step (1-indexed) -> Velocity [0.0 - 1.0]
@@ -52,6 +61,14 @@ struct Pattern {
     static constexpr int PAR_DECAY_TIME = 1301;
     static constexpr int PAR_SUSTAIN_LEVEL = 1302;
     static constexpr int PAR_RELEASE_TIME = 1303;
+    
+    // EQ Parameters (1400-1499)
+    static constexpr int FX_EQ = 21;
+    static constexpr int PAR_EQ_BAND1 = 1400;  // 60Hz  (-1 to 1 = -12dB to +12dB)
+    static constexpr int PAR_EQ_BAND2 = 1401;  // 250Hz
+    static constexpr int PAR_EQ_BAND3 = 1402;  // 1kHz
+    static constexpr int PAR_EQ_BAND4 = 1403;  // 4kHz
+    static constexpr int PAR_EQ_BAND5 = 1404;  // 12kHz
     
     // Audio data (loaded at runtime)
     juce::AudioBuffer<float> sampleBuffer;

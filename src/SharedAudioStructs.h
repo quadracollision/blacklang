@@ -12,6 +12,9 @@ struct PatternPlayState {
     bool stopAtSliceEnd = false;    // Slice flags
     bool stopAtEnd = false;         // Per-slot sync: stop at pattern end and switch to queued pattern
     
+    double playbackStartPosition = 0.0; // Start position of the current trigger (0 or slice start)
+    int currentSliceIndex = -1; // -1 if not slicing, or index into sliceMarkers
+    
     int64_t playbackDelaySamples = 0; // For Nudge timing offset (delay before starting playback)
     
     int64_t fadeInSamplesRemaining = 0; // For 2ms fade-in (88 samples at 44100Hz)

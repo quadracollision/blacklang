@@ -206,20 +206,19 @@ void RecordingUI::DrawReviewUI() {
     }
     
     // --- Footer Controls (Slicer Style) ---
-    float btnH = 40;
-    float btnY = footerY + 10;
+    float btnH = 45;
+    float btnY = footerY + (60 - btnH) / 2; // Center vertically in footer
     
-    // Left: Recording Info (Mini)
-    char infoText[64];
-    double dur = sampleCount > 0 ? (double)sampleCount / engine.getRecordedSampleRate() : 0;
-    snprintf(infoText, 64, "Len: %.1fs  Samples: %d  Rate: %.0fHz", dur, sampleCount, engine.getRecordedSampleRate());
-    DrawTextApp(infoText, 20, btnY + 10, 16, GRAY);
+    // Left: (Empty for now)
     
     // Right: Action Buttons
-    float btnX = screenW - 350;
+    float btnW = 140;
+    float gap = 20;
+    float totalBtnWidth = 3 * btnW + 2 * gap;
+    float btnX = screenW - totalBtnWidth - 40; // Right aligned with margin
     
     // Preview / Stop
-    Rectangle previewBtn = {btnX, btnY, 100, btnH};
+    Rectangle previewBtn = {btnX, btnY, btnW, btnH};
     bool isPreviewing = state.recorder.isPreviewing;
     
     if (isPreviewing) {
@@ -235,14 +234,14 @@ void RecordingUI::DrawReviewUI() {
     }
     
     // Save
-    Rectangle saveBtn = {btnX + 110, btnY, 100, btnH};
+    Rectangle saveBtn = {btnX + btnW + gap, btnY, btnW, btnH};
     DrawRectangleRec(saveBtn, BLUE);
     const char* saveLabel = state.recorder.recordStems ? "Save All" : "Save";
     int saveLabelW = MeasureTextApp(saveLabel, 20);
     DrawTextApp(saveLabel, (int)(saveBtn.x + (saveBtn.width - saveLabelW) / 2), (int)(saveBtn.y + (saveBtn.height - 20) / 2), 20, WHITE);
     
     // Discard
-    Rectangle discardBtn = {btnX + 220, btnY, 100, btnH};
+    Rectangle discardBtn = {btnX + 2 * (btnW + gap), btnY, btnW, btnH};
     DrawRectangleRec(discardBtn, Color{150, 50, 50, 255});
     const char* discardLabel = "Discard";
     int discardLabelW = MeasureTextApp(discardLabel, 20);

@@ -64,6 +64,11 @@ bool DrawTextInput(Rectangle rect, char* buffer, size_t maxLen, int fieldId, int
             size_t len = strlen(buffer);
             if (len > 0) buffer[len-1] = '\0';
         }
+        
+        if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER)) {
+            focusedId = -1;
+            clicked = true;
+        }
 #endif
     }
     return clicked;
