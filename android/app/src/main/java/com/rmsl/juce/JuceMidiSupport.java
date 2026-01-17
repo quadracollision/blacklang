@@ -571,7 +571,9 @@ public class JuceMidiSupport
             for (MidiDeviceInfo info : foundDevices)
                 onDeviceAdded (info);
 
-            manager.registerDeviceCallback (this, null);
+            // DISABLED: This causes crashes on some devices (Redmi) where the callback
+            // fires on a thread without proper JNI context for JUCE.
+            // manager.registerDeviceCallback (this, null);
         }
 
         protected void finalize () throws Throwable

@@ -369,8 +369,8 @@ void SampleSlicer::DrawControlButtons(Rectangle area, Pattern& pattern, bool inp
     
     // --- SLICE SELECTOR ---
     if (!pattern.sliceMarkers.empty()) {
-        DrawTextApp("SLICE:", winRect.x + 20, startY + 12, 20, WHITE);
-        float sliceBtnX = winRect.x + 90; // Increased offset to prevent overlap with "SLICE:" label
+        DrawTextApp("SLICE:", winRect.x + 20, startY + 14, 20, WHITE);
+        float sliceBtnX = winRect.x + 110; // Offset to fit longer label
         
         for (int i = 0; i < (int)pattern.sliceMarkers.size() && i < 8; ++i) { // Limit to 8 for now or until wrap logic
             Rectangle sBtn = {sliceBtnX, startY, 40, 40};
@@ -441,46 +441,6 @@ void SampleSlicer::DrawControlButtons(Rectangle area, Pattern& pattern, bool inp
     
     startY += 40;
     
-    auto drawFadeSlider = [&](const char* label, float* val, float maxVal, float y, const char* id) {
-        DrawTextApp(label, winRect.x + 20, y, 16, WHITE); // IN: / OUT:
-        Rectangle slider = {winRect.x + 80, y, 200, 20};
-        DrawRectangleRec(slider, DARKGRAY);
-        DrawRectangleLinesEx(slider, 1, WHITE);
-        
-        float norm = *val / maxVal;
-        if (norm > 1.0f) norm = 1.0f;
-        Rectangle handle = {slider.x + norm * (slider.width - 10), slider.y - 2, 10, 24};
-        DrawRectangleRec(handle, LIGHTGRAY);
-        
-        // Interaction Locking
-        bool isHovering = CheckCollisionPointRec(state.getMousePosition(), {slider.x - 5, slider.y - 5, slider.width + 10, slider.height + 10});
-        bool isLockedToThis = (state.drag.activeControlId == id);
-        bool isLockedToOther = (!state.drag.activeControlId.empty() && !isLockedToThis);
-        
-        if (!inputBlocked && !isLockedToOther) {
-             if (isHovering && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                 state.drag.activeControlId = id; // Lock
-                 isLockedToThis = true;
-             }
-             
-             if (isLockedToThis && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-                state.editor.scrollConsumed = true; // BLOCK SCROLL
-                float mouseX = state.getMousePosition().x;
-                float newNorm = (mouseX - slider.x) / slider.width;
-                if (newNorm < 0) newNorm = 0;
-                if (newNorm > 1) newNorm = 1;
-                *val = newNorm * maxVal;
-                engine.addPattern(pattern); // Update engine live
-             }
-             
-             if (isLockedToThis && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-                 state.drag.activeControlId = ""; // Unlock
-             }
-        }
-        
-        DrawTextApp(TextFormat("%.0f%%", *val * 100.0f), slider.x + slider.width + 10, y + 2, 16, WHITE);
-    };
-    
     // Determine which values to edit
     float* inVal = &pattern.fadeIn;
     float* outVal = &pattern.fadeOut;
@@ -499,10 +459,31 @@ void SampleSlicer::DrawControlButtons(Rectangle area, Pattern& pattern, bool inp
         outVal = &pattern.sliceFadeOuts[state.editor.selectedSliceIndex];
     }
     
-    drawFadeSlider("IN:", inVal, 0.5f, startY, "FadeInSlider");
-    startY += 30;
-    drawFadeSlider("OUT:", outVal, 0.5f, startY, "FadeOutSlider");
-    startY += 30;
+    // Fade In Slider using DrawSlider widget
+    DrawTextApp("IN:", winRect.x + 20, startY + 15, 20, WHITE);
+    bool fadeInDragging = false;
+    Rectangle fadeInRect = {winRect.x + 80, startY, 280, 50};
+    float newFadeIn = DrawSlider(fadeInRect, *inVal, 0.0f, 0.5f, DARKGRAY, LIGHTGRAY, state.getMousePosition(), &fadeInDragging);
+    if (fadeInDragging) {
+        state.editor.scrollConsumed = true; // Block scroll while dragging
+        *inVal = newFadeIn;
+        engine.addPattern(pattern);
+    }
+    DrawTextApp(TextFormat("%.0f%%", *inVal * 100.0f), fadeInRect.x + fadeInRect.width + 15, startY + 18, 20, WHITE);
+    startY += 65;
+    
+    // Fade Out Slider using DrawSlider widget
+    DrawTextApp("OUT:", winRect.x + 15, startY + 15, 20, WHITE);
+    bool fadeOutDragging = false;
+    Rectangle fadeOutRect = {winRect.x + 80, startY, 280, 50};
+    float newFadeOut = DrawSlider(fadeOutRect, *outVal, 0.0f, 0.5f, DARKGRAY, LIGHTGRAY, state.getMousePosition(), &fadeOutDragging);
+    if (fadeOutDragging) {
+        state.editor.scrollConsumed = true; // Block scroll while dragging
+        *outVal = newFadeOut;
+        engine.addPattern(pattern);
+    }
+    DrawTextApp(TextFormat("%.0f%%", *outVal * 100.0f), fadeOutRect.x + fadeOutRect.width + 15, startY + 18, 20, WHITE);
+    startY += 65;
 }
 
 void SampleSlicer::HandlePlayModeClick(Rectangle waveRect, Pattern& pattern, bool inputBlocked, bool isInViewport) {

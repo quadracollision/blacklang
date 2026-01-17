@@ -60,6 +60,7 @@ if (ANDROID)
         src/gui/RecordingUI.cpp
         src/fx/FXProcessor.cpp
         src/platform/AndroidBridge.cpp
+        src/platform/CrashLogger.cpp
     )
     
     target_include_directories(blacklang PRIVATE src)
@@ -94,6 +95,7 @@ if (ANDROID)
             JUCE_ANDROID=1
             JUCE_USE_CURL=0
             JUCE_WEB_BROWSER=0
+            JUCE_DISABLE_MIDI=1
     )
 else()
     # Desktop Executable
@@ -122,6 +124,7 @@ else()
         src/gui/RecordingUI.cpp
         src/fx/FXProcessor.cpp
         src/platform/AndroidBridge.cpp
+        src/platform/CrashLogger.cpp
     )
 
     target_include_directories(blacklang-raylib PRIVATE src)

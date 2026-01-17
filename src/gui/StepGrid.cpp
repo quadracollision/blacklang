@@ -58,12 +58,20 @@ void DrawStepGrid(Rectangle bounds, const Pattern& pattern, int activeStep, GuiS
         // Check if step has pitch data for melodic mode
         if (pattern.stepPitches.count(i + 1)) {
             int pitch = pattern.stepPitches.at(i + 1);
+            
+            // Bounds check pitch value to prevent out-of-bounds access
+            if (pitch < 0) pitch = 0;
+            if (pitch > 127) pitch = 127;
+            
             int noteIdx = pitch % 12;
             int octave = pitch / 12;
             
+            // Ensure noteIdx is valid (should always be 0-11, but be safe)
+            if (noteIdx < 0 || noteIdx >= 12) noteIdx = 0;
+            
             static const char* nNames[] = {"C","C#","D","D#","E","F","F#","G","G#","A","A#","B"};
             char pText[8];
-            snprintf(pText, 8, "%s%d", nNames[noteIdx], octave);
+            snprintf(pText, sizeof(pText), "%s%d", nNames[noteIdx], octave);
             
             // Draw cell with pitch
             DrawRectangle(x, y, size, size, c);

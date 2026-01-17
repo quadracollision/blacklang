@@ -1,6 +1,7 @@
 #include "GuiRenderer.h"
 #include "GuiState.h"
 #include "AudioEngine.h"
+#include "platform/CrashLogger.h"
 #include <iostream>
 #include <algorithm>
 
@@ -10,6 +11,10 @@ static const int DESIGN_WIDTH = 960;
 static const int DESIGN_HEIGHT = 540;
 
 int main() {
+    // Initialize crash logger FIRST, before anything else
+    crash::initCrashLogger();
+    crash::logMessage("main() started");
+    
     // Init Raylib
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     

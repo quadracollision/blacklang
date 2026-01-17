@@ -275,22 +275,25 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
         if (state.editor.selectedAppliedFxId != -1) {
             float paramPanelY = removeBtn.y + removeBtn.height + 15;
             // Use boxStartX to align params with the boxes (centered)
-            DrawTextApp("FX Params:", boxStartX, paramPanelY, 20, WHITE);
+            DrawTextApp("FX Params:", boxStartX, paramPanelY, 22, WHITE);
+            
+            // Add vertical offset after header so sliders don't overlap
+            float sliderStartY = paramPanelY + 35;
             
             int step = state.editor.selectedStep + 1;
             
             if (state.editor.selectedAppliedFxId == Pattern::FX_STUTTER) {
-                DrawStutterParams(boxStartX, paramPanelY, p, step);
+                DrawStutterParams(boxStartX, sliderStartY, p, step);
             } else if (state.editor.selectedAppliedFxId == Pattern::FX_SLIDE) {
-                DrawSlideParams(boxStartX, paramPanelY, p, step);
+                DrawSlideParams(boxStartX, sliderStartY, p, step);
             } else if (state.editor.selectedAppliedFxId == Pattern::FX_NUDGE) {
-                DrawNudgeParams(boxStartX, paramPanelY, p, step);
+                DrawNudgeParams(boxStartX, sliderStartY, p, step);
             } else if (state.editor.selectedAppliedFxId == Pattern::FX_ADSR) {
-                DrawADSRParams(boxStartX, paramPanelY, p, step);
+                DrawADSRParams(boxStartX, sliderStartY, p, step);
             } else if (state.editor.selectedAppliedFxId == Pattern::FX_EQ) {
-                DrawEQParams(boxStartX, paramPanelY, p, step);
+                DrawEQParams(boxStartX, sliderStartY, p, step);
             } else {
-                DrawTextApp("No params", boxStartX + 120, paramPanelY, 20, GRAY);
+                DrawTextApp("No params", boxStartX + 120, sliderStartY, 20, GRAY);
             }
         }
         
@@ -305,11 +308,11 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
         // Add extra height for parameter panel
         if (state.editor.selectedAppliedFxId != -1) {
              if (state.editor.selectedAppliedFxId == Pattern::FX_ADSR) {
-                 startY += 120; // 4 sliders
+                 startY += 280; // 4 sliders with larger spacing
              } else if (state.editor.selectedAppliedFxId == Pattern::FX_EQ) {
-                 startY += 200; // EQ graph panel
+                 startY += 230; // EQ graph panel
              } else {
-                 startY += 60; // Standard Params
+                 startY += 180; // Standard params (2 sliders + header)
              }
         }
     } else {
@@ -323,240 +326,133 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
 
 void FXControls::DrawStutterParams(float x, float paramPanelY, Pattern& p, int step) {
     // Rate Control
-    DrawTextApp("Rate:", x + 160, paramPanelY, 20, WHITE);
+    DrawTextApp("RATE:", x, paramPanelY + 15, 22, WHITE);
     
     float currentRate = 4.0f;
     if (p.stepFXParams[step].count(Pattern::PAR_STUTTER_RATE)) {
         currentRate = p.stepFXParams[step][Pattern::PAR_STUTTER_RATE];
     }
     
-    Rectangle rateSlider = {x + 280, paramPanelY + 5, 150, 10};
-    DrawRectangleRec(rateSlider, DARKGRAY);
-    DrawRectangleLinesEx(rateSlider, 1, WHITE);
-    
-    float minRate = 1.0f, maxRate = 16.0f;
-    float rateNorm = (currentRate - minRate) / (maxRate - minRate);
-    if (rateNorm < 0) rateNorm = 0;
-    if (rateNorm > 1) rateNorm = 1;
-    Rectangle rateHandle = {rateSlider.x + rateNorm * (rateSlider.width - 10), rateSlider.y - 2, 10, 14};
-    DrawRectangleRec(rateHandle, LIGHTGRAY);
-    
-    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-        Vector2 mouse = state.getMousePosition();
-        if (CheckCollisionPointRec(mouse, {rateSlider.x - 5, rateSlider.y - 5, rateSlider.width + 10, rateSlider.height + 10})) {
-            float newVal = minRate + ((mouse.x - rateSlider.x) / rateSlider.width) * (maxRate - minRate);
-            if (newVal < minRate) newVal = minRate;
-            if (newVal > maxRate) newVal = maxRate;
-            p.stepFXParams[step][Pattern::PAR_STUTTER_RATE] = newVal;
-        }
-    }
-    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+    bool rateDragging = false;
+    Rectangle rateSlider = {x + 120, paramPanelY, 200, 50};
+    float newRate = DrawSlider(rateSlider, currentRate, 1.0f, 16.0f, DARKGRAY, LIGHTGRAY, state.getMousePosition(), &rateDragging);
+    if (rateDragging) {
+        state.editor.scrollConsumed = true;
+        p.stepFXParams[step][Pattern::PAR_STUTTER_RATE] = newRate;
         engine.addPattern(p);
     }
-    
-    DrawTextApp(TextFormat("%.1f", p.stepFXParams[step].count(Pattern::PAR_STUTTER_RATE) ? 
-        p.stepFXParams[step][Pattern::PAR_STUTTER_RATE] : 4.0f), rateSlider.x + rateSlider.width + 10, paramPanelY, 10, WHITE);
+    DrawTextApp(TextFormat("%.1f", newRate), rateSlider.x + rateSlider.width + 15, paramPanelY + 18, 18, WHITE);
 
     // Speed Control
-    paramPanelY += 35;
-    DrawTextApp("Speed:", x + 160, paramPanelY, 20, WHITE);
+    paramPanelY += 65;
+    DrawTextApp("SPEED:", x, paramPanelY + 15, 22, WHITE);
     
     float currentSpeed = 1.0f;
     if (p.stepFXParams[step].count(Pattern::PAR_STUTTER_SPEED)) {
         currentSpeed = p.stepFXParams[step][Pattern::PAR_STUTTER_SPEED];
     }
     
-    Rectangle speedSlider = {x + 280, paramPanelY + 5, 150, 10};
-    DrawRectangleRec(speedSlider, DARKGRAY);
-    DrawRectangleLinesEx(speedSlider, 1, WHITE);
-    
-    float minSpeed = 0.5f, maxSpeed = 4.0f;
-    float speedNorm = (currentSpeed - minSpeed) / (maxSpeed - minSpeed);
-    if (speedNorm < 0) speedNorm = 0;
-    if (speedNorm > 1) speedNorm = 1;
-    Rectangle speedHandle = {speedSlider.x + speedNorm * (speedSlider.width - 10), speedSlider.y - 2, 10, 14};
-    DrawRectangleRec(speedHandle, LIGHTGRAY);
-    
-    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-        Vector2 mouse = state.getMousePosition();
-        if (CheckCollisionPointRec(mouse, {speedSlider.x - 5, speedSlider.y - 5, speedSlider.width + 10, speedSlider.height + 10})) {
-            float newVal = minSpeed + ((mouse.x - speedSlider.x) / speedSlider.width) * (maxSpeed - minSpeed);
-            if (newVal < minSpeed) newVal = minSpeed;
-            if (newVal > maxSpeed) newVal = maxSpeed;
-            p.stepFXParams[step][Pattern::PAR_STUTTER_SPEED] = newVal;
-        }
-    }
-    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+    bool speedDragging = false;
+    Rectangle speedSlider = {x + 120, paramPanelY, 200, 50};
+    float newSpeed = DrawSlider(speedSlider, currentSpeed, 0.5f, 4.0f, DARKGRAY, LIGHTGRAY, state.getMousePosition(), &speedDragging);
+    if (speedDragging) {
+        state.editor.scrollConsumed = true;
+        p.stepFXParams[step][Pattern::PAR_STUTTER_SPEED] = newSpeed;
         engine.addPattern(p);
     }
-    
-    DrawTextApp(TextFormat("%.2f", p.stepFXParams[step].count(Pattern::PAR_STUTTER_SPEED) ? 
-        p.stepFXParams[step][Pattern::PAR_STUTTER_SPEED] : 1.0f), speedSlider.x + speedSlider.width + 10, paramPanelY, 10, WHITE);
+    DrawTextApp(TextFormat("%.2f", newSpeed), speedSlider.x + speedSlider.width + 15, paramPanelY + 18, 18, WHITE);
 }
 
 void FXControls::DrawSlideParams(float x, float paramPanelY, Pattern& p, int step) {
     // Time Control
-    DrawTextApp("Time:", x + 160, paramPanelY, 20, WHITE);
+    DrawTextApp("TIME:", x, paramPanelY + 15, 22, WHITE);
     
     float currentTime = 1.0f;
     if (p.stepFXParams[step].count(Pattern::PAR_SLIDE_TIME)) {
         currentTime = p.stepFXParams[step][Pattern::PAR_SLIDE_TIME];
     }
     
-    Rectangle timeSlider = {x + 280, paramPanelY + 5, 150, 10};
-    DrawRectangleRec(timeSlider, DARKGRAY);
-    DrawRectangleLinesEx(timeSlider, 1, WHITE);
-    
-    float minTime = 0.1f, maxTime = 1.0f;
-    float timeNorm = (currentTime - minTime) / (maxTime - minTime);
-    if (timeNorm < 0) timeNorm = 0;
-    if (timeNorm > 1) timeNorm = 1;
-    Rectangle timeHandle = {timeSlider.x + timeNorm * (timeSlider.width - 10), timeSlider.y - 2, 10, 14};
-    DrawRectangleRec(timeHandle, LIGHTGRAY);
-    
-    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-        Vector2 mouse = state.getMousePosition();
-        if (CheckCollisionPointRec(mouse, {timeSlider.x - 5, timeSlider.y - 5, timeSlider.width + 10, timeSlider.height + 10})) {
-            float newVal = minTime + ((mouse.x - timeSlider.x) / timeSlider.width) * (maxTime - minTime);
-            if (newVal < minTime) newVal = minTime;
-            if (newVal > maxTime) newVal = maxTime;
-            p.stepFXParams[step][Pattern::PAR_SLIDE_TIME] = newVal;
-        }
-    }
-    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+    bool timeDragging = false;
+    Rectangle timeSlider = {x + 120, paramPanelY, 200, 50};
+    float newTime = DrawSlider(timeSlider, currentTime, 0.1f, 1.0f, DARKGRAY, LIGHTGRAY, state.getMousePosition(), &timeDragging);
+    if (timeDragging) {
+        state.editor.scrollConsumed = true;
+        p.stepFXParams[step][Pattern::PAR_SLIDE_TIME] = newTime;
         engine.addPattern(p);
     }
-    
-    DrawTextApp(TextFormat("%.2f", p.stepFXParams[step].count(Pattern::PAR_SLIDE_TIME) ? 
-        p.stepFXParams[step][Pattern::PAR_SLIDE_TIME] : 1.0f), timeSlider.x + timeSlider.width + 10, paramPanelY, 10, WHITE);
+    DrawTextApp(TextFormat("%.2f", newTime), timeSlider.x + timeSlider.width + 15, paramPanelY + 18, 18, WHITE);
 
     // Squelch Control
-    paramPanelY += 35;
-    DrawTextApp("Squelch:", x + 160, paramPanelY, 20, WHITE);
+    paramPanelY += 65;
+    DrawTextApp("SQUELCH:", x, paramPanelY + 15, 22, WHITE);
     
     float currentSquelch = 0.0f;
     if (p.stepFXParams[step].count(Pattern::PAR_SLIDE_SQUELCH)) {
         currentSquelch = p.stepFXParams[step][Pattern::PAR_SLIDE_SQUELCH];
     }
     
-    Rectangle squelchSlider = {x + 280, paramPanelY + 5, 150, 10};
-    DrawRectangleRec(squelchSlider, DARKGRAY);
-    DrawRectangleLinesEx(squelchSlider, 1, WHITE);
-    
-    float minSquelch = 0.0f, maxSquelch = 1.0f;
-    float squelchNorm = (currentSquelch - minSquelch) / (maxSquelch - minSquelch);
-    if (squelchNorm < 0) squelchNorm = 0;
-    if (squelchNorm > 1) squelchNorm = 1;
-    Rectangle squelchHandle = {squelchSlider.x + squelchNorm * (squelchSlider.width - 10), squelchSlider.y - 2, 10, 14};
-    DrawRectangleRec(squelchHandle, LIGHTGRAY);
-    
-    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-        Vector2 mouse = state.getMousePosition();
-        if (CheckCollisionPointRec(mouse, {squelchSlider.x - 5, squelchSlider.y - 5, squelchSlider.width + 10, squelchSlider.height + 10})) {
-            float newVal = minSquelch + ((mouse.x - squelchSlider.x) / squelchSlider.width) * (maxSquelch - minSquelch);
-            if (newVal < minSquelch) newVal = minSquelch;
-            if (newVal > maxSquelch) newVal = maxSquelch;
-            p.stepFXParams[step][Pattern::PAR_SLIDE_SQUELCH] = newVal;
-        }
-    }
-    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+    bool squelchDragging = false;
+    Rectangle squelchSlider = {x + 120, paramPanelY, 200, 50};
+    float newSquelch = DrawSlider(squelchSlider, currentSquelch, 0.0f, 1.0f, DARKGRAY, LIGHTGRAY, state.getMousePosition(), &squelchDragging);
+    if (squelchDragging) {
+        state.editor.scrollConsumed = true;
+        p.stepFXParams[step][Pattern::PAR_SLIDE_SQUELCH] = newSquelch;
         engine.addPattern(p);
     }
-    
-    DrawTextApp(TextFormat("%.2f", p.stepFXParams[step].count(Pattern::PAR_SLIDE_SQUELCH) ? 
-        p.stepFXParams[step][Pattern::PAR_SLIDE_SQUELCH] : 0.0f), squelchSlider.x + squelchSlider.width + 10, paramPanelY, 10, WHITE);
+    DrawTextApp(TextFormat("%.2f", newSquelch), squelchSlider.x + squelchSlider.width + 15, paramPanelY + 18, 18, WHITE);
 }
 
 void FXControls::DrawNudgeParams(float x, float paramPanelY, Pattern& p, int step) {
-    DrawTextApp("Nudge (Start/End):", x + 170, paramPanelY + 5, 10, WHITE);
+    DrawTextApp("NUDGE:", x, paramPanelY + 15, 22, WHITE);
     
     float currentOffset = 0.5f;
     if (p.stepFXParams[step].count(Pattern::PAR_NUDGE_OFFSET)) {
         currentOffset = p.stepFXParams[step][Pattern::PAR_NUDGE_OFFSET];
     }
     
-    Rectangle offsetSlider = {x + 280, paramPanelY + 5, 150, 10};
-    DrawRectangleRec(offsetSlider, DARKGRAY);
-    DrawRectangleLinesEx(offsetSlider, 1, WHITE);
-    
-    // Center Tick
-    DrawRectangle(offsetSlider.x + offsetSlider.width/2 - 1, offsetSlider.y - 2, 2, 14, GRAY);
-    
-    // Handle
-    float minOff = 0.0f, maxOff = 1.0f;
-    float offNorm = (currentOffset - minOff) / (maxOff - minOff);
-    if (offNorm < 0) offNorm = 0;
-    if (offNorm > 1) offNorm = 1;
-    Rectangle offHandle = {offsetSlider.x + offNorm * (offsetSlider.width - 2), offsetSlider.y, 2, 10};
-    DrawRectangleRec(offHandle, ORANGE);
-
-    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-        Vector2 mouse = state.getMousePosition();
-        if (CheckCollisionPointRec(mouse, {offsetSlider.x - 5, offsetSlider.y - 5, offsetSlider.width + 10, offsetSlider.height + 10})) {
-            float newVal = minOff + ((mouse.x - offsetSlider.x) / offsetSlider.width) * (maxOff - minOff);
-            if (newVal < minOff) newVal = minOff;
-            if (newVal > maxOff) newVal = maxOff;
-            p.stepFXParams[step][Pattern::PAR_NUDGE_OFFSET] = newVal;
-        }
-    }
-    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+    bool offsetDragging = false;
+    Rectangle offsetSlider = {x + 120, paramPanelY, 200, 50};
+    float newOffset = DrawSlider(offsetSlider, currentOffset, 0.0f, 1.0f, DARKGRAY, ORANGE, state.getMousePosition(), &offsetDragging);
+    if (offsetDragging) {
+        state.editor.scrollConsumed = true;
+        p.stepFXParams[step][Pattern::PAR_NUDGE_OFFSET] = newOffset;
         engine.addPattern(p);
     }
     
     // Text Description
-    float offset = p.stepFXParams[step].count(Pattern::PAR_NUDGE_OFFSET) ? 
-        p.stepFXParams[step][Pattern::PAR_NUDGE_OFFSET] : 0.5f;
-    if (offset > 0.55f) {
-        DrawTextApp(TextFormat("Start +%.0f%%", (offset-0.5f)*200), offsetSlider.x + offsetSlider.width + 10, paramPanelY, 10, WHITE);
-    } else if (offset < 0.45f) {
-        DrawTextApp(TextFormat("Len %.0f%%", offset*200), offsetSlider.x + offsetSlider.width + 10, paramPanelY, 10, WHITE);
+    if (newOffset > 0.55f) {
+        DrawTextApp(TextFormat("Start +%.0f%%", (newOffset-0.5f)*200), offsetSlider.x + offsetSlider.width + 15, paramPanelY + 18, 18, WHITE);
+    } else if (newOffset < 0.45f) {
+        DrawTextApp(TextFormat("Len %.0f%%", newOffset*200), offsetSlider.x + offsetSlider.width + 15, paramPanelY + 18, 18, WHITE);
     } else {
-        DrawTextApp("Full", offsetSlider.x + offsetSlider.width + 10, paramPanelY, 10, WHITE);
+        DrawTextApp("Full", offsetSlider.x + offsetSlider.width + 15, paramPanelY + 18, 18, WHITE);
     }
 }
 
 void FXControls::DrawADSRParams(float x, float y, Pattern& p, int step) {
-    auto drawSlider = [&](const char* label, int paramId, float defaultVal, float min, float max, float yOffset) {
-        DrawTextApp(label, x + 160, y + yOffset, 20, WHITE);
+    auto drawParamSlider = [&](const char* label, int paramId, float defaultVal, float min, float max, float yOffset) {
+        DrawTextApp(label, x, y + yOffset + 15, 22, WHITE);
         
         float currentVal = defaultVal;
         if (p.stepFXParams[step].count(paramId)) {
             currentVal = p.stepFXParams[step][paramId];
         }
         
-        Rectangle slider = {x + 280, y + yOffset + 5, 150, 10};
-        DrawRectangleRec(slider, DARKGRAY);
-        DrawRectangleLinesEx(slider, 1, WHITE);
-        
-        float norm = (currentVal - min) / (max - min);
-        if (norm < 0) norm = 0;
-        if (norm > 1) norm = 1;
-        Rectangle handle = {slider.x + norm * (slider.width - 10), slider.y - 2, 10, 14};
-        DrawRectangleRec(handle, LIGHTGRAY);
-        
-        if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-            Vector2 mouse = state.getMousePosition();
-            if (CheckCollisionPointRec(mouse, {slider.x - 5, slider.y - 5, slider.width + 10, slider.height + 10})) {
-                float newVal = min + ((mouse.x - slider.x) / slider.width) * (max - min);
-                if (newVal < min) newVal = min;
-                if (newVal > max) newVal = max;
-                p.stepFXParams[step][paramId] = newVal;
-            }
-        }
-        
-        // Finalize edit on release
-        if (CheckCollisionPointRec(state.getMousePosition(), {slider.x - 5, slider.y - 5, slider.width + 10, slider.height + 10}) 
-            && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        bool isDragging = false;
+        Rectangle slider = {x + 120, y + yOffset, 200, 50};
+        float newVal = DrawSlider(slider, currentVal, min, max, DARKGRAY, LIGHTGRAY, state.getMousePosition(), &isDragging);
+        if (isDragging) {
+            state.editor.scrollConsumed = true;
+            p.stepFXParams[step][paramId] = newVal;
             engine.addPattern(p);
         }
-        
-        DrawTextApp(TextFormat("%.2f", currentVal), slider.x + slider.width + 10, y + yOffset, 10, WHITE);
+        DrawTextApp(TextFormat("%.2f", newVal), slider.x + slider.width + 15, y + yOffset + 18, 18, WHITE);
     };
     
-    drawSlider("Attack", Pattern::PAR_ATTACK_TIME, 0.05f, 0.0f, 1.0f, 0);
-    drawSlider("Decay", Pattern::PAR_DECAY_TIME, 0.1f, 0.0f, 1.0f, 35);
-    drawSlider("Sustain", Pattern::PAR_SUSTAIN_LEVEL, 0.8f, 0.0f, 1.0f, 70);
-    drawSlider("Release", Pattern::PAR_RELEASE_TIME, 0.2f, 0.0f, 1.0f, 105);
+    drawParamSlider("ATTACK:", Pattern::PAR_ATTACK_TIME, 0.05f, 0.0f, 1.0f, 0);
+    drawParamSlider("DECAY:", Pattern::PAR_DECAY_TIME, 0.1f, 0.0f, 1.0f, 60);
+    drawParamSlider("SUSTAIN:", Pattern::PAR_SUSTAIN_LEVEL, 0.8f, 0.0f, 1.0f, 120);
+    drawParamSlider("RELEASE:", Pattern::PAR_RELEASE_TIME, 0.2f, 0.0f, 1.0f, 180);
 }
 
 void FXControls::DrawEQParams(float x, float y, Pattern& p, int step) {

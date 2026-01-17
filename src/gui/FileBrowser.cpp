@@ -483,14 +483,18 @@ bool Draw(GuiState& state, AudioEngine& engine) {
                 c.patternNames = col.patternNames;
                 c.slotSyncEnabled = col.slotSyncEnabled;
                 
-                // Get FX Chain from Engine
+                // Get FX Chain from Engine (with null safety)
                 AudioBus* bus = engine.getTrackBus(col.trackName);
                 if (bus) {
-                    for (const auto& effect : bus->effects) {
+                    // Copy effects vector to avoid race conditions with audio thread
+                    auto effectsCopy = bus->effects;
+                    for (const auto& effect : effectsCopy) {
+                         if (!effect) continue; // Skip null effects
                          SerializedFX sfx;
                          sfx.type = (int)effect->getType();
                          sfx.enabled = effect->isActive(); 
-                         for (int pIdx = 0; pIdx < effect->getNumParams(); ++pIdx) {
+                         int numParams = effect->getNumParams();
+                         for (int pIdx = 0; pIdx < numParams; ++pIdx) {
                              sfx.params.push_back(effect->getParam(pIdx).value);
                          }
                          c.fxChain.push_back(sfx);

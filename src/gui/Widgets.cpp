@@ -89,27 +89,82 @@ bool DrawButton(Rectangle rect, const char* text, Color bgColor, Color textColor
     return clicked;
 }
 
-float DrawSlider(Rectangle rect, float value, float minVal, float maxVal, Color trackColor, Color handleColor, Vector2 mousePos) {
-    DrawRectangleRec(rect, trackColor);
-    DrawRectangleLinesEx(rect, 1, WHITE);
+// Touch-friendly slider widget with exclusive locking
+// Returns new value. Sets outIsDragging to true if actively being manipulated.
+// Uses static lock to ensure only one slider at a time can be dragged.
+float DrawSlider(Rectangle rect, float value, float minVal, float maxVal, Color trackColor, Color handleColor, Vector2 mousePos, bool* outIsDragging) {
+    // Static variable to track which slider is currently being dragged
+    // We use the rect position as a simple unique identifier
+    static float activeSliderX = -999999.0f;
+    static float activeSliderY = -999999.0f;
+    static bool anySliderActive = false;
     
+    Vector2 mouse = (mousePos.x < 0) ? GetMousePosition() : mousePos;
+    
+    // Draw track
+    DrawRectangleRec(rect, trackColor);
+    DrawRectangleLinesEx(rect, 2, WHITE);
+    
+    // Normalize value
     float norm = (value - minVal) / (maxVal - minVal);
     if (norm < 0) norm = 0;
     if (norm > 1) norm = 1;
     
-    Rectangle handle = {rect.x + norm * (rect.width - 10), rect.y - 2, 10, rect.height + 4};
-    DrawRectangleRec(handle, handleColor);
+    // Large handle for touch (40px wide, extends above/below track)
+    float handleWidth = 40.0f;
+    Rectangle handle = {
+        rect.x + norm * (rect.width - handleWidth), 
+        rect.y - 5, 
+        handleWidth, 
+        rect.height + 10
+    };
     
-    // Handle interaction
-    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-        Vector2 mouse = (mousePos.x < 0) ? GetMousePosition() : mousePos;
-        if (CheckCollisionPointRec(mouse, {rect.x - 5, rect.y - 5, rect.width + 10, rect.height + 10})) {
-            float newNorm = (mouse.x - rect.x) / rect.width;
-            if (newNorm < 0) newNorm = 0;
-            if (newNorm > 1) newNorm = 1;
-            return minVal + newNorm * (maxVal - minVal);
-        }
+    // Extended hit area for easier touch (20px padding all around)
+    Rectangle hitArea = {
+        rect.x - 20, 
+        rect.y - 25, 
+        rect.width + 40, 
+        rect.height + 50
+    };
+    
+    bool isHovering = CheckCollisionPointRec(mouse, hitArea);
+    bool isDragging = false;
+    bool isThisSliderActive = (activeSliderX == rect.x && activeSliderY == rect.y);
+    float newValue = value;
+    
+    // Reset lock when mouse is released
+    if (!IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+        anySliderActive = false;
+        activeSliderX = -999999.0f;
+        activeSliderY = -999999.0f;
     }
     
-    return value;
+    // Lock to this slider on initial press
+    if (isHovering && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !anySliderActive) {
+        activeSliderX = rect.x;
+        activeSliderY = rect.y;
+        anySliderActive = true;
+        isThisSliderActive = true;
+    }
+    
+    // Only respond if this is the active slider
+    if (isThisSliderActive && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+        isDragging = true;
+        float newNorm = (mouse.x - rect.x) / rect.width;
+        if (newNorm < 0) newNorm = 0;
+        if (newNorm > 1) newNorm = 1;
+        newValue = minVal + newNorm * (maxVal - minVal);
+    }
+    
+    // Draw handle with visual feedback when dragging
+    Color actualHandleColor = isDragging ? WHITE : handleColor;
+    DrawRectangleRec(handle, actualHandleColor);
+    DrawRectangleLinesEx(handle, 2, isDragging ? GREEN : WHITE);
+    
+    // Output dragging state if requested
+    if (outIsDragging) {
+        *outIsDragging = isDragging;
+    }
+    
+    return newValue;
 }
