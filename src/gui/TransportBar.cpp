@@ -487,6 +487,37 @@ void TransportBar::DrawSyncButton() {
     DrawTextApp(txt, x + (w - txtW)/2, y + (h - 12)/2, 12, BLACK);
     
     if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), btn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        // If playing, also ensure any selected-but-not-active patterns start playing
+        if (state.isPlaying) {
+            // Check each column - if a pattern is selected but not in activePatternSlots, add it
+            for (int colIdx = 0; colIdx < (int)state.columns.size(); ++colIdx) {
+                // Check if this column has a selection (via selectedSlotIndex or similar)
+                // For now, use the activePatternSlots map - if a column isn't in it but has patterns, add slot 0
+                if (state.activePatternSlots.find(colIdx) == state.activePatternSlots.end()) {
+                    // Column not playing - check if it has any patterns
+                    if (!state.columns[colIdx].patternNames.empty() && !state.columns[colIdx].patternNames[0].empty()) {
+                        // Activate slot 0 for this column
+                        state.activePatternSlots[colIdx] = 0;
+                    }
+                }
+            }
+            
+            // Update engine with all active patterns
+            std::vector<std::pair<std::string, std::string>> allActive;
+            for (auto& pair : state.activePatternSlots) {
+                int c = pair.first;
+                int s = pair.second;
+                if (c >= 0 && c < (int)state.columns.size() && s >= 0 && s < (int)state.columns[c].patternNames.size()) {
+                    std::string pName = state.columns[c].patternNames[s];
+                    if (!pName.empty()) {
+                        engine.assignPatternToTrack(pName, state.columns[c].trackName);
+                        allActive.push_back({pName, state.columns[c].trackName});
+                    }
+                }
+            }
+            engine.updateActivePatterns(allActive);
+        }
+        
         engine.scheduleResync();
     }
 }
