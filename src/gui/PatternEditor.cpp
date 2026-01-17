@@ -837,16 +837,29 @@ void PatternEditor::Draw() {
             engine.addPattern(p);
             
             // Ensure track assignment matches the column this pattern belongs to
+            bool assigned = false;
+            
+            // 1. Try to find pattern in existing columns
             for (const auto& col : state.columns) {
-                bool found = false;
                 for (const auto& pn : col.patternNames) {
                     if (pn == p.name) {
                         engine.assignPatternToTrack(p.name, col.trackName);
-                        found = true;
+                        assigned = true;
                         break;
                     }
                 }
-                if (found) break;
+                if (assigned) break;
+            }
+            
+            // 2. If not found (new pattern), use the source column index if valid
+            if (!assigned && state.editor.sourceColumnIndex >= 0 && state.editor.sourceColumnIndex < (int)state.columns.size()) {
+                engine.assignPatternToTrack(p.name, state.columns[(size_t)state.editor.sourceColumnIndex].trackName);
+                assigned = true;
+            }
+            
+            // 3. Fallback: just use Track 0 if all else fails
+            if (!assigned && !state.columns.empty()) {
+                engine.assignPatternToTrack(p.name, state.columns[0].trackName);
             }
             
             // Play just this pattern

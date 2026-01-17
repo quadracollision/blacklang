@@ -518,7 +518,8 @@ void TransportBar::DrawSyncButton() {
             engine.updateActivePatterns(allActive);
         }
         
-        engine.scheduleResync();
+        // Use immediate resync to ensure first note is triggered correctly
+        engine.resyncAllPatterns();
     }
 }
 

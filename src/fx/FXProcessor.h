@@ -52,13 +52,8 @@ private:
     void handleRelease(PatternPlayState& state, const Pattern& pattern, int currentStep);
     
     // EQ Processing
-    struct BiquadState { float z1 = 0, z2 = 0; };
-    std::array<BiquadState, 5> eqState;  // 5 band EQ filter state
-    bool eqActive = false;
-    std::array<float, 5> eqGains;        // Current band gains
-    double eqSampleRate = 44100.0;       // Cached sample rate for EQ
     void handleEQ(PatternPlayState& state, const Pattern& pattern, int currentStep, double sampleRate);
-    float applyEQ(float sample);
+    float applyEQ(PatternPlayState& state, float sample);
     void computeBiquadCoeffs(float freq, float gain, float q, double sampleRate, float& b0, float& b1, float& b2, float& a1, float& a2);
 };
 

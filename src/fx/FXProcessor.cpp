@@ -117,8 +117,8 @@ float FXProcessor::processSampleFX(PatternPlayState& state, float sample, double
     }
     
     // Apply EQ if active
-    if (eqActive) {
-        sample = applyEQ(sample);
+    if (state.eq.active) {
+        sample = applyEQ(state, sample);
     }
 
     return sample;
@@ -340,7 +340,6 @@ void FXProcessor::handleRelease(PatternPlayState& state, const Pattern& pattern,
     }
 }
 
-// ============================================
 // 5-Band EQ Implementation
 // ============================================
 
@@ -358,44 +357,42 @@ void FXProcessor::handleEQ(PatternPlayState& state, const Pattern& pattern, int 
         Pattern::PAR_EQ_BAND5
     };
     
-    eqActive = false;
+    state.eq.active = false;
+    state.eq.sampleRate = sampleRate;
     
     for (int i = 0; i < 5; ++i) {
-        eqGains[i] = 0.0f;  // Default: no change
+        state.eq.gains[i] = 0.0f;  // Default: no change
         
         if (pattern.stepFXParams.count(currentStep) && 
             pattern.stepFXParams.at(currentStep).count(bandParams[i])) {
-            eqGains[i] = pattern.stepFXParams.at(currentStep).at(bandParams[i]);
+            state.eq.gains[i] = pattern.stepFXParams.at(currentStep).at(bandParams[i]);
         }
         
         // If any gain is non-zero, activate EQ
-        if (std::abs(eqGains[i]) > 0.01f) {
-            eqActive = true;
+        if (std::abs(state.eq.gains[i]) > 0.01f) {
+            state.eq.active = true;
         }
     }
     
     // Reset filter states on step start
     for (int i = 0; i < 5; ++i) {
-        eqState[i].z1 = 0;
-        eqState[i].z2 = 0;
+        state.eq.bandStates[i].z1 = 0;
+        state.eq.bandStates[i].z2 = 0;
     }
-    
-    // Store sample rate for use in applyEQ
-    eqSampleRate = sampleRate;
 }
 
-float FXProcessor::applyEQ(float sample) {
+float FXProcessor::applyEQ(PatternPlayState& state, float sample) {
     // Apply 5 cascaded biquad peak/shelf filters
     float out = sample;
     
     for (int i = 0; i < 5; ++i) {
-        float gainDB = eqGains[i] * 12.0f;  // -1 to 1 -> -12dB to +12dB
+        float gainDB = state.eq.gains[i] * 12.0f;  // -1 to 1 -> -12dB to +12dB
         
         if (std::abs(gainDB) < 0.1f) continue;  // Skip near-zero bands
         
         // Compute biquad coefficients for peaking EQ
         float A = std::pow(10.0f, gainDB / 40.0f);
-        float w0 = 2.0f * 3.14159265f * EQ_FREQUENCIES[i] / (float)eqSampleRate;
+        float w0 = 2.0f * 3.14159265f * EQ_FREQUENCIES[i] / (float)state.eq.sampleRate;
         float sinw0 = std::sin(w0);
         float cosw0 = std::cos(w0);
         float alpha = sinw0 / (2.0f * EQ_Q);
@@ -412,11 +409,12 @@ float FXProcessor::applyEQ(float sample) {
         a1 /= a0; a2 /= a0;
         
         // Apply biquad (Direct Form II Transposed)
-        float y = b0 * out + eqState[i].z1;
-        eqState[i].z1 = b1 * out - a1 * y + eqState[i].z2;
-        eqState[i].z2 = b2 * out - a2 * y;
+        double in = (double)out;
+        double y = b0 * in + state.eq.bandStates[i].z1;
+        state.eq.bandStates[i].z1 = b1 * in - a1 * y + state.eq.bandStates[i].z2;
+        state.eq.bandStates[i].z2 = b2 * in - a2 * y;
         
-        out = y;
+        out = (float)y;
     }
     
     return out;

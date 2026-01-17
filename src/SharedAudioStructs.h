@@ -98,4 +98,24 @@ struct PatternPlayState {
     }
     
     bool isReverse = false;
+
+    // EQ State (Per-pattern isolation)
+    struct EQState {
+        bool active = false;
+        float gains[5] = {0.0f}; // 5 bands
+        double sampleRate = 44100.0;
+        
+        struct BiquadState {
+            double z1 = 0.0, z2 = 0.0;
+        } bandStates[5];
+        
+        void reset() {
+            active = false;
+            for(int i=0; i<5; ++i) {
+                gains[i] = 0.0f;
+                bandStates[i].z1 = 0.0;
+                bandStates[i].z2 = 0.0;
+            }
+        }
+    } eq;
 };
