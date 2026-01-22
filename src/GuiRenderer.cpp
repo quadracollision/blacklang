@@ -32,6 +32,8 @@ void GuiRenderer::Draw() {
     // Reset click consumption for this frame
     state.resetClickState();
     
+
+    
     // =============================
     // EARLY INPUT PASS: Consume clicks for overlays BEFORE main view processes input
     // This prevents clicks from passing through to elements behind overlays
@@ -170,6 +172,17 @@ void GuiRenderer::Draw() {
     
     // Draw RecordingUI (mode selection and review overlays)
     recordingUI.Draw();
+
+    // LATE INPUT PASS: Clear UI Control Locking on Release
+    // Done at the END of the frame so that components (like TrackView, Mixer)
+    // can process the "Release" event with the state intact during this frame,
+    // but we guarantee a clean state for the next frame to prevent lockups.
+    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        state.drag.activeControlId = "";
+        state.drag.isDragging = false; 
+        state.drag.isHolding = false;
+    }
+
 }
 
 void GuiRenderer::DrawColumn(int index, PatternColumn& col) {

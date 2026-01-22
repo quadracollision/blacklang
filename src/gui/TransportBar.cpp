@@ -269,7 +269,11 @@ void TransportBar::DrawSettingsButton() {
     
     DrawLine(gearBtn.x, gearBtn.y, gearBtn.x, gearBtn.y + gearBtn.height, BLACK);
     
-    if (state.isClickAvailable() && !state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), gearBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    // Fix: Allow clicking to CLOSE even if click was consumed by the early-pass overlay blocker
+    // The GuiRenderer consumes clicks when activePopup is set, so we must bypass isClickAvailable check if isOpen is true
+    bool canClick = (state.isClickAvailable() || isOpen) && !state.editor.isOpen;
+    
+    if (canClick && CheckCollisionPointRec(state.getMousePosition(), gearBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.consumeClick();
         if (isOpen) {
             state.settings.activePopup = PopupType::None;

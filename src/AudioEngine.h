@@ -198,4 +198,10 @@ private:
     std::atomic<bool> recordingPreviewActive{false};
     int64_t recordingPreviewPosition = 0;
     std::string recordingPreviewStem = "";
+
+public:
+    // Arrangement / Song Mode
+    #include "Arrangement.h"
+    Arrangement arrangement;
+    Arrangement* getArrangement() { return &arrangement; }
 };

@@ -11,11 +11,11 @@ void DrawPatternBox(const std::string& name, Rectangle bounds, bool selected, in
     DrawRectangleLinesEx(bounds, 1.0f, selected ? WHITE : GRAY);
     
     // Title Bar for Pattern
-    Rectangle titleBar = {bounds.x, bounds.y, bounds.width, 22};
+    Rectangle titleBar = {bounds.x, bounds.y, bounds.width, 30};
     DrawRectangleRec(titleBar, Color{20, 20, 20, 255}); // Solid Black Header
     // DrawRectangleLinesEx(titleBar, 1, Color{200, 200, 200, 255}); // No Border requested
     
-    DrawTextApp(name.c_str(), bounds.x + 5, bounds.y + 2, 20, WHITE); // Size 20!
+    DrawTextApp(name.c_str(), bounds.x + 5, bounds.y + 5, 20, WHITE); // Size 20!
 }
 
 void DrawStepGrid(Rectangle bounds, const Pattern& pattern, int activeStep, GuiState& state) {
@@ -28,24 +28,27 @@ void DrawStepGrid(Rectangle bounds, const Pattern& pattern, int activeStep, GuiS
     float bestDiff = 99999.0f;
     float targetRatio = 1.0f; // Aim for square cells
     
-    // Find best row count that respects even/odd preference
     for (int r = 1; r <= steps; r++) {
-        // Skip if parity doesn't match (even steps prefer even rows, odd prefer odd)
-        if (isEven && r % 2 != 0 && r != 1) continue;
-        if (!isEven && r % 2 == 0) continue;
-        
-        // Check if this row count divides evenly or nearly
+        // Calculate needed columns for this row count
         int c = (steps + r - 1) / r; // ceil(steps / r)
+        
+        int capacity = r * c;
+        int remainder = capacity - steps;
         
         // Calculate theoretical cell dimensions
         float cellW = bounds.width / c;
         float cellH = bounds.height / r;
         
         float ratio = cellW / cellH;
-        float diff = std::abs(ratio - targetRatio);
+        float aspectDiff = std::abs(ratio - targetRatio);
         
-        if (diff < bestDiff) {
-            bestDiff = diff;
+        // SCORING:
+        // Priority 1: Minimize empty slots (Remainder) - Heavy Penalty
+        // Priority 2: Minimize aspect ratio deviation (Squareness)
+        float score = aspectDiff + (remainder * 1000.0f);
+        
+        if (score < bestDiff) {
+            bestDiff = score;
             bestRows = r;
         }
     }
@@ -62,13 +65,26 @@ void DrawStepGrid(Rectangle bounds, const Pattern& pattern, int activeStep, GuiS
     float stepW = (bounds.width - totalGapW) / cols;
     float stepH = (bounds.height - totalGapH) / rows;
     
+    // FORCE SQUARE CELLS (User Request)
+    // "ensure that these are always drawn as squares"
+    float size = std::min(stepW, stepH);
+    stepW = size;
+    stepH = size;
+    
+    // Recalculate gaps/offsets to center the grid
+    float usedW = cols * stepW + (cols - 1) * gap; // internal gaps only
+    float usedH = rows * stepH + (rows - 1) * gap;
+    
+    float offsetX = (bounds.width - usedW) / 2.0f;
+    float offsetY = (bounds.height - usedH) / 2.0f;
+    
     for (int i = 0; i < steps; ++i) {
         int col = i % cols;
         int row = i / cols;
         
         Rectangle cellRect = {
-            bounds.x + gap + col * (stepW + gap),
-            bounds.y + gap + row * (stepH + gap),
+            bounds.x + offsetX + col * (stepW + gap),
+            bounds.y + offsetY + row * (stepH + gap),
             stepW,
             stepH
         };

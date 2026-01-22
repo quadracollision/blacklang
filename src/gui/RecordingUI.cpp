@@ -119,11 +119,15 @@ void RecordingUI::DrawReviewUI() {
     const char* title = "Review Recording";
     DrawTextApp(title, 20, 18, 24, WHITE);
     
-    // Filename Input in Header (Right side of title)
-    float titleW = MeasureTextApp(title, 24);
-    DrawTextApp("Name:", 20 + titleW + 30, 22, 16, LIGHTGRAY);
+    // Filename Input in Header (Right side)
+    const char* nameLabel = "Name:";
+    int nameLabelW = MeasureTextApp(nameLabel, 16);
+    float nameBoxW = 250.0f;
+    float nameBoxX = screenW - 20 - nameBoxW;
     
-    Rectangle nameBox = {20 + titleW + 85, 16, 250, 28};
+    DrawTextApp(nameLabel, (int)(nameBoxX - nameLabelW - 10), 22, 16, LIGHTGRAY);
+    
+    Rectangle nameBox = {nameBoxX, 16, nameBoxW, 28};
     DrawRectangleRec(nameBox, Color{50, 50, 55, 255});
     DrawRectangleLinesEx(nameBox, 1, Color{80, 80, 90, 255});
     DrawTextInput(nameBox, state.recorder.filenameBuffer, 63, 600, state.focusedFieldId, state.getMousePosition());

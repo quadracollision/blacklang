@@ -930,6 +930,8 @@ void PatternEditor::Draw() {
             // Cancel mode
             state.editor.clipboard.isCopyMode = false;
             state.editor.clipboard.isPasteMode = false;
+             // USER REQUEST: Reset to "Copy" state by clearing clipboard
+            state.editor.clipboard.hasData = false;
         } else if (hasClipboard) {
             // Enter paste mode
             state.editor.clipboard.isPasteMode = true;

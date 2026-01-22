@@ -234,6 +234,12 @@ struct SettingsState {
     bool isSwitchingDevice = false;  // Indicates device switch in progress
 };
 
+// State for arrangement-driven playback (visual feedback in TrackView)
+struct ArrangementPlayState {
+    bool isPlaying = false;
+    std::map<std::string, std::string> activeClipsPerTrack; // trackName -> patternName
+};
+
 
 struct GuiState {
     std::vector<PatternColumn> columns;
@@ -244,6 +250,7 @@ struct GuiState {
     TrackClipboard trackClipboard; // For copy/paste patterns in track view
     SettingsState settings; // Audio device settings
     RecordingState recorder;
+    ArrangementPlayState arrangementPlayState; // For arrangement playback visual feedback
 
     
     // Column Renaming

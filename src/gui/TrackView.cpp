@@ -1,11 +1,13 @@
 #include "TrackView.h"
 #include "TrackFX.h"
+#include "ArrangementView.h" // NEW
 #include <raymath.h>
 #include "Widgets.h"
 #include "StepGrid.h"
 #include "../FilePicker.h"
 #include "../GuiState.h"
 #include "../AudioEngine.h"
+
 #include <algorithm>
 #include <cstring>
 #include <cstdio>
@@ -23,6 +25,8 @@ namespace gui {
 TrackView::TrackView(GuiState& s, AudioEngine& e) : state(s), engine(e) {}
 
 void TrackView::Draw() {
+    static ArrangementView arrangementView(state, engine);
+
     // 1. Manage Drag State Promotion (Hold -> Drag)
     // Long Press Logic:
     // - If held for > 0.4s without moving much: Promote to DRAG
@@ -123,6 +127,16 @@ void TrackView::Draw() {
         // Bottom Align: Gap at Top
         // If content fits with gap, use gap. Else full height.
         if (visibleContentH < viewH) {
+            float topGap = viewH - visibleContentH;
+            
+            // Draw Arrangement View in the gap!
+            if (topGap > 50.0f) {
+                // Timeline starts right under header bar (use actual header size, not padding)
+                float actualHeaderTop = 60.0f; // Adjusted to avoid overlapping text
+                Rectangle timelineRect = { 0, actualHeaderTop, screenW, headerH + topGap - actualHeaderTop };
+                arrangementView.Draw(timelineRect);
+            }
+            
             viewY = screenH - footerH - visibleContentH;
             viewH = visibleContentH;
         }
@@ -388,7 +402,14 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
                 // Occupied Cell
                 // Occupied Cell
                 
-                int currentStep = engine.getPatternProgress(col.patternNames[i]);
+                // Check for instance-specific progress first (Arrangement)
+                std::string instanceKey = col.patternNames[i] + "@" + col.trackName;
+                int currentStep = engine.getPatternProgress(instanceKey);
+                
+                // Fallback to generic pattern progress if not found (or error)
+                if (currentStep <= 0) {
+                    currentStep = engine.getPatternProgress(col.patternNames[i]);
+                }
                 
                 DrawPatternBox(col.patternNames[i], cellRect, isSelected, currentStep);
                 
@@ -400,12 +421,19 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
                     DrawTextApp("S", (int)(syncBadge.x + 4), (int)(syncBadge.y + 1), 12, WHITE);
                 }
 
-                
+                // Draw arrangement-playing indicator
+                if (state.arrangementPlayState.isPlaying) {
+                    auto it = state.arrangementPlayState.activeClipsPerTrack.find(col.trackName);
+                    if (it != state.arrangementPlayState.activeClipsPerTrack.end() && it->second == col.patternNames[i]) {
+                        // This pattern is being played by arrangement - green border
+                        DrawRectangleLinesEx(cellRect, 3, GREEN);
+                    }
+                }                
                 // Draw mini step grid inside the pattern box
                 Pattern* pat = engine.getPattern(col.patternNames[i]);
                 if (pat) {
-                    // Fill the area below the title bar (approx 22px height)
-                    float titleH = 22.0f;
+                    // Fill the area below the title bar (approx 30px height)
+                    float titleH = 30.0f;
                     Rectangle gridRect = {
                         cellRect.x, 
                         cellRect.y + titleH, 

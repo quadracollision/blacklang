@@ -56,6 +56,8 @@ if (ANDROID)
         src/gui/PatternEditor.cpp
         src/gui/FXControls.cpp
         src/gui/SampleSlicer.cpp
+    src/gui/ArrangementView.cpp
+    src/ArrangementPlayer.cpp
         src/gui/TrackFX.cpp
         src/gui/RecordingUI.cpp
         src/fx/FXProcessor.cpp
@@ -120,6 +122,8 @@ else()
         src/gui/PatternEditor.cpp
         src/gui/FXControls.cpp
         src/gui/SampleSlicer.cpp
+        src/gui/ArrangementView.cpp
+        src/ArrangementPlayer.cpp
         src/gui/TrackFX.cpp
         src/gui/RecordingUI.cpp
         src/fx/FXProcessor.cpp

@@ -262,6 +262,7 @@ void AudioEngine::pause() {
     }
 }
 
+// Update active patterns with specific track assignments
 void AudioEngine::updateActivePatterns(const std::vector<std::pair<std::string, std::string>>& patternsWithTracks) {
     if (patternsWithTracks.empty()) {
         stop();
@@ -270,35 +271,42 @@ void AudioEngine::updateActivePatterns(const std::vector<std::pair<std::string, 
     
     std::lock_guard<std::mutex> lock(patternMutex);
 
-    // Update track assignments
-    std::vector<std::string> names;
-    names.reserve(patternsWithTracks.size());
+    // Build list of composite keys (instances)
+    std::vector<std::string> newActiveInstanceKeys;
+    newActiveInstanceKeys.reserve(patternsWithTracks.size());
+    
     for (const auto& pair : patternsWithTracks) {
-        names.push_back(pair.first);
-        if (!pair.second.empty()) {
-            patternToTrack[pair.first] = pair.second;
+        // key = "PatternName@TrackName" to allow same pattern on multiple tracks
+        std::string key = pair.first + "@" + pair.second;
+        newActiveInstanceKeys.push_back(key);
+        
+        // Store track mapping for this specific instance
+        patternToTrack[key] = pair.second;
+    }
+    
+    // Build set for fast lookup
+    std::set<std::string> newActiveSet(newActiveInstanceKeys.begin(), newActiveInstanceKeys.end());
+    
+    // Initialize new active instances, keep existing ones running
+    for (size_t i = 0; i < newActiveInstanceKeys.size(); ++i) {
+        const std::string& key = newActiveInstanceKeys[i];
+        const std::string& baseName = patternsWithTracks[i].first;
+        
+        if (patternStates.find(key) == patternStates.end()) {
+             // New instance starting now
+             if (patterns.count(baseName)) {
+                PatternPlayState newState;
+                newState.currentStep = 0;
+                double dur = patterns[baseName].getStepDurationSamples(globalBpm.load(), sampleRate);
+                newState.stepStartSample = -(int64_t)dur;
+                newState.samplePosition = 0;
+                patternStates[key] = newState;
+             }
         }
     }
     
-    // Build set of requested patterns
-    std::set<std::string> newActiveSet(names.begin(), names.end());
-    
-    // Initialize new patterns, keep existing ones running
-    for (const auto& name : names) {
-        if (patternStates.find(name) == patternStates.end()) {
-            PatternPlayState newState;
-            newState.currentStep = 1;
-            newState.stepStartSample = 0;
-            newState.samplePosition = 0;
-            patternStates[name] = newState;
-        }
-    }
-    
-    // Rebuild activePatternNames
-    activePatternNames.clear();
-    for (const auto& name : newActiveSet) {
-        activePatternNames.push_back(name);
-    }
+    // Update active list
+    activePatternNames = newActiveInstanceKeys;
     
     // Cleanup old states
     std::vector<std::string> toRemove;
@@ -307,7 +315,10 @@ void AudioEngine::updateActivePatterns(const std::vector<std::pair<std::string, 
             toRemove.push_back(pair.first);
         }
     }
-    for (const auto& r : toRemove) patternStates.erase(r);
+    for (const auto& r : toRemove) {
+        patternStates.erase(r);
+        patternToTrack.erase(r); // Also clean up track map
+    }
     
     if (!playing.load()) {
         playing.store(true);
@@ -353,6 +364,25 @@ int AudioEngine::getPatternProgress(const std::string& name) {
     
     if (patternStates.count(name)) {
         return patternStates[name].currentStep;
+    }
+    
+    // Fuzzy search for "PatternName@AnyTrack"
+    // This allows TrackView to see progress even if the pattern is playing on a different track
+    size_t nameLen = name.length();
+    for (const auto& pair : patternStates) {
+        // Check if key starts with "name@"
+        // But first, handle if 'name' itself is an instance key (contains @), don't double search?
+        // Actually, if 'name' was an instance key, the direct lookup above would have found it.
+        // So we assume 'name' *might* be just the base name, OR a specific instance key that didn't match.
+        // If 'name' is "Pat1@Track1" and we want to find "Pat1@Track2" ?? 
+        // No, current logic in TrackView tries specific then base.
+        // So if TrackView called with "Pat1", we want to find "Pat1@TrackX".
+        
+        // Check prefix
+        if (pair.first.length() > nameLen && 
+            pair.first.rfind(name + "@", 0) == 0) {
+            return pair.second.currentStep;
+        }
     }
     
     // FIX: Fallback for Single Pattern / Chain Mode
@@ -481,18 +511,34 @@ void AudioEngine::audioDeviceIOCallbackWithContext(
         PatternContext contexts[64]; 
         int activeContextCount = 0;
         
-        for (const auto& patName : activePatternNames) {
-            auto patIt = patterns.find(patName);
+        for (const auto& instanceKey : activePatternNames) {
+            // Extract base pattern name from instance key "Pattern@Track"
+            // If separation not found, treat whole string as pattern name (legacy/single-mode)
+            std::string baseName = instanceKey;
+            size_t sep = instanceKey.find('@');
+            if (sep != std::string::npos) {
+                baseName = instanceKey.substr(0, sep);
+            }
+
+            auto patIt = patterns.find(baseName);
             if (patIt != patterns.end()) {
-                // Determine track and bus ONCE
-                std::string trackName = patternToTrack.count(patName) ? patternToTrack.at(patName) : "";
+                // Determine track and bus
+                // Search using full instance key first
+                std::string trackName = "";
+                if (patternToTrack.count(instanceKey)) {
+                    trackName = patternToTrack.at(instanceKey);
+                } else if (patternToTrack.count(baseName)) {
+                     // Fallback for non-instance keys
+                    trackName = patternToTrack.at(baseName);
+                }
+                
                 AudioBus* bus = busManager.getOrCreateTrack(trackName);
                 
                 if (bus && activeContextCount < 64) {
                     contexts[activeContextCount].pattern = &patIt->second;
-                    contexts[activeContextCount].state = &patternStates[patName];
+                    contexts[activeContextCount].state = &patternStates[instanceKey]; // Use instance key for state
                     contexts[activeContextCount].trackBus = bus;
-                    contexts[activeContextCount].patternName = patName;
+                    contexts[activeContextCount].patternName = instanceKey; // Store key for context (important for queue updates)
                     activeContextCount++;
                 }
             }
