@@ -21,47 +21,78 @@ namespace gui {
 TransportBar::TransportBar(GuiState& s, AudioEngine& e) : state(s), engine(e) {}
 
 void TransportBar::Draw() {
-    Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
+    Rectangle rect = {0, (float)state.getScreenHeight() - state.getFooterHeight(), (float)state.getScreenWidth(), (float)state.getFooterHeight()};
     DrawRectangleRec(rect, Color{25, 25, 25, 255});
     
-    DrawPlayStop();
-    DrawRecording();
-    DrawCopyPaste();
-    DrawEditShift();
-    DrawSyncButton();
-    DrawSettingsButton();
+    DrawAddTrackButton(); // Index 0
+    DrawCopyPaste();      // Index 1
+    DrawPlayStop();       // Index 2 (Play) & 3 (Stop)
+    DrawRecording();      // Index 4
+    DrawSyncButton();     // Index 5
+    DrawSettingsButton(); // Index 6
     DrawSettingsPopup();
 }
 
-void TransportBar::DrawRecording() {
-    Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
-    float centerX = state.getScreenWidth() / 2.0f;
-    float btnH = (float)state.FOOTER_HEIGHT;
-    float btnW = 60;
+void TransportBar::DrawAddTrackButton() {
+    float footerH = (float)state.getFooterHeight();
+    float y = (float)state.getScreenHeight() - footerH;
+    float btnW = (float)state.getScreenWidth() / 7.0f;
+    float x = 0.0f; // Index 0
     
-    // Record Button (Beside Stop)
-    float gap = 5.0f;
-    // Stop ends at centerX + 2.5 + 70 = centerX + 72.5
-    Rectangle recBtn = {centerX + 72.5f + gap, rect.y, btnW, btnH};
+    Rectangle rect = {x, y, btnW, footerH};
+    
+    DrawRectangleRec(rect, Color{40, 40, 40, 255});
+    DrawTextApp("+", rect.x + (btnW - 14)/2, rect.y + footerH/2 - 12, 24, GRAY);
+    
+    // Add gap line
+    DrawLine(rect.x + rect.width, rect.y, rect.x + rect.width, rect.y + rect.height, BLACK);
+    
+    if (state.isClickAvailable() && !state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), rect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        state.consumeClick();
+        // Add a new track
+        char nameBuf[32];
+        snprintf(nameBuf, 32, "Track %d", (int)state.columns.size() + 1);
+        
+        PatternColumn newCol;
+        newCol.trackName = nameBuf;
+        for(int i=0; i<16; i++) {
+             newCol.patternNames.push_back("");
+             newCol.slotSyncEnabled.push_back(false);
+        }
+        newCol.bounds = {0,0,0,0}; // Will be calculated by Layout
+        
+        state.columns.push_back(newCol);
+    }
+}
+
+void TransportBar::DrawRecording() {
+    float footerH = (float)state.getFooterHeight();
+    float y = (float)state.getScreenHeight() - footerH;
+    float btnW = (float)state.getScreenWidth() / 7.0f;
+    float x = btnW * 4; // Index 4 (After Stop)
+    
+    Rectangle recBtn = {x, y, btnW, footerH};
     
     bool isArmed = state.recorder.isArmed;
     bool isRecording = state.recorder.isRecording;
     
-    // Draw Record Button based on state
+    Color bg = LIGHTGRAY;
+    if (isRecording) bg = Color{200, 50, 50, 255};
+    else if (isArmed) bg = Color{200, 150, 50, 255};
+    
+    DrawRectangleRec(recBtn, bg);
+    
     if (isRecording) {
-        // Full red when actively recording
-        DrawRectangleRec(recBtn, Color{200, 50, 50, 255});
-        DrawCircle((int)(recBtn.x + 30), (int)(recBtn.y + 30), 18, RED);
+        DrawCircle((int)(recBtn.x + btnW/2), (int)(recBtn.y + footerH/2), 18, RED);
     } else if (isArmed) {
-        // Orange/Yellow when armed (waiting for Play)
-        DrawRectangleRec(recBtn, Color{200, 150, 50, 255});
-        DrawCircle((int)(recBtn.x + 30), (int)(recBtn.y + 30), 14, ORANGE);
-        DrawCircleLines((int)(recBtn.x + 30), (int)(recBtn.y + 30), 18, WHITE);
+        DrawCircle((int)(recBtn.x + btnW/2), (int)(recBtn.y + footerH/2), 14, ORANGE);
+        DrawCircleLines((int)(recBtn.x + btnW/2), (int)(recBtn.y + footerH/2), 18, WHITE);
     } else {
-        // Gray button with Red Dot (idle)
-        DrawRectangleRec(recBtn, LIGHTGRAY);
-        DrawCircle((int)(recBtn.x + 30), (int)(recBtn.y + 30), 12, RED);
+        DrawCircle((int)(recBtn.x + btnW/2), (int)(recBtn.y + footerH/2), 12, RED);
     }
+    
+    // Add gap line
+    DrawLine(recBtn.x + recBtn.width, recBtn.y, recBtn.x + recBtn.width, recBtn.y + recBtn.height, BLACK);
     
     // Handle Record Button Click
     if (state.isClickAvailable() && !state.editor.isOpen &&
@@ -86,18 +117,21 @@ void TransportBar::DrawRecording() {
 }
 
 void TransportBar::DrawPlayStop() {
-    Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
-    float centerX = state.getScreenWidth() / 2.0f;
-    float btnH = (float)state.FOOTER_HEIGHT;  // Full height
-    float btnW = 70;  // Wider buttons
+    float footerH = (float)state.getFooterHeight();
+    float y = (float)state.getScreenHeight() - footerH;
+    float btnW = (float)state.getScreenWidth() / 7.0f;
     
-    // Play
-    float gap = 5.0f;
-    Rectangle playRect = {centerX - btnW - (gap/2), rect.y, btnW, btnH};
+    // Play: Index 2
+    float playX = btnW * 2;
+    Rectangle playRect = {playX, y, btnW, footerH};
+    
     DrawRectangleRec(playRect, state.isPlaying ? GREEN : GRAY);
     const char* playTxt = ">";
-    int playTxtW = MeasureTextApp(playTxt, 24);
-    DrawTextApp(playTxt, playRect.x + (playRect.width - playTxtW)/2, playRect.y + (playRect.height - 24)/2, 24, BLACK);
+    int playTxtW = MeasureTextApp(playTxt, 30);
+    DrawTextApp(playTxt, playRect.x + (playRect.width - playTxtW)/2, playRect.y + (playRect.height - 30)/2, 30, BLACK);
+    
+    DrawLine(playRect.x + playRect.width, playRect.y, playRect.x + playRect.width, playRect.y + playRect.height, BLACK);
+
     if (state.isClickAvailable() && !state.editor.isOpen &&
         CheckCollisionPointRec(state.getMousePosition(), playRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.consumeClick();
@@ -146,12 +180,15 @@ void TransportBar::DrawPlayStop() {
         if (!names.empty()) engine.playMultiplePatterns(names);
     }
     
-    // Stop
-    // Stop
-    // Gap 5px between Play and Stop means Offset 2.5 from center
-    Rectangle stopRect = {centerX + (gap/2), rect.y, btnW, btnH};
+    // Stop: Index 3
+    float stopX = btnW * 3;
+    Rectangle stopRect = {stopX, y, btnW, footerH};
+    
     DrawRectangleRec(stopRect, RED);
-    DrawRectangle((int)(stopRect.x + 25), (int)(stopRect.y + 20), 20, 20, WHITE);
+    DrawRectangle((int)(stopRect.x + (btnW-20)/2), (int)(stopRect.y + (footerH-20)/2), 20, 20, WHITE);
+    
+    DrawLine(stopRect.x + stopRect.width, stopRect.y, stopRect.x + stopRect.width, stopRect.y + stopRect.height, BLACK);
+
     if (state.isClickAvailable() && !state.editor.isOpen &&
         CheckCollisionPointRec(state.getMousePosition(), stopRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.consumeClick();
@@ -172,35 +209,40 @@ void TransportBar::DrawBPM() {
 }
 
 void TransportBar::DrawCopyPaste() {
-    Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
-    float btnH = (float)state.FOOTER_HEIGHT;
-    float btnW = 80;
-    float startX = 0; // Start at left
+    float footerH = (float)state.getFooterHeight();
+    float y = (float)state.getScreenHeight() - footerH;
+    float btnW = (float)state.getScreenWidth() / 7.0f;
+    float x = btnW * 1; // Index 1 (After Add)
     
-    // Copy Button
-    Rectangle copyBtn = {startX, rect.y, btnW, btnH};
+    Rectangle copyBtn = {x, y, btnW, footerH};
+    
     bool isActive = state.trackClipboard.isSelectingSource;
     if (state.trackClipboard.isPasting) isActive = true;
     
-    // If not active, draw normal button
+    // Draw button
     if (!state.trackClipboard.isSelectingSource && !state.trackClipboard.isPasting) {
         DrawRectangleRec(copyBtn, DARKGRAY);
         const char* txt = "COPY";
-        int txtW = MeasureTextApp(txt, 16);
-        DrawTextApp(txt, copyBtn.x + (copyBtn.width - txtW)/2, copyBtn.y + (copyBtn.height - 16)/2, 16, WHITE);
+        int txtW = MeasureTextApp(txt, 18);
+        DrawTextApp(txt, copyBtn.x + (copyBtn.width - txtW)/2, copyBtn.y + (copyBtn.height - 18)/2, 18, WHITE);
         
         if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), copyBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.trackClipboard.isSelectingSource = true;
         }
     } else {
-        // Active "Copy" State or "Cancel" button
+        // Active "Copy" State
         DrawRectangleRec(copyBtn, ORANGE); 
-        DrawTextApp("Cancel", copyBtn.x + 15, copyBtn.y + 20, 18, WHITE);
+        const char* txt = "CANCEL";
+        int txtW = MeasureTextApp(txt, 18);
+        DrawTextApp(txt, copyBtn.x + (copyBtn.width - txtW)/2, copyBtn.y + (copyBtn.height - 18)/2, 18, WHITE);
+        
          if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), copyBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             state.trackClipboard.isSelectingSource = false;
             state.trackClipboard.isPasting = false;
         }
     }
+    
+    DrawLine(copyBtn.x + copyBtn.width, copyBtn.y, copyBtn.x + copyBtn.width, copyBtn.y + copyBtn.height, BLACK);
 }
 
 void TransportBar::DrawEditShift() {
@@ -213,19 +255,19 @@ void TransportBar::DrawEditShift() {
 }
 
 void TransportBar::DrawSettingsButton() {
-    Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
-    float btnH = (float)state.FOOTER_HEIGHT;
-    float btnW = 60;
+    float footerH = (float)state.getFooterHeight();
+    float y = (float)state.getScreenHeight() - footerH;
+    float btnW = (float)state.getScreenWidth() / 7.0f;
+    float x = btnW * 6; // Index 6 (Last)
     
-    // Far right
-    // Far right - add margin
-    Rectangle gearBtn = {state.getScreenWidth() - btnW - 5, rect.y, btnW, btnH};
+    Rectangle gearBtn = {x, y, btnW, footerH};
     bool isOpen = (state.settings.activePopup != PopupType::None);
     DrawRectangleRec(gearBtn, isOpen ? ORANGE : DARKGRAY);
     const char* gearTxt = "*";
     int gearW = MeasureTextApp(gearTxt, 30);
-    // Removed +5 offset
     DrawTextApp(gearTxt, gearBtn.x + (gearBtn.width - gearW)/2, gearBtn.y + (gearBtn.height - 30)/2, 30, WHITE);
+    
+    DrawLine(gearBtn.x, gearBtn.y, gearBtn.x, gearBtn.y + gearBtn.height, BLACK);
     
     if (state.isClickAvailable() && !state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), gearBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.consumeClick();
@@ -247,7 +289,8 @@ void TransportBar::DrawSettingsPopup() {
         state.consumeClick();
     }
     
-    Rectangle rect = {0, (float)state.getScreenHeight() - state.FOOTER_HEIGHT, (float)state.getScreenWidth(), (float)state.FOOTER_HEIGHT};
+    float footerH = (float)state.getFooterHeight();
+    Rectangle rect = {0, (float)state.getScreenHeight() - footerH, (float)state.getScreenWidth(), footerH};
     
     float popW = 450;
     float popH = 300; // Increased height for better spacing
@@ -458,69 +501,38 @@ void TransportBar::DrawSettingsPopup() {
     }
 }
 
-
-
 void TransportBar::DrawSyncButton() {
-    // Placement: After Edit/Shift.
-    // Edit/Shift logic is in DrawEditShift.
-    // Let's place it at a fixed comfortable position or relative.
-    // Right of center (Play/Stop/Rec).
-    // Play/Stop is Center - 60 to Center + 60.
-    // Rec is Center + 80.
-    // Edit/Shift is left aligned? No.
-    // Let's put Sync at Center + 160 (Right of Record)
+    float footerH = (float)state.getFooterHeight();
+    float y = (float)state.getScreenHeight() - footerH;
+    float btnW = (float)state.getScreenWidth() / 7.0f;
+    float x = btnW * 5; // Index 5 (After Rec)
     
-    float centerX = state.getScreenWidth() / 2.0f;
-    // Rec starts at centerX + 77.5. Width 60. Ends at + 137.5.
-    // Sync starts at + 137.5 + 5 = 142.5.
-    float x = centerX + 142.5f;
-    float y = (float)state.getScreenHeight() - state.FOOTER_HEIGHT; // Match others
-    float w = 60;
-    float h = (float)state.FOOTER_HEIGHT; // Match others
-    
-    Rectangle btn = {x, y, w, h};
-    
+    Rectangle btn = {x, y, btnW, footerH};
     DrawRectangleRec(btn, LIGHTGRAY);
-    // Reduced font size to fit new font
+    
     const char* txt = "SYNC";
-    int txtW = MeasureTextApp(txt, 12);
-    DrawTextApp(txt, x + (w - txtW)/2, y + (h - 12)/2, 12, BLACK);
+    int txtW = MeasureTextApp(txt, 16);
+    DrawTextApp(txt, btn.x + (btn.width - txtW)/2, btn.y + (btn.height - 16)/2, 16, BLACK);
+    
+    DrawLine(btn.x + btn.width, btn.y, btn.x + btn.width, btn.y + btn.height, BLACK);
     
     if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), btn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        // If playing, also ensure any selected-but-not-active patterns start playing
         if (state.isPlaying) {
-            // Check each column - if a pattern is selected but not in activePatternSlots, add it
-            for (int colIdx = 0; colIdx < (int)state.columns.size(); ++colIdx) {
-                // Check if this column has a selection (via selectedSlotIndex or similar)
-                // For now, use the activePatternSlots map - if a column isn't in it but has patterns, add slot 0
-                if (state.activePatternSlots.find(colIdx) == state.activePatternSlots.end()) {
-                    // Column not playing - check if it has any patterns
-                    if (!state.columns[colIdx].patternNames.empty() && !state.columns[colIdx].patternNames[0].empty()) {
-                        // Activate slot 0 for this column
-                        state.activePatternSlots[colIdx] = 0;
+             // ... sync logic ...
+            std::vector<std::string> patternsWithBeatsync;
+            for (const auto& col : state.columns) {
+                for (const std::string& patName : col.patternNames) {
+                    if (!patName.empty()) {
+                        patternsWithBeatsync.push_back(patName);
                     }
                 }
             }
-            
-            // Update engine with all active patterns
-            std::vector<std::pair<std::string, std::string>> allActive;
-            for (auto& pair : state.activePatternSlots) {
-                int c = pair.first;
-                int s = pair.second;
-                if (c >= 0 && c < (int)state.columns.size() && s >= 0 && s < (int)state.columns[c].patternNames.size()) {
-                    std::string pName = state.columns[c].patternNames[s];
-                    if (!pName.empty()) {
-                        engine.assignPatternToTrack(pName, state.columns[c].trackName);
-                        allActive.push_back({pName, state.columns[c].trackName});
-                    }
-                }
+            if (!patternsWithBeatsync.empty()) {
+                engine.syncPatternsWithBeatsync(patternsWithBeatsync);
             }
-            engine.updateActivePatterns(allActive);
         }
-        
-        // Use immediate resync to ensure first note is triggered correctly
-        engine.resyncAllPatterns();
     }
 }
 
 } // namespace gui
+

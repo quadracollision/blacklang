@@ -10,6 +10,13 @@
 #include <cstring>
 #include <cstdio>
 #include <cmath> // for abs
+#if defined(__ANDROID__)
+#include <android/log.h>
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, "BlackLang_GUI", __VA_ARGS__)
+#else
+#include <cstdio>
+#define LOGD(...) printf(__VA_ARGS__); printf("\n")
+#endif
 
 namespace gui {
 
@@ -78,7 +85,7 @@ void TrackView::Draw() {
             } else if (state.drag.scrollDirection == 2) {
                 // Horizontal scroll of track view
                 state.mainScrollX -= delta.x;
-                float maxScrollX = (state.columns.size() * (state.COLUMN_WIDTH + 10)) - state.getScreenWidth() + 100;
+                float maxScrollX = (state.columns.size() * (state.getColumnWidth() + 10)) - state.getScreenWidth() + 100;
                 if (state.mainScrollX < 0) state.mainScrollX = 0;
                 if (maxScrollX > 0 && state.mainScrollX > maxScrollX) state.mainScrollX = maxScrollX;
             }
@@ -88,49 +95,90 @@ void TrackView::Draw() {
     }
 
     // 2. Draw Columns
+    // 2. Draw Columns
     float startX = 20.0f;
+    if (state.isPortrait) {
+        // Center columns (should be ~0 if width fits exactly)
+        startX = (float)(state.getScreenWidth() - (3 * state.getColumnWidth())) / 2.0f;
+    }
     float colX = startX - state.mainScrollX;
     
     // Scissor for main view area
-    Rectangle viewRect = {0, (float)state.HEADER_HEIGHT, (float)state.getScreenWidth(), (float)state.getScreenHeight() - state.HEADER_HEIGHT - state.FOOTER_HEIGHT};
+    float headerH = (float)state.getHeaderHeight();
+    float footerH = (float)state.getFooterHeight();
+    float screenW = (float)state.getScreenWidth();
+    float screenH = (float)state.getScreenHeight();
+    
+    // PORTRAIT: 3 Visible Cells + Button Area (Stacked)
+    // Landscape: Full height
+    float patternH = (float)state.getPatternHeight();
+    float buttonsH = state.isPortrait ? 160.0f : 40.0f; // Large Button Area (reduced to 160)
+    // Fix: Include Track Header (30px) in visible content height calculation
+    float visibleContentH = (state.isPortrait ? 30.0f : 0.0f) + (3.0f * patternH) + buttonsH;
+    
+    float viewY = headerH;
+    float viewH = screenH - headerH - footerH;
+    
+    if (state.isPortrait) {
+        // Bottom Align: Gap at Top
+        // If content fits with gap, use gap. Else full height.
+        if (visibleContentH < viewH) {
+            viewY = screenH - footerH - visibleContentH;
+            viewH = visibleContentH;
+        }
+    }
+    
+    Rectangle viewRect = {0, viewY, screenW, viewH};
     BeginScissorMode((int)viewRect.x, (int)viewRect.y, (int)viewRect.width, (int)viewRect.height);
 
     for (size_t i = 0; i < state.columns.size(); ++i) {
         state.columns[i].bounds = {
             colX,
-            (float)state.HEADER_HEIGHT + 20, // Margin
-            (float)state.COLUMN_WIDTH,
-            (float)(state.getScreenHeight() - state.HEADER_HEIGHT - state.FOOTER_HEIGHT - 40)
+            viewY, // Top of view area
+            (float)state.getColumnWidth(),
+            viewH - buttonsH // Content area for patterns
         };
         DrawColumn((int)i, state.columns[i]);
-        colX += state.COLUMN_WIDTH + 10;
+        // No gap in portrait mode to ensure 3 tracks fit perfectly (Screen/3)
+        float colGap = state.isPortrait ? 0.0f : 10.0f;
+        colX += state.getColumnWidth() + colGap;
     }
     
-    // Add Column Button
-    Rectangle addColBtn = {colX, (float)state.HEADER_HEIGHT + 20, 40, (float)state.PATTERN_HEIGHT};
-    DrawRectangleRec(addColBtn, Color{40, 40, 40, 255});
-    DrawTextApp("+", addColBtn.x + 13, addColBtn.y + 30, 30, GRAY);
-    
-    if (state.isClickAvailable() && !state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), addColBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-         state.consumeClick();
-         if (CheckCollisionPointRec(state.getMousePosition(), viewRect)) {
-             // FIX: Correctly initialize PatternColumn with all fields
-             std::string newTrackName = "Track_" + std::to_string(state.columns.size());
-             state.columns.push_back({
-                 "Track " + std::to_string(state.columns.size() + 1), // Title
-                 std::vector<std::string>(16, ""),                    // PatternNames
-                 std::vector<bool>(16, false),                        // SlotSyncEnabled
-                 {0, 0, 0, 0},                                        // Bounds
-                 0.0f,                                                // ScrollY
-                 false,                                               // MixerMode
-                 newTrackName,                                        // TrackName
-                 1.0f,                                                // Volume
-                 0.5f                                                 // Pan
-             });
-         }
+    // Add Column Button (Only in Landscape - Portrait has it in TransportBar)
+    if (!state.isPortrait) {
+        Rectangle addColBtn = {colX, headerH + 20, 40, (float)state.getPatternHeight()};
+        DrawRectangleRec(addColBtn, Color{40, 40, 40, 255});
+        DrawTextApp("+", addColBtn.x + 13, addColBtn.y + 30, 30, GRAY);
+        
+        if (state.isClickAvailable() && !state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), addColBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+             state.consumeClick();
+             if (CheckCollisionPointRec(state.getMousePosition(), viewRect)) {
+                 // FIX: Correctly initialize PatternColumn with all fields
+                 std::string newTrackName = "Track_" + std::to_string(state.columns.size());
+                 state.columns.push_back({
+                     "Track " + std::to_string(state.columns.size() + 1), // Title
+                     std::vector<std::string>(16, ""),                    // PatternNames
+                     std::vector<bool>(16, false),                        // SlotSyncEnabled
+                     {0, 0, 0, 0},                                        // Bounds
+                     0.0f,                                                // ScrollY
+                     false,                                               // MixerMode
+                     newTrackName,                                        // TrackName
+                     1.0f,                                                // Volume
+                     0.5f                                                 // Pan
+                 });
+             }
+        }
     }
     
     EndScissorMode();
+
+    // ... (Drag Logic Omitted for brevity, assumed unchanged) ...
+    // Note: I am replacing a chunk that ends before DrawColumn implementation, so I need to check where to insert the button drawing logic.
+    // Ah, the button drawing is INSIDE DrawColumn which is below.
+    // I need to use another replace call for DrawColumn button logic.
+    
+    // END of main Layout Logic replacement.
+
 
     // 3. Global Drop Logic (if Dragging)
     if (state.drag.isDragging) {
@@ -153,7 +201,7 @@ void TrackView::Draw() {
                     // Calculate Slot Index based on Scroll
                     float topMargin = 40.0f;
                     float relativeY = mouse.y - (col.bounds.y + topMargin) + col.scrollY;
-                    int slotIdx = (int)(relativeY / (state.PATTERN_HEIGHT + 5));
+                    int slotIdx = (int)(relativeY / (state.getPatternHeight() + 5));
                     
                     if (slotIdx >= 0 && slotIdx < (int)col.patternNames.size()) {
                         // VALID DROP TARGET
@@ -231,8 +279,9 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
     // Old column highlighting removed. Cell highlighting handled in cell loop below.
     
     // Content area
-    float topMargin = 40.0f;
-    float bottomMargin = 40.0f;
+    // Content area
+    float topMargin = state.isPortrait ? 30.0f : 40.0f;
+    float bottomMargin = state.isPortrait ? 0.0f : 40.0f;
     Rectangle contentArea = {
         col.bounds.x,
         col.bounds.y + topMargin,
@@ -241,7 +290,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
     };
     
     // Initial Calc
-    float totalContentHeight = (float)col.patternNames.size() * (float)(state.PATTERN_HEIGHT + 5);
+    float totalContentHeight = (float)col.patternNames.size() * (float)(state.getPatternHeight() + 5);
     
     // Scroll Logic
     if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), col.bounds)) {
@@ -287,16 +336,14 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
         }
     }
     
-    // Add button at bottom (Small, Left)
-    float btnY = col.bounds.y + col.bounds.height - 35;
-    Rectangle addBtnRect = {col.bounds.x + 5, btnY, 40, 30};
+    // Button rects defined later in DrawColumn
     
     BeginScissorMode((int)contentArea.x, (int)contentArea.y, (int)contentArea.width, (int)contentArea.height);
     
     float y = contentArea.y - col.scrollY;
     
     // Auto-fill grid to visible height to prevent "popping into existence" or empty space
-    int visibleCells = (int)(contentArea.height / (state.PATTERN_HEIGHT + 5)) + 2; 
+    int visibleCells = (int)(contentArea.height / (state.getPatternHeight() + 5)) + 2; 
     int minCells = std::max(16, visibleCells);
     if (col.patternNames.size() < (size_t)minCells) {
         col.patternNames.resize((size_t)minCells, "");
@@ -304,29 +351,31 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
     }
 
     // Clamp Scroll (Recalculate after resize)
-    totalContentHeight = (float)col.patternNames.size() * (float)(state.PATTERN_HEIGHT + 5);
+    totalContentHeight = (float)col.patternNames.size() * (float)(state.getPatternHeight() + 5);
     float maxScroll = std::max(0.0f, totalContentHeight - contentArea.height);
     if (col.scrollY < 0) col.scrollY = 0;
     if (col.scrollY > maxScroll) col.scrollY = maxScroll;
     
     for (size_t i = 0; i < col.patternNames.size(); ++i) {
+        float cellPadding = state.isPortrait ? 2.0f : 10.0f;  // Equal padding on both sides
+        float cellWidth = col.bounds.width - (cellPadding * 2);
         Rectangle cellRect = {
-            col.bounds.x + 5,
+            col.bounds.x + cellPadding,
             y,
-            col.bounds.width - 15, // Reduced width to clear scrollbar (thinner now)
-            (float)state.PATTERN_HEIGHT
+            cellWidth,
+            (float)state.getPatternHeight()
         };
-        y += state.PATTERN_HEIGHT + 5;
+        y += state.getPatternHeight() + 1;
         
         bool isSelected = (state.activePatternSlots.count(index) && state.activePatternSlots[index] == (int)i);
-        bool overlapsButton = CheckCollisionRecs(cellRect, addBtnRect);
+        // overlapsButton check removed - buttons are outside content area now
         
         if (state.drag.isDragging && 
             state.drag.sourceColumnIndex == index && 
             state.drag.sourceSlotIndex == (int)i) {
             // Beind dragged source
             DrawRectangleLinesEx(cellRect, 2.0f, DARKGRAY);
-        } else if (!overlapsButton && !state.editor.isOpen) { // BLOCKED IF EDITOR IS OPEN
+        } else if (!state.editor.isOpen) { // BLOCKED IF EDITOR IS OPEN
             if (col.patternNames[i].empty()) {
                 // Empty Cell
                 DrawRectangleRec(cellRect, Color{30, 30, 30, 255});
@@ -337,9 +386,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
                 HandlePatternClick(index, (int)i, "", cellRect);
             } else {
                 // Occupied Cell
-                bool isHoldingThis = state.drag.isHolding && 
-                                     state.drag.sourceColumnIndex == index && 
-                                     state.drag.sourceSlotIndex == (int)i;
+                // Occupied Cell
                 
                 int currentStep = engine.getPatternProgress(col.patternNames[i]);
                 
@@ -357,7 +404,14 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
                 // Draw mini step grid inside the pattern box
                 Pattern* pat = engine.getPattern(col.patternNames[i]);
                 if (pat) {
-                    Rectangle gridRect = {cellRect.x + 5, cellRect.y + 20, cellRect.width - 10, cellRect.height - 25};
+                    // Fill the area below the title bar (approx 22px height)
+                    float titleH = 22.0f;
+                    Rectangle gridRect = {
+                        cellRect.x, 
+                        cellRect.y + titleH, 
+                        cellRect.width, 
+                        cellRect.height - titleH
+                    };
                     DrawStepGrid(gridRect, *pat, currentStep, state);
                 }
 
@@ -381,7 +435,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
         }
         
         // NEW WORKFLOW HIGHLIGHTING: Source Selection
-        if (state.trackClipboard.isSelectingSource && !overlapsButton && !state.editor.isOpen) {
+        if (state.trackClipboard.isSelectingSource && !state.editor.isOpen) {
              // Highlight pattern to be copied (must be occupied)
              if (!col.patternNames[i].empty() && CheckCollisionPointRec(state.getMousePosition(), cellRect)) {
                  DrawRectangleLinesEx(cellRect, 2, ORANGE);
@@ -390,7 +444,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
         }
 
         // PASTE MODE HIGHLIGHTING & INTERACTION
-        if (state.trackClipboard.isPasting && !overlapsButton && !state.editor.isOpen) {
+        if (state.trackClipboard.isPasting && !state.editor.isOpen) {
             // Check if slot is empty
             bool isEmpty = col.patternNames[i].empty();
             
@@ -413,7 +467,7 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
         }
 
         // Drag Destination Logic - VISUAL OVERLAY (Draw LAST to be visible over content)
-        if (state.drag.isDragging && CheckCollisionPointRec(state.getMousePosition(), cellRect) && !overlapsButton) {
+        if (state.drag.isDragging && CheckCollisionPointRec(state.getMousePosition(), cellRect)) {
             // Visible Indicator
             DrawRectangle(cellRect.x, cellRect.y, cellRect.width, cellRect.height, Color{0, 255, 0, 60}); // Brighter Green Highlight
             DrawRectangleLinesEx(cellRect, 3.0f, GREEN); // Thicker Border
@@ -422,124 +476,109 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
     
     EndScissorMode();
     
-    // Scrollbar
-    if (totalContentHeight > contentArea.height) {
-        float barW = 6;  // Thinner scrollbar for mobile
-        float barX = col.bounds.x + col.bounds.width - barW - 2;
-        float barY = contentArea.y;
-        float barH = contentArea.height;
-        
-        float viewRatio = contentArea.height / totalContentHeight;
-        float thumbH = std::max(20.0f, contentArea.height * viewRatio);
-        
-        float scrollableH = totalContentHeight - contentArea.height;
-        float trackH = contentArea.height - thumbH;
-        
-        float thumbY = barY + (col.scrollY / scrollableH) * trackH;
-        
-        Rectangle barRect = {barX, barY, barW, barH};
-        Rectangle thumbRect = {barX, thumbY, barW, thumbH};
-        
-        // Interaction
-        if (!state.editor.isOpen && state.drag.scrollbarDraggingColumn == index) {
-            // DRAGGING
-            if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-                float mouseY = state.getMousePosition().y;
-                float newThumbY = mouseY - state.drag.scrollbarClickOffsetY;
-                
-                // Clamp thumb
-                if (newThumbY < barY) newThumbY = barY;
-                if (newThumbY > barY + trackH) newThumbY = barY + trackH;
-                
-                // Calculate and apply scrollY
-                float ratio = (trackH > 0) ? (newThumbY - barY) / trackH : 0.0f;
-                // Clamp ratio 0..1 to be safe
-                if (ratio < 0.0f) ratio = 0.0f;
-                if (ratio > 1.0f) ratio = 1.0f;
-                
-                col.scrollY = ratio * scrollableH;
-            } else {
-                state.drag.scrollbarDraggingColumn = -1;
-            }
-        } else {
-            // IDLE / CLICK
-            if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), barRect)) {
-                 DrawRectangleRec(barRect, Color{40, 40, 40, 80}); // Hover - more transparent
-                 
-                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                     state.drag.scrollbarDraggingColumn = index;
-                     float mouseY = state.getMousePosition().y;
-                     
-                     if (CheckCollisionPointRec(state.getMousePosition(), thumbRect)) {
-                         // Clicked Thumb
-                         state.drag.scrollbarClickOffsetY = mouseY - thumbY;
-                     } else {
-                         // Clicked Track - Jump center to mouse
-                         float desiredThumbY = mouseY - thumbH/2;
-                         // Clamp
-                         if (desiredThumbY < barY) desiredThumbY = barY;
-                         if (desiredThumbY > barY + trackH) desiredThumbY = barY + trackH;
-                         
-                         // Apply early
-                         float ratio = (trackH > 0) ? (desiredThumbY - barY) / trackH : 0.0f;
-                         if (ratio < 0.0f) ratio = 0.0f;
-                         if (ratio > 1.0f) ratio = 1.0f;
-                         
-                         col.scrollY = ratio * scrollableH;
-                         
-                         // Set offset to center so dragging continues naturally
-                         state.drag.scrollbarClickOffsetY = thumbH/2;
-                     }
-                 }
-            } else {
-                // Removed idle scrollbar background for cleaner look on mobile
-            }
-        }
-        
-        // Re-calc thumbY if scroll changed
-        thumbY = barY + (col.scrollY / scrollableH) * trackH;
-        thumbRect.y = thumbY;
+    // Note: Vertical scrollbar removed - scrolling still works via touch drag and mouse wheel
 
-        DrawRectangleRec(thumbRect, state.drag.scrollbarDraggingColumn == index ? Color{150, 150, 150, 200} : Color{80, 80, 80, 120});
+    // --- Column Buttons ---
+    float btnStart_y = col.bounds.y + col.bounds.height;
+    
+    // Define Rects based on mode
+    Rectangle addRect, delRect, mixRect;
+    
+    if (state.isPortrait) {
+        // Stacked: + - Row, Mixer Row
+        // Dynamic Height Calculation to fill available space
+        float footerY = (float)state.getScreenHeight() - (float)state.getFooterHeight();
+        float availableH = footerY - btnStart_y;
+        if (availableH < 80) availableH = 80; // Safety min
+        
+        float gap = 5.0f;
+        float rowH = (availableH - gap) / 2.0f;
+        
+        // Row 1: + -
+        float halfW = (col.bounds.width - gap) / 2.0f;
+        addRect = {col.bounds.x, btnStart_y, halfW, rowH};
+        delRect = {col.bounds.x + halfW + gap, btnStart_y, halfW, rowH};
+        
+        // Row 2: Mixer
+        mixRect = {col.bounds.x, btnStart_y + rowH + gap, col.bounds.width, rowH};
+    } else {
+        // Landscape: Inline
+        float btnH = 35.0f;
+        addRect = {col.bounds.x + 5, btnStart_y, 40, btnH};
+        delRect = {addRect.x + 45, btnStart_y, 40, btnH};
+        mixRect = {delRect.x + 45, btnStart_y, col.bounds.width - 95, btnH};
     }
-
-    // Add Button (Small, Left) - Drawn using pre-calculated rect
-    DrawRectangleRec(addBtnRect, Color{50, 50, 50, 255});
-    DrawTextApp("+", addBtnRect.x + 13, addBtnRect.y + 2, 24, WHITE);
     
-    // Delete Button (Next to Add)
-    Rectangle delBtnRect = {addBtnRect.x + addBtnRect.width + 5, btnY, 40, 30};
-    DrawRectangleRec(delBtnRect, Color{80, 20, 20, 255});  // Dark red
-    DrawTextApp("-", delBtnRect.x + 15, delBtnRect.y + 2, 24, WHITE);
+    // 1. Add Button (+)
+    DrawRectangleRec(addRect, Color{50, 50, 50, 255});
+    DrawRectangleLinesEx(addRect, 1.0f, Color{100, 100, 100, 255}); // Border
+    DrawTextApp("+", addRect.x + (addRect.width - 14)/2, addRect.y + (addRect.height - 24)/2, 24, WHITE);
     
-    // Delete button action
-    if (state.isClickAvailable() && !state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), delBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (state.isClickAvailable() && !state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), addRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.consumeClick();
-        // Delete the selected pattern in this column
+        
+        // Add Logic (Inlined from HandleAddPattern)
+        int targetSlot = -1;
         if (state.activePatternSlots.count(index)) {
             int selectedSlot = state.activePatternSlots[index];
             if (selectedSlot >= 0 && selectedSlot < (int)col.patternNames.size()) {
-                col.patternNames[(size_t)selectedSlot] = "";  // Clear the slot
-                state.activePatternSlots.erase(index);  // Clear selection
+                if (col.patternNames[(size_t)selectedSlot].empty()) {
+                    targetSlot = selectedSlot;
+                }
+            }
+        }
+        
+        if (targetSlot != -1) {
+            Pattern p;
+            std::string candidateName;
+            do {
+                candidateName = "Pat" + std::to_string(state.patternIdCounter++);
+            } while (engine.getPattern(candidateName) != nullptr);
+            
+            p.name = candidateName;
+            p.bpm = state.bpm;
+            engine.addPattern(p);
+            engine.assignPatternToTrack(p.name, col.title);
+            
+            col.patternNames[(size_t)targetSlot] = p.name;
+            if (targetSlot >= (int)col.slotSyncEnabled.size()) {
+                col.slotSyncEnabled.resize((size_t)(targetSlot + 1), false);
+            }
+            col.slotSyncEnabled[(size_t)targetSlot] = true;
+        }
+    }
+    
+    // 2. Delete Button (-)
+    DrawRectangleRec(delRect, Color{80, 20, 20, 255});
+    DrawRectangleLinesEx(delRect, 1.0f, Color{100, 100, 100, 255}); // Border
+    DrawTextApp("-", delRect.x + (delRect.width - 14)/2, delRect.y + (delRect.height - 24)/2, 24, WHITE);
+    
+    if (state.isClickAvailable() && !state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), delRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        state.consumeClick();
+        // Delete Logic
+        if (state.activePatternSlots.count(index)) {
+            int selectedSlot = state.activePatternSlots[index];
+            if (selectedSlot >= 0 && selectedSlot < (int)col.patternNames.size()) {
+                col.patternNames[(size_t)selectedSlot] = "";
+                state.activePatternSlots.erase(index);
             }
         }
     }
     
-    // Mixer Button (Rest)
-    Rectangle mixBtnRect = {col.bounds.x + 95, btnY, col.bounds.width - 100, 30};
-    DrawRectangleRec(mixBtnRect, Color{30, 30, 40, 255});
-    // Centered "MIXER" text
+    // 3. Mixer Button
+    DrawRectangleRec(mixRect, Color{30, 30, 40, 255});
+    DrawRectangleLinesEx(mixRect, 1.0f, Color{100, 100, 100, 255}); // Border
     const char* mixText = "MIXER";
-    int fontSize = 20; // Larger font
+    int fontSize = 20;
     int textW = MeasureText(mixText, fontSize);
-    DrawTextApp(mixText, mixBtnRect.x + (mixBtnRect.width - textW)/2, mixBtnRect.y + 6, fontSize, GRAY);
+    DrawTextApp(mixText, mixRect.x + (mixRect.width - textW)/2, mixRect.y + (mixRect.height - fontSize)/2, fontSize, GRAY);
     
-    if (state.isClickAvailable() && !state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), mixBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (state.isClickAvailable() && !state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), mixRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.consumeClick();
-        col.mixerMode = true;
+        col.mixerMode = !col.mixerMode; // Toggle
     }
     
-    HandleAddPattern(index, col);
+    // Note: External HandleAddPattern call removed
 }
 
 void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::string& patternName, Rectangle cellRect) {
@@ -556,6 +595,7 @@ void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::strin
     
     // Check Collision using PASSED cellRect (Matches Drawing)
     if (!state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), contentArea) && CheckCollisionPointRec(state.getMousePosition(), cellRect)) {
+        // LOGD("HandlePatternClick HIT: Col %d Slot %d. ActiveID: %s", colIndex, slotIndex, state.drag.activeControlId.c_str());
         static double lastPatternClickTime = 0;
         static std::string lastPatternClickName = "";
 
@@ -577,6 +617,7 @@ void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::strin
             bool wasDragging = state.drag.isDragging || state.drag.scrollDirection != 0;
 
             if (isMyInteraction && !wasDragging) {
+                LOGD("Pattern Clicked: Col %d Slot %d. Processing Select/Edit.", colIndex, slotIndex);
                 // ... (Logic remains identical, just wrapped in isMyInteraction)
                 // NEW WORKFLOW: Source Selection (Priority over everything else)
                 if (state.trackClipboard.isSelectingSource) {
@@ -795,43 +836,5 @@ void TrackView::HandlePatternClick(int colIndex, int slotIndex, const std::strin
     }
 }
 
-void TrackView::HandleAddPattern(int colIndex, PatternColumn& col) {
-    // colIndex is used for selection lookup
-    
-    Rectangle addBtnRect = {col.bounds.x + 5, col.bounds.y + col.bounds.height - 35, 40, 30};
-    
-    if (state.isClickAvailable() && !state.editor.isOpen && CheckCollisionPointRec(state.getMousePosition(), addBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        state.consumeClick();
-        // Only create pattern if we have a selected EMPTY slot
-        int targetSlot = -1;
-        
-        if (state.activePatternSlots.count(colIndex)) {
-            int selectedSlot = state.activePatternSlots[colIndex];
-            if (selectedSlot >= 0 && selectedSlot < (int)col.patternNames.size()) {
-                if (col.patternNames[(size_t)selectedSlot].empty()) {
-                    targetSlot = selectedSlot;
-                }
-            }
-        }
-        
-        // Only create pattern if we found an empty slot
-        if (targetSlot != -1) {
-            Pattern p;
-            p.name = "Pat" + std::to_string(state.patternIdCounter++);
-            p.bpm = state.bpm;
-            engine.addPattern(p);
-            // FIX: Register track assignment logic
-            engine.assignPatternToTrack(p.name, col.title);
-            col.patternNames[(size_t)targetSlot] = p.name;
-            // Explicitly Enable Sync for new patterns
-            if (targetSlot >= (int)col.slotSyncEnabled.size()) {
-                col.slotSyncEnabled.resize(targetSlot + 1, false);
-            }
-            col.slotSyncEnabled[(size_t)targetSlot] = true;
-            
-            // Editor logic removed per request - user stays in grid view
-        }
-        // Otherwise, do nothing (user tried to add on occupied slot)
-    }
-}
+// HandleAddPattern definition removed (inlined)
 } // namespace gui

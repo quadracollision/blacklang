@@ -52,6 +52,7 @@ public:
     // Sync
     void scheduleResync();
     void resyncAllPatterns(); // Immediate (legacy/force)
+    void syncPatternsWithBeatsync(const std::vector<std::string>& patternNames); // Sync patterns with syncBase > 0
     
     // Preview
     void previewSlice(Pattern& pattern, int sliceIndex, bool playToEnd = false);

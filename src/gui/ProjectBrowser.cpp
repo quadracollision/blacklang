@@ -395,6 +395,16 @@ bool Draw(GuiState& state, AudioEngine& engine) {
                             engine.loadSample(pat);
                         }
                         engine.addPattern(pat);
+                        
+                        // FIX: Update patternIdCounter based on max existing ID
+                        if (name.rfind("Pat", 0) == 0) { // Starts with "Pat"
+                            try {
+                                int id = std::stoi(name.substr(3));
+                                if (id >= state.patternIdCounter) {
+                                    state.patternIdCounter = id + 1;
+                                }
+                            } catch (...) { /* ignore non-numeric suffixes */ }
+                        }
                     }
                     state.columns.clear();
                     state.activePatternSlots.clear();

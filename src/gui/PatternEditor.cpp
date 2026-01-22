@@ -60,23 +60,28 @@ void PatternEditor::Draw() {
     float startY = winRect.y + 70 - state.editor.scrollOffsetY; // Base Y with Scroll
     float rowHeight = 50; // Touch-friendly row spacing
     float labelX = winRect.x + 20;
-    float fieldX = winRect.x + 120;
-    int labelSize = 22;
+    float labelWidth = state.isPortrait ? 80 : 100;  // Narrower labels in portrait
+    float fieldX = winRect.x + labelWidth + 20;
+    float fieldMaxWidth = winRect.width - labelWidth - 50;  // Dynamic field width
+    int labelSize = state.isPortrait ? 18 : 22;
     int fieldH = 40;
     
     
-    // Name
+    // Name - dynamic width
+    float nameFieldWidth = std::min(280.0f, fieldMaxWidth);
     DrawTextApp("Name:", labelX, startY + 8, labelSize, WHITE);
-    if (DrawTextInput({fieldX, startY, 280, (float)fieldH}, state.editor.nameBuffer, 63, 0, state.editor.focusedFieldId, state.getMousePosition(), inputBlocked)) {
+    if (DrawTextInput({fieldX, startY, nameFieldWidth, (float)fieldH}, state.editor.nameBuffer, 63, 0, state.editor.focusedFieldId, state.getMousePosition(), inputBlocked)) {
         state.editor.scrollConsumed = true;
     }
     
-    // Sample
+    // Sample - responsive layout
     startY += rowHeight;
-    DrawTextApp("Smpl:", labelX, startY + 8, 20, WHITE);
+    DrawTextApp("Smpl:", labelX, startY + 8, state.isPortrait ? 16 : 20, WHITE);
     
     // User requested only filename display
-    Rectangle sampleBox = {fieldX, startY, 300, (float)fieldH};
+    float loadBtnWidth = state.isPortrait ? 60 : 80;
+    float sampleBoxWidth = std::min(300.0f, fieldMaxWidth - loadBtnWidth - 10);
+    Rectangle sampleBox = {fieldX, startY, sampleBoxWidth, (float)fieldH};
     DrawRectangleRec(sampleBox, DARKGRAY);
     DrawRectangleLinesEx(sampleBox, 1, GRAY);
     
@@ -92,10 +97,11 @@ void PatternEditor::Draw() {
     // RESTORE MAIN CONTENT SCISSOR - critical to avoid "appearing through" header
     BeginScissorMode((int)contentScissor.x, (int)contentScissor.y, (int)contentScissor.width, (int)contentScissor.height);
     
-    // Load Button - touch friendly
-    Rectangle loadBtnRect = {fieldX + 310, startY, 80, (float)fieldH};
+    // Load Button - touch friendly, positioned after sample box
+    Rectangle loadBtnRect = {fieldX + sampleBoxWidth + 10, startY, loadBtnWidth, (float)fieldH};
     DrawRectangleRec(loadBtnRect, BLUE);
-    DrawTextApp("Load", loadBtnRect.x + (loadBtnRect.width - MeasureTextApp("Load", 18))/2, loadBtnRect.y + (loadBtnRect.height - 18)/2, 18, WHITE);
+    int loadFontSize = state.isPortrait ? 14 : 18;
+    DrawTextApp("Load", loadBtnRect.x + (loadBtnRect.width - MeasureTextApp("Load", loadFontSize))/2, loadBtnRect.y + (loadBtnRect.height - loadFontSize)/2, loadFontSize, WHITE);
     
     if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), loadBtnRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
          state.consumeClick();
@@ -166,10 +172,14 @@ void PatternEditor::Draw() {
     
     // Mode Toggle Buttons Row - touch friendly horizontal layout
     startY += rowHeight + 10; // Move to next row
-    float toggleW = 100;
-    float toggleH = 50;
-    float toggleGap = 8;
+    
+    // Calculate dynamic button sizes based on available width
+    float availableWidth = winRect.width - 40;  // 20px padding each side
+    float toggleGap = state.isPortrait ? 4 : 8;
+    float toggleW = (availableWidth - toggleGap * 3) / 4;  // 4 buttons with 3 gaps
+    float toggleH = state.isPortrait ? 40 : 50;
     float toggleStartX = labelX;
+    int toggleFontSize = state.isPortrait ? 14 : 16;
     
     // Helper: Check if any mode is active
     bool anyModeActive = state.editor.showMelodicControls || state.editor.showFxControls || state.editor.showSlicerControls;
@@ -178,8 +188,8 @@ void PatternEditor::Draw() {
     Rectangle stepToggleRect = {toggleStartX, startY, toggleW, toggleH};
     DrawRectangleRec(stepToggleRect, !anyModeActive ? ORANGE : DARKGRAY);
     const char* stepTxt = "Step";
-    int stepW = MeasureTextApp(stepTxt, 20);
-    DrawTextApp(stepTxt, stepToggleRect.x + (stepToggleRect.width - stepW)/2, stepToggleRect.y + (stepToggleRect.height - 20)/2, 20, WHITE);
+    int stepW = MeasureTextApp(stepTxt, toggleFontSize);
+    DrawTextApp(stepTxt, stepToggleRect.x + (stepToggleRect.width - stepW)/2, stepToggleRect.y + (stepToggleRect.height - toggleFontSize)/2, toggleFontSize, WHITE);
     if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), stepToggleRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         // Disable all special modes to return to step mode
         state.editor.showMelodicControls = false;
@@ -190,9 +200,9 @@ void PatternEditor::Draw() {
     // Melodic Toggle
     Rectangle melodyToggleRect = {toggleStartX + (toggleW + toggleGap), startY, toggleW, toggleH};
     DrawRectangleRec(melodyToggleRect, state.editor.showMelodicControls ? BLUE : DARKGRAY);
-    const char* melTxt = "Melody";
-    int melW = MeasureTextApp(melTxt, 16);
-    DrawTextApp(melTxt, melodyToggleRect.x + (melodyToggleRect.width - melW)/2, melodyToggleRect.y + (melodyToggleRect.height - 16)/2, 16, WHITE);
+    const char* melTxt = state.isPortrait ? "Mel" : "Melody";
+    int melW = MeasureTextApp(melTxt, toggleFontSize);
+    DrawTextApp(melTxt, melodyToggleRect.x + (melodyToggleRect.width - melW)/2, melodyToggleRect.y + (melodyToggleRect.height - toggleFontSize)/2, toggleFontSize, WHITE);
     if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), melodyToggleRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.editor.showMelodicControls = !state.editor.showMelodicControls;
         if (state.editor.showMelodicControls) {
@@ -205,8 +215,8 @@ void PatternEditor::Draw() {
     Rectangle fxToggleRect = {toggleStartX + (toggleW + toggleGap) * 2, startY, toggleW, toggleH}; 
     DrawRectangleRec(fxToggleRect, state.editor.showFxControls ? VIOLET : DARKGRAY);
     const char* fxTxt = "FX";
-    int fxW = MeasureTextApp(fxTxt, 20);
-    DrawTextApp(fxTxt, fxToggleRect.x + (fxToggleRect.width - fxW)/2, fxToggleRect.y + (fxToggleRect.height - 20)/2, 20, WHITE);
+    int fxW = MeasureTextApp(fxTxt, toggleFontSize);
+    DrawTextApp(fxTxt, fxToggleRect.x + (fxToggleRect.width - fxW)/2, fxToggleRect.y + (fxToggleRect.height - toggleFontSize)/2, toggleFontSize, WHITE);
     if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), fxToggleRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.editor.showFxControls = !state.editor.showFxControls;
         if (state.editor.showFxControls) {
@@ -218,9 +228,9 @@ void PatternEditor::Draw() {
     // Slicer Toggle
     Rectangle slicerToggleRect = {toggleStartX + (toggleW + toggleGap) * 3, startY, toggleW, toggleH};
     DrawRectangleRec(slicerToggleRect, state.editor.showSlicerControls ? GREEN : DARKGRAY);
-    const char* slicerTxt = "Slicer";
-    int slicerW = MeasureTextApp(slicerTxt, 16);
-    DrawTextApp(slicerTxt, slicerToggleRect.x + (slicerToggleRect.width - slicerW)/2, slicerToggleRect.y + (slicerToggleRect.height - 16)/2, 16, WHITE);
+    const char* slicerTxt = state.isPortrait ? "Slice" : "Slicer";
+    int slicerW = MeasureTextApp(slicerTxt, toggleFontSize);
+    DrawTextApp(slicerTxt, slicerToggleRect.x + (slicerToggleRect.width - slicerW)/2, slicerToggleRect.y + (slicerToggleRect.height - toggleFontSize)/2, toggleFontSize, WHITE);
     if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), slicerToggleRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.editor.showSlicerControls = !state.editor.showSlicerControls;
         if (state.editor.showSlicerControls) {
@@ -256,7 +266,11 @@ void PatternEditor::Draw() {
     int stepCount = atoi(state.editor.stepsBuffer);
     if (stepCount <= 0) stepCount = 16;
     if (stepCount > 64) stepCount = 64;
-    int cols = std::min(16, stepCount);
+    
+    // In portrait mode, use 4 columns (more rows, larger touch targets)
+    // In landscape mode, use 16 columns
+    int maxCols = state.isPortrait ? 4 : 16;
+    int cols = std::min(maxCols, stepCount);
     int rows = (stepCount + cols - 1) / cols;
     float cellW = gridRect.width / cols;
     
@@ -267,6 +281,29 @@ void PatternEditor::Draw() {
     
     // Update gridRect height to match content
     gridRect.height = gridHeight;
+    
+    // --- TAP VS DRAG DETECTION FOR STEP GRID ---
+    // Check if current drag moved too far to be a tap
+    if (state.editor.pendingStepClick >= 0 && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+        Vector2 currentPos = state.getMousePosition();
+        float dx = currentPos.x - state.editor.stepClickStartPos.x;
+        float dy = currentPos.y - state.editor.stepClickStartPos.y;
+        float dist = sqrtf(dx*dx + dy*dy);
+        if (dist > 15.0f) {  // 15px threshold for tap vs drag
+            state.editor.stepClickMoved = true;
+        }
+    }
+    
+    // Process pending tap on release
+    int tappedStep = -1;
+    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        if (state.editor.pendingStepClick >= 0 && !state.editor.stepClickMoved) {
+            tappedStep = state.editor.pendingStepClick;  // This was a tap, process it
+        }
+        // Always reset pending click state on release
+        state.editor.pendingStepClick = -1;
+        state.editor.stepClickMoved = false;
+    }
     
     for (int i = 0; i < stepCount; ++i) {
         int col = i % cols;
@@ -393,7 +430,15 @@ void PatternEditor::Draw() {
         
         bool inViewport = CheckCollisionPointRec(state.getMousePosition(), {winRect.x, winRect.y+50, winRect.width, winRect.height-100});
         
+        // On PRESS: Record pending click (don't process yet)
         if (!inputBlocked && inViewport && CheckCollisionPointRec(state.getMousePosition(), stepRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            state.editor.pendingStepClick = i;
+            state.editor.stepClickStartPos = state.getMousePosition();
+            state.editor.stepClickMoved = false;
+        }
+        
+        // Process step action only if this step was TAPPED (not dragged)
+        if (tappedStep == i) {
             
             // Modal Copy Logic
             if (state.editor.clipboard.isCopyMode) {
@@ -640,79 +685,155 @@ void PatternEditor::Draw() {
     
     // Melodic Controls (NOW BELOW GRID)
     if (state.editor.showMelodicControls) {
-        DrawTextApp(TextFormat("Oct: %d", state.editor.selectedOctave), winRect.x + 20, startY + 15, 24, WHITE);
+        // Portrait mode: Stack octave controls and piano vertically
+        // Landscape mode: Octave on left, piano to right
         
-        // Octave buttons - touch friendly
-        Rectangle octDown = {winRect.x + 140, startY, 50, 50};
-        DrawRectangleRec(octDown, DARKGRAY);
-        const char* minusTxt = "-";
-        int minusW = MeasureTextApp(minusTxt, 28);
-        DrawTextApp(minusTxt, octDown.x + (octDown.width - minusW)/2, octDown.y + (octDown.height - 28)/2, 28, WHITE);
-        if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), octDown) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) state.editor.selectedOctave--;
-        
-        Rectangle octUp = {winRect.x + 200, startY, 50, 50};
-        DrawRectangleRec(octUp, DARKGRAY);
-        const char* plusTxt = "+";
-        int plusW = MeasureTextApp(plusTxt, 28);
-        DrawTextApp(plusTxt, octUp.x + (octUp.width - plusW)/2, octUp.y + (octUp.height - 28)/2, 28, WHITE);
-        if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), octUp) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) state.editor.selectedOctave++;
-        
-        const char* notes[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
-        float keyX = winRect.x + 270;
-        float keyY = startY; 
-        float whiteKeyWidth = 45;  // Increased from 25
-        float blackKeyWidth = 30;  // Increased from 18
-        float keyHeight = 100;     // Increased from 80
-        
-        // White keys first
-        for (int i = 0; i < 12; ++i) {
-            bool isBlack = (i==1 || i==3 || i==6 || i==8 || i==10);
-            if (!isBlack) {
-                Rectangle keyRect = {keyX, keyY, whiteKeyWidth, keyHeight};
-                bool isSelected = (state.editor.selectedNote == i);
-                DrawRectangleRec(keyRect, isSelected ? YELLOW : WHITE);
-                DrawRectangleLinesEx(keyRect, 2, BLACK);
-                if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), keyRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                    state.editor.selectedNote = i;
-                    // Update selected step's pitch if in edit mode
-                    if (state.editor.selectedStep != -1 && state.editor.stepStates[state.editor.selectedStep]) {
-                        int shift = (state.editor.selectedOctave - 4) * 12 + i;
-                        p.stepPitches[state.editor.selectedStep + 1] = shift;
-                        engine.addPattern(p);
+        if (state.isPortrait) {
+            // Row 1: Octave controls centered
+            float octRowY = startY;
+            float octStartX = winRect.x + 20;
+            DrawTextApp(TextFormat("Oct: %d", state.editor.selectedOctave), octStartX, octRowY + 12, 20, WHITE);
+            
+            Rectangle octDown = {octStartX + 100, octRowY, 60, 45};
+            DrawRectangleRec(octDown, DARKGRAY);
+            DrawTextApp("-", octDown.x + 25, octDown.y + 10, 24, WHITE);
+            if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), octDown) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) state.editor.selectedOctave--;
+            
+            Rectangle octUp = {octStartX + 170, octRowY, 60, 45};
+            DrawRectangleRec(octUp, DARKGRAY);
+            DrawTextApp("+", octUp.x + 25, octUp.y + 10, 24, WHITE);
+            if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), octUp) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) state.editor.selectedOctave++;
+            
+            startY += 55; // Move to next row
+            
+            // Row 2: Full-width piano keyboard
+            const char* notes[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+            float pianoWidth = winRect.width - 40;
+            float keyX = winRect.x + 20;
+            float keyY = startY;
+            float whiteKeyWidth = pianoWidth / 7;  // 7 white keys
+            float blackKeyWidth = whiteKeyWidth * 0.65f;
+            float keyHeight = 120; // Taller keys for Android touch (was 80)
+            
+            // White keys first
+            float whiteX = keyX;
+            for (int i = 0; i < 12; ++i) {
+                bool isBlack = (i==1 || i==3 || i==6 || i==8 || i==10);
+                if (!isBlack) {
+                    Rectangle keyRect = {whiteX, keyY, whiteKeyWidth, keyHeight};
+                    bool isSelected = (state.editor.selectedNote == i);
+                    DrawRectangleRec(keyRect, isSelected ? YELLOW : WHITE);
+                    DrawRectangleLinesEx(keyRect, 2, BLACK);
+                    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), keyRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                        state.editor.selectedNote = i;
+                        if (state.editor.selectedStep != -1 && state.editor.stepStates[state.editor.selectedStep]) {
+                            int shift = (state.editor.selectedOctave - 4) * 12 + i;
+                            p.stepPitches[state.editor.selectedStep + 1] = shift;
+                            engine.addPattern(p);
+                        }
+                    }
+                    int fontSize = (int)(whiteKeyWidth * 0.35f);
+                    if (fontSize < 10) fontSize = 10;
+                    DrawTextApp(notes[i], keyRect.x + (keyRect.width - MeasureTextApp(notes[i], fontSize))/2, keyRect.y + keyHeight - fontSize - 5, fontSize, BLACK);
+                    whiteX += whiteKeyWidth;
+                }
+            }
+            
+            // Black keys on top
+            for (int i = 0; i < 12; ++i) {
+                bool isBlack = (i==1 || i==3 || i==6 || i==8 || i==10);
+                if (isBlack) {
+                    float xPos = 0;
+                    if(i==1) xPos = whiteKeyWidth * 1 - (blackKeyWidth/2);
+                    if(i==3) xPos = whiteKeyWidth * 2 - (blackKeyWidth/2);
+                    if(i==6) xPos = whiteKeyWidth * 4 - (blackKeyWidth/2);
+                    if(i==8) xPos = whiteKeyWidth * 5 - (blackKeyWidth/2);
+                    if(i==10) xPos = whiteKeyWidth * 6 - (blackKeyWidth/2);
+                    Rectangle keyRect = {keyX + xPos, keyY, blackKeyWidth, keyHeight * 0.6f};
+                    bool isSelected = (state.editor.selectedNote == i);
+                    DrawRectangleRec(keyRect, isSelected ? YELLOW : BLACK);
+                    DrawRectangleLinesEx(keyRect, 1, DARKGRAY);
+                    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), keyRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                        state.editor.selectedNote = i;
+                        if (state.editor.selectedStep != -1 && state.editor.stepStates[state.editor.selectedStep]) {
+                            int shift = (state.editor.selectedOctave - 4) * 12 + i;
+                            p.stepPitches[state.editor.selectedStep + 1] = shift;
+                            engine.addPattern(p);
+                        }
                     }
                 }
-                DrawTextApp(notes[i], keyRect.x + 12, keyRect.y + keyHeight - 25, 16, BLACK);
-                keyX += whiteKeyWidth;
             }
-        }
-        
-        // Black keys on top
-        keyX = winRect.x + 270;
-        for (int i = 0; i < 12; ++i) {
-            bool isBlack = (i==1 || i==3 || i==6 || i==8 || i==10);
-            if (isBlack) {
-                 float xPos = 0;
-                 if(i==1) xPos = whiteKeyWidth * 1 - (blackKeyWidth/2);
-                 if(i==3) xPos = whiteKeyWidth * 2 - (blackKeyWidth/2);
-                 if(i==6) xPos = whiteKeyWidth * 4 - (blackKeyWidth/2);
-                 if(i==8) xPos = whiteKeyWidth * 5 - (blackKeyWidth/2);
-                 if(i==10) xPos = whiteKeyWidth * 6 - (blackKeyWidth/2);
-                 Rectangle keyRect = {winRect.x + 270 + xPos, keyY, blackKeyWidth, keyHeight * 0.6f};
-                 bool isSelected = (state.editor.selectedNote == i);
-                 DrawRectangleRec(keyRect, isSelected ? YELLOW : BLACK);
-                 DrawRectangleLinesEx(keyRect, 1, DARKGRAY);
-                 if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), keyRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                     state.editor.selectedNote = i;
-                     // Update selected step's pitch if in edit mode
-                     if (state.editor.selectedStep != -1 && state.editor.stepStates[state.editor.selectedStep]) {
-                         int shift = (state.editor.selectedOctave - 4) * 12 + i;
-                         p.stepPitches[state.editor.selectedStep + 1] = shift;
-                         engine.addPattern(p);
-                     }
-                 }
+            startY += keyHeight + 10;
+            
+        } else {
+            // Landscape mode: Original horizontal layout
+            DrawTextApp(TextFormat("Oct: %d", state.editor.selectedOctave), winRect.x + 20, startY + 15, 24, WHITE);
+            
+            Rectangle octDown = {winRect.x + 140, startY, 50, 50};
+            DrawRectangleRec(octDown, DARKGRAY);
+            DrawTextApp("-", octDown.x + 20, octDown.y + 12, 28, WHITE);
+            if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), octDown) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) state.editor.selectedOctave--;
+            
+            Rectangle octUp = {winRect.x + 200, startY, 50, 50};
+            DrawRectangleRec(octUp, DARKGRAY);
+            DrawTextApp("+", octUp.x + 20, octUp.y + 12, 28, WHITE);
+            if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), octUp) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) state.editor.selectedOctave++;
+            
+            const char* notes[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+            float keyX = winRect.x + 270;
+            float keyY = startY; 
+            float whiteKeyWidth = 45;
+            float blackKeyWidth = 30;
+            float keyHeight = 100;
+            
+            // White keys
+            for (int i = 0; i < 12; ++i) {
+                bool isBlack = (i==1 || i==3 || i==6 || i==8 || i==10);
+                if (!isBlack) {
+                    Rectangle keyRect = {keyX, keyY, whiteKeyWidth, keyHeight};
+                    bool isSelected = (state.editor.selectedNote == i);
+                    DrawRectangleRec(keyRect, isSelected ? YELLOW : WHITE);
+                    DrawRectangleLinesEx(keyRect, 2, BLACK);
+                    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), keyRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                        state.editor.selectedNote = i;
+                        if (state.editor.selectedStep != -1 && state.editor.stepStates[state.editor.selectedStep]) {
+                            int shift = (state.editor.selectedOctave - 4) * 12 + i;
+                            p.stepPitches[state.editor.selectedStep + 1] = shift;
+                            engine.addPattern(p);
+                        }
+                    }
+                    DrawTextApp(notes[i], keyRect.x + 12, keyRect.y + keyHeight - 25, 16, BLACK);
+                    keyX += whiteKeyWidth;
+                }
             }
+            
+            // Black keys
+            keyX = winRect.x + 270;
+            for (int i = 0; i < 12; ++i) {
+                bool isBlack = (i==1 || i==3 || i==6 || i==8 || i==10);
+                if (isBlack) {
+                    float xPos = 0;
+                    if(i==1) xPos = whiteKeyWidth * 1 - (blackKeyWidth/2);
+                    if(i==3) xPos = whiteKeyWidth * 2 - (blackKeyWidth/2);
+                    if(i==6) xPos = whiteKeyWidth * 4 - (blackKeyWidth/2);
+                    if(i==8) xPos = whiteKeyWidth * 5 - (blackKeyWidth/2);
+                    if(i==10) xPos = whiteKeyWidth * 6 - (blackKeyWidth/2);
+                    Rectangle keyRect = {keyX + xPos, keyY, blackKeyWidth, keyHeight * 0.6f};
+                    bool isSelected = (state.editor.selectedNote == i);
+                    DrawRectangleRec(keyRect, isSelected ? YELLOW : BLACK);
+                    DrawRectangleLinesEx(keyRect, 1, DARKGRAY);
+                    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), keyRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                        state.editor.selectedNote = i;
+                        if (state.editor.selectedStep != -1 && state.editor.stepStates[state.editor.selectedStep]) {
+                            int shift = (state.editor.selectedOctave - 4) * 12 + i;
+                            p.stepPitches[state.editor.selectedStep + 1] = shift;
+                            engine.addPattern(p);
+                        }
+                    }
+                }
+            }
+            startY += keyHeight + 10;
         }
-        startY += keyHeight + 10;
     }
 
     // FX Controls (Modular)
@@ -760,289 +881,90 @@ void PatternEditor::Draw() {
     }
 
     // 2. Footer Bar
-    DrawRectangle(winRect.x, winRect.y + winRect.height - 55, winRect.width, 55, Color{30, 30, 30, 255}); // Footer BG
+    DrawRectangle(winRect.x, winRect.y + winRect.height - 65, winRect.width, 65, Color{30, 30, 30, 255}); // Footer BG
 
-    // Copy Button (Left) - larger for touch
-    Rectangle copyRect = {winRect.x + 10, winRect.y + winRect.height - 45, 80, 40};
-    bool copyActive = state.editor.clipboard.isCopyMode;
-    DrawRectangleRec(copyRect, copyActive ? ORANGE : DARKGRAY);
-    const char* copyTxt = "Copy";
-    int copyW = MeasureTextApp(copyTxt, 16);
-    DrawTextApp(copyTxt, copyRect.x + (copyRect.width - copyW)/2, copyRect.y + (copyRect.height - 16)/2, 16, WHITE);
+    // Footer buttons - dynamically sized
+    float footerY = winRect.y + winRect.height - 60;
+    float footerBtnH = state.isPortrait ? 55 : 45;
+    float footerGap = state.isPortrait ? 5 : 8;
+    int footerFontSize = state.isPortrait ? 16 : 16;
     
-    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), copyRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        state.editor.clipboard.isCopyMode = !state.editor.clipboard.isCopyMode;
-        state.editor.clipboard.isPasteMode = false;
-        state.editor.clipboard.isEditMode = false;
-    }
+    // Calculate button widths to fit screen
+    float availFooterWidth = winRect.width - 20;  // 10px padding each side
+    
+    // 6 buttons in both modes: Copy/Paste, Edit, Commit, Play, Resample, Save
+    int numButtons = 6;
+    float footerBtnW = (availFooterWidth - (numButtons - 1) * footerGap) / numButtons;
+    
+    float btnX = winRect.x + 10;
 
-    // Paste Button - larger for touch
-    Rectangle pasteRect = {winRect.x + 100, winRect.y + winRect.height - 45, 90, 40};
-    bool canPaste = state.editor.clipboard.hasData;
+    // Copy/Paste Toggle Button (single button)
+    Rectangle copyPasteRect = {btnX, footerY, footerBtnW, footerBtnH};
+    bool hasClipboard = state.editor.clipboard.hasData;
+    bool copyActive = state.editor.clipboard.isCopyMode;
     bool pasteActive = state.editor.clipboard.isPasteMode;
     
-    Color pasteColor = pasteActive ? MAGENTA : DARKGRAY; 
+    // Determine button state
+    const char* cpTxt;
+    Color cpColor;
+    if (copyActive) {
+        cpTxt = "Cancel";
+        cpColor = ORANGE;
+    } else if (hasClipboard && pasteActive) {
+        cpTxt = "Cancel";
+        cpColor = MAGENTA;
+    } else if (hasClipboard) {
+        cpTxt = "Paste";
+        cpColor = MAGENTA;
+    } else {
+        cpTxt = "Copy";
+        cpColor = DARKGRAY;
+    }
     
-    DrawRectangleRec(pasteRect, pasteColor);
-    const char* pasteTxt = "Paste";
-    int pasteW = MeasureTextApp(pasteTxt, 16);
-    DrawTextApp(pasteTxt, pasteRect.x + (pasteRect.width - pasteW)/2, pasteRect.y + (pasteRect.height - 16)/2, 16, WHITE);
+    DrawRectangleRec(copyPasteRect, cpColor);
+    int cpW = MeasureTextApp(cpTxt, footerFontSize);
+    DrawTextApp(cpTxt, copyPasteRect.x + (copyPasteRect.width - cpW)/2, copyPasteRect.y + (copyPasteRect.height - footerFontSize)/2, footerFontSize, WHITE);
     
-    if (!inputBlocked && canPaste && CheckCollisionPointRec(state.getMousePosition(), pasteRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        state.editor.clipboard.isPasteMode = !state.editor.clipboard.isPasteMode;
-        state.editor.clipboard.isCopyMode = false;
+    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), copyPasteRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (copyActive || pasteActive) {
+            // Cancel mode
+            state.editor.clipboard.isCopyMode = false;
+            state.editor.clipboard.isPasteMode = false;
+        } else if (hasClipboard) {
+            // Enter paste mode
+            state.editor.clipboard.isPasteMode = true;
+            state.editor.clipboard.isCopyMode = false;
+        } else {
+            // Enter copy mode
+            state.editor.clipboard.isCopyMode = true;
+            state.editor.clipboard.isPasteMode = false;
+        }
         state.editor.clipboard.isEditMode = false;
     }
+    btnX += footerBtnW + footerGap;
 
-    // Edit Button (Use Cyan for distinction) - larger for touch
-    Rectangle editRect = {winRect.x + 200, winRect.y + winRect.height - 45, 80, 40};
+    // Edit Button (select step to edit velocity/pitch)
+    Rectangle editRect = {btnX, footerY, footerBtnW, footerBtnH};
     bool editActive = state.editor.clipboard.isEditMode;
     DrawRectangleRec(editRect, editActive ? SKYBLUE : DARKGRAY);
     const char* editTxt = "Edit";
-    int editW = MeasureTextApp(editTxt, 16);
-    DrawTextApp(editTxt, editRect.x + (editRect.width - editW)/2, editRect.y + (editRect.height - 16)/2, 16, WHITE);
+    int editW = MeasureTextApp(editTxt, footerFontSize);
+    DrawTextApp(editTxt, editRect.x + (editRect.width - editW)/2, editRect.y + (editRect.height - footerFontSize)/2, footerFontSize, WHITE);
     
     if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), editRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         state.editor.clipboard.isEditMode = !state.editor.clipboard.isEditMode;
         state.editor.clipboard.isCopyMode = false;
         state.editor.clipboard.isPasteMode = false;
     }
+    btnX += footerBtnW + footerGap;
 
-    // Preview/Stop Button - plays just this pattern or stops it
-    Rectangle previewRect = {winRect.x + 290, winRect.y + winRect.height - 45, 100, 40};
-    
-    if (state.editor.isPreviewing) {
-        DrawRectangleRec(previewRect, RED);
-        const char* stopTxt = "Stop";
-        int stopW = MeasureTextApp(stopTxt, 16);
-        DrawTextApp(stopTxt, previewRect.x + (previewRect.width - stopW)/2, previewRect.y + (previewRect.height - 16)/2, 16, WHITE);
-    } else {
-        DrawRectangleRec(previewRect, LIME);
-        const char* prevTxt = "Preview";
-        int prevW = MeasureTextApp(prevTxt, 16);
-        DrawTextApp(prevTxt, previewRect.x + (previewRect.width - prevW)/2, previewRect.y + (previewRect.height - 16)/2, 16, BLACK);
-    }
-    
-    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), previewRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        if (state.editor.isPreviewing) {
-            // Stop preview
-            engine.stop();
-            state.editor.isPreviewing = false;
-        } else {
-            // Save current pattern state first
-            p.name = state.editor.nameBuffer;
-            p.steps = atoi(state.editor.stepsBuffer);
-            p.syncBase = atoi(state.editor.syncBaseBuffer);
-            if (p.syncBase <= 0) p.syncBase = p.steps;
-            engine.addPattern(p);
-            
-            // Ensure track assignment matches the column this pattern belongs to
-            bool assigned = false;
-            
-            // 1. Try to find pattern in existing columns
-            for (const auto& col : state.columns) {
-                for (const auto& pn : col.patternNames) {
-                    if (pn == p.name) {
-                        engine.assignPatternToTrack(p.name, col.trackName);
-                        assigned = true;
-                        break;
-                    }
-                }
-                if (assigned) break;
-            }
-            
-            // 2. If not found (new pattern), use the source column index if valid
-            if (!assigned && state.editor.sourceColumnIndex >= 0 && state.editor.sourceColumnIndex < (int)state.columns.size()) {
-                engine.assignPatternToTrack(p.name, state.columns[(size_t)state.editor.sourceColumnIndex].trackName);
-                assigned = true;
-            }
-            
-            // 3. Fallback: just use Track 0 if all else fails
-            if (!assigned && !state.columns.empty()) {
-                engine.assignPatternToTrack(p.name, state.columns[0].trackName);
-            }
-            
-            // Play just this pattern
-            engine.playPattern(p.name);
-            state.editor.isPreviewing = true;
-        }
-    }
-    
-    // Resample Button - next to Preview (records one pattern cycle to sample buffer)
-    Rectangle resampleRect = {previewRect.x + previewRect.width + 8, previewRect.y, 90, 40};
-    bool isResampling = engine.resampleManager.isRecording();
-    
-    if (isResampling) {
-        DrawRectangleRec(resampleRect, RED);
-        const char* recTxt = "REC...";
-        int recW = MeasureTextApp(recTxt, 14);
-        DrawTextApp(recTxt, resampleRect.x + (resampleRect.width - recW)/2, resampleRect.y + (resampleRect.height - 14)/2, 14, WHITE);
-    } else {
-        DrawRectangleRec(resampleRect, Color{255, 140, 0, 255}); // Orange
-        const char* resTxt = "Resamp";
-        int resW = MeasureTextApp(resTxt, 14);
-        DrawTextApp(resTxt, resampleRect.x + (resampleRect.width - resW)/2, resampleRect.y + (resampleRect.height - 14)/2, 14, WHITE);
-    }
-    
-    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), resampleRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        if (!isResampling) {
-            // Start resample: arm recording and start playback
-            int steps = atoi(state.editor.stepsBuffer);
-            if (steps <= 0) steps = 16;
-            engine.resampleManager.start(steps, engine.getBPM(), 44100.0);
-            engine.playPattern(state.editor.currentPattern.name);
-        } else {
-            // Cancel resample if clicked while recording
-            engine.resampleManager.stop();
-            engine.stop();
-        }
-    }
-
-    // Per-Slot Sync Toggle - in footer for easy touch access
-    // Find which slot this pattern is in and toggle that slot's sync
-    // Per-Slot Sync Toggle - in footer for easy touch access
-    // Find which slot this pattern is in and toggle that slot's sync
-    // Position relative to right side to avoid overlap
-    Rectangle syncRect = {winRect.x + winRect.width - 350, winRect.y + winRect.height - 45, 80, 40};
-    
-    // Find slot for current pattern
-    // Find slot for current pattern
-    int foundCol = -1, foundSlot = -1;
-    
-    // Prefer Source Index (if valid)
-    if (state.editor.sourceColumnIndex >= 0 && state.editor.sourceSlotIndex >= 0) {
-        if (state.editor.sourceColumnIndex < (int)state.columns.size()) {
-             PatternColumn& pc = state.columns[(size_t)state.editor.sourceColumnIndex];
-             if (state.editor.sourceSlotIndex < (int)pc.patternNames.size()) {
-                 foundCol = state.editor.sourceColumnIndex;
-                 foundSlot = state.editor.sourceSlotIndex;
-             }
-        }
-    }
-    
-    // Fallback to name search if not found
-    if (foundCol < 0) {
-        for (size_t c = 0; c < state.columns.size() && foundCol < 0; c++) {
-            for (size_t s = 0; s < state.columns[c].patternNames.size(); s++) {
-                if (state.columns[c].patternNames[s] == p.name) {
-                    foundCol = (int)c;
-                    foundSlot = (int)s;
-                    break;
-                }
-            }
-        }
-    }
-    
-    bool slotSyncEnabled = false;
-    if (foundCol >= 0 && foundSlot >= 0) {
-        PatternColumn& pc = state.columns[(size_t)foundCol];
-        // Ensure slotSyncEnabled vector is large enough
-        while (pc.slotSyncEnabled.size() < pc.patternNames.size()) {
-            pc.slotSyncEnabled.push_back(false);
-        }
-        if (foundSlot < (int)pc.slotSyncEnabled.size()) {
-            slotSyncEnabled = pc.slotSyncEnabled[(size_t)foundSlot];
-        }
-    }
-    
-    DrawRectangleRec(syncRect, slotSyncEnabled ? Color{0, 180, 0, 255} : DARKGRAY);
-    const char* syncTxt = "Sync";
-    int syncW = MeasureTextApp(syncTxt, 16);
-    DrawTextApp(syncTxt, syncRect.x + (syncRect.width - syncW)/2, syncRect.y + (syncRect.height - 16)/2, 16, WHITE);
-    
-    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), syncRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        if (foundCol >= 0 && foundSlot >= 0) {
-            PatternColumn& pc = state.columns[(size_t)foundCol];
-            // Ensure vector is large enough
-            while (pc.slotSyncEnabled.size() < pc.patternNames.size()) {
-                pc.slotSyncEnabled.push_back(false);
-            }
-            pc.slotSyncEnabled[(size_t)foundSlot] = !pc.slotSyncEnabled[(size_t)foundSlot];
-        }
-    }
-
-    // Save Button (Fixed at Bottom Footer) - larger for touch
-    Rectangle saveRect = {winRect.x + winRect.width - 130, winRect.y + winRect.height - 45, 120, 40};
-    
-    // Play Button (only visible in Shift mode during playback)
-    // Play Button (only visible in Shift mode during playback)
-    // Place left of Commit Button (which is roughly -250)
-    if (state.isShiftMode && state.isPlaying) {
-        Rectangle playBtn = {winRect.x + winRect.width - 440, saveRect.y, 80, 40}; // Increased height to 40
-        DrawRectangleRec(playBtn, GREEN);
-        const char* playTxt = "Play";
-        int playW = MeasureTextApp(playTxt, 20);
-        DrawTextApp(playTxt, playBtn.x + (playBtn.width - playW)/2, playBtn.y + (playBtn.height - 20)/2, 20, BLACK);
-        
-        if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), playBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            // --- SAVE THE PATTERN FIRST (same as Save button) ---
-            p.name = state.editor.nameBuffer;
-            
-            std::string sPath = state.editor.samplePathBuffer;
-            if (!sPath.empty() && !fs::exists(sPath)) {
-                 std::vector<std::string> prefixes = {"../", "src/", "../src/", "samples/", "../samples/"};
-                 for (const auto& pre : prefixes) {
-                     if (fs::exists(pre + sPath)) {
-                         sPath = pre + sPath;
-                         break;
-                     }
-                 }
-            }
-            
-            p.samplePath = sPath;
-            p.bpm = state.bpm;
-            p.steps = atoi(state.editor.stepsBuffer);
-            p.syncBase = atoi(state.editor.syncBaseBuffer);
-            
-            p.activeSteps.clear();
-            for (int i=0; i<64; ++i) {
-                if (state.editor.stepStates[i]) {
-                    p.activeSteps.push_back(i+1);
-                }
-            }
-            
-            if (p.samplePath != "") engine.loadSample(p);
-            engine.addPattern(p);
-            
-            // --- NOW SELECT FOR PLAYBACK ---
-            std::string patName = p.name;
-            for (int colIdx = 0; colIdx < (int)state.columns.size(); ++colIdx) {
-                for (int slotIdx = 0; slotIdx < (int)state.columns[colIdx].patternNames.size(); ++slotIdx) {
-                    if (state.columns[colIdx].patternNames[slotIdx] == patName) {
-                        state.activePatternSlots[colIdx] = slotIdx;
-                        break;
-                    }
-                }
-            }
-            
-            // Update engine with new active patterns
-            // Update engine with new active patterns
-            std::vector<std::pair<std::string, std::string>> allActive;
-            for (auto& pair : state.activePatternSlots) {
-                int c = pair.first;
-                int s = pair.second;
-                if (c >= 0 && c < (int)state.columns.size() && s >= 0 && s < (int)state.columns[c].patternNames.size()) {
-                    allActive.push_back({state.columns[c].patternNames[s], state.columns[c].trackName});
-                }
-            }
-            engine.updateActivePatterns(allActive);
-            
-            // Turn off Shift mode
-            state.isShiftMode = false;
-            state.shiftEditingPatternName = "";
-        }
-    }
-    
-    // Footer BG already drawn above
-    // DrawRectangle(winRect.x, winRect.y + winRect.height - 50, winRect.width, 50, Color{30, 30, 30, 255}); // Footer BG
     
     // Commit Button (Save without closing)
-    // Commit Button (Save without closing)
-    Rectangle commitRect = {winRect.x + winRect.width - 250, winRect.y + winRect.height - 45, 100, 40};
+    Rectangle commitRect = {btnX, footerY, footerBtnW, footerBtnH};
     DrawRectangleRec(commitRect, Color{0, 150, 0, 255}); // Green
     const char* commitTxt = "Commit";
-    int commitW = MeasureTextApp(commitTxt, 16);
-    DrawTextApp(commitTxt, commitRect.x + (commitRect.width - commitW)/2, commitRect.y + (commitRect.height - 16)/2, 16, WHITE);
+    int commitW = MeasureTextApp(commitTxt, footerFontSize);
+    DrawTextApp(commitTxt, commitRect.x + (commitRect.width - commitW)/2, commitRect.y + (commitRect.height - footerFontSize)/2, footerFontSize, WHITE);
     
     if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), commitRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         // Save pattern without closing
@@ -1080,15 +1002,98 @@ void PatternEditor::Draw() {
             for (auto& col : state.columns) {
                 std::replace(col.patternNames.begin(), col.patternNames.end(), oldName, p.name);
             }
-            strncpy(state.editor.originalName, p.name.c_str(), sizeof(state.editor.originalName) - 1); // Update original name for next commit
+            strncpy(state.editor.originalName, p.name.c_str(), sizeof(state.editor.originalName) - 1);
         }
-        
         // Don't close - stay in editor
     }
+    btnX += footerBtnW + footerGap;
+
+    // Preview/Stop Button
+    Rectangle previewRect = {btnX, footerY, footerBtnW, footerBtnH};
     
-    // Save and Exit Button
+    if (state.editor.isPreviewing) {
+        DrawRectangleRec(previewRect, RED);
+        const char* stopTxt = "Stop";
+        int stopW = MeasureTextApp(stopTxt, footerFontSize);
+        DrawTextApp(stopTxt, previewRect.x + (previewRect.width - stopW)/2, previewRect.y + (previewRect.height - footerFontSize)/2, footerFontSize, WHITE);
+    } else {
+        DrawRectangleRec(previewRect, LIME);
+        const char* prevTxt = state.isPortrait ? "Play" : "Preview";
+        int prevW = MeasureTextApp(prevTxt, footerFontSize);
+        DrawTextApp(prevTxt, previewRect.x + (previewRect.width - prevW)/2, previewRect.y + (previewRect.height - footerFontSize)/2, footerFontSize, BLACK);
+    }
+    
+    if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), previewRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (state.editor.isPreviewing) {
+            engine.stop();
+            state.editor.isPreviewing = false;
+        } else {
+            p.name = state.editor.nameBuffer;
+            p.steps = atoi(state.editor.stepsBuffer);
+            p.syncBase = atoi(state.editor.syncBaseBuffer);
+            if (p.syncBase <= 0) p.syncBase = p.steps;
+            engine.addPattern(p);
+            
+            bool assigned = false;
+            for (const auto& col : state.columns) {
+                for (const auto& pn : col.patternNames) {
+                    if (pn == p.name) {
+                        engine.assignPatternToTrack(p.name, col.trackName);
+                        assigned = true;
+                        break;
+                    }
+                }
+                if (assigned) break;
+            }
+            
+            if (!assigned && state.editor.sourceColumnIndex >= 0 && state.editor.sourceColumnIndex < (int)state.columns.size()) {
+                engine.assignPatternToTrack(p.name, state.columns[(size_t)state.editor.sourceColumnIndex].trackName);
+                assigned = true;
+            }
+            
+            if (!assigned && !state.columns.empty()) {
+                engine.assignPatternToTrack(p.name, state.columns[0].trackName);
+            }
+            
+            engine.playPattern(p.name);
+            state.editor.isPreviewing = true;
+        }
+    }
+    btnX += footerBtnW + footerGap;
+
+    // Resample Button
+    Rectangle resampleRect = {btnX, footerY, footerBtnW, footerBtnH};
+    bool isResampling = engine.resampleManager.isRecording();
+        
+        if (isResampling) {
+            DrawRectangleRec(resampleRect, RED);
+            const char* recTxt = "REC";
+            int recW = MeasureTextApp(recTxt, footerFontSize);
+            DrawTextApp(recTxt, resampleRect.x + (resampleRect.width - recW)/2, resampleRect.y + (resampleRect.height - footerFontSize)/2, footerFontSize, WHITE);
+        } else {
+            DrawRectangleRec(resampleRect, Color{255, 140, 0, 255});
+            const char* resTxt = "Resamp";
+            int resW = MeasureTextApp(resTxt, footerFontSize);
+            DrawTextApp(resTxt, resampleRect.x + (resampleRect.width - resW)/2, resampleRect.y + (resampleRect.height - footerFontSize)/2, footerFontSize, WHITE);
+        }
+        
+        if (!inputBlocked && CheckCollisionPointRec(state.getMousePosition(), resampleRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            if (!isResampling) {
+                int steps = atoi(state.editor.stepsBuffer);
+                if (steps <= 0) steps = 16;
+                engine.resampleManager.start(steps, engine.getBPM(), 44100.0);
+                engine.playPattern(state.editor.currentPattern.name);
+            } else {
+                engine.resampleManager.stop();
+                engine.stop();
+            }
+    }
+    btnX += footerBtnW + footerGap;
+
+    // Save+Exit Button (draws in the last button slot)
+    Rectangle saveRect = {btnX, footerY, footerBtnW, footerBtnH};
+    const char* saveTxt = state.isPortrait ? "Save" : "Save+Exit";
     DrawRectangleRec(saveRect, BLUE);
-    const char* saveTxt = "Save+Exit";
     int saveW = MeasureTextApp(saveTxt, 14); // Keep 14 to fit
     DrawTextApp(saveTxt, saveRect.x + (saveRect.width - saveW)/2, saveRect.y + (saveRect.height - 14)/2, 14, WHITE);
     

@@ -47,20 +47,42 @@ int main() {
     // Init Renderer
     GuiRenderer renderer(state, audio);
     
+    // Track orientation for render texture recreation
+    bool lastPortrait = false;
+    
     // Main Loop
     while (!WindowShouldClose()) {
-        // Calculate scaling to fit screen while maintaining aspect ratio
+        // Detect orientation
         float screenW = (float)GetScreenWidth();
         float screenH = (float)GetScreenHeight();
-        float scaleX = screenW / DESIGN_WIDTH;
-        float scaleY = screenH / DESIGN_HEIGHT;
+        bool isPortrait = screenH > screenW;
+        
+        // Recreate render texture if orientation changed
+        if (isPortrait != lastPortrait) {
+            UnloadRenderTexture(target);
+            if (isPortrait) {
+                target = LoadRenderTexture(DESIGN_HEIGHT, DESIGN_WIDTH);  // 540x960 for portrait
+            } else {
+                target = LoadRenderTexture(DESIGN_WIDTH, DESIGN_HEIGHT);  // 960x540 for landscape
+            }
+            SetTextureFilter(target.texture, TEXTURE_FILTER_BILINEAR);
+            lastPortrait = isPortrait;
+        }
+        
+        // Get current virtual dimensions
+        int virtualW = isPortrait ? DESIGN_HEIGHT : DESIGN_WIDTH;
+        int virtualH = isPortrait ? DESIGN_WIDTH : DESIGN_HEIGHT;
+        
+        // Calculate scaling to fit screen while maintaining aspect ratio
+        float scaleX = screenW / virtualW;
+        float scaleY = screenH / virtualH;
         
         // Use min to fit entire UI on screen (may show letterbox bars)
         // This prevents cropping of transport bar, header, etc.
         float scale = std::min(scaleX, scaleY);
         
-        float scaledW = DESIGN_WIDTH * scale;
-        float scaledH = DESIGN_HEIGHT * scale;
+        float scaledW = virtualW * scale;
+        float scaledH = virtualH * scale;
         float offsetX = (screenW - scaledW) / 2.0f;
         float offsetY = (screenH - scaledH) / 2.0f;
         
@@ -72,10 +94,11 @@ int main() {
         };
         
         // Store virtual screen dimensions and mouse position in state for GUI code
-        state.virtualWidth = DESIGN_WIDTH;
-        state.virtualHeight = DESIGN_HEIGHT;
+        state.virtualWidth = virtualW;
+        state.virtualHeight = virtualH;
         state.virtualMouse = virtualMouse;
         state.uiScale = scale;
+        state.isPortrait = isPortrait;
         
         renderer.Update();
         
@@ -89,7 +112,7 @@ int main() {
             ClearBackground(BLACK);
             
             // Source rectangle (flip Y because render textures are upside-down)
-            Rectangle sourceRec = { 0, 0, (float)DESIGN_WIDTH, -(float)DESIGN_HEIGHT };
+            Rectangle sourceRec = { 0, 0, (float)virtualW, -(float)virtualH };
             
             // Destination rectangle (scaled and centered)
             Rectangle destRec = { offsetX, offsetY, scaledW, scaledH };

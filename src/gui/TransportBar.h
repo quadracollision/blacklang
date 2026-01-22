@@ -20,10 +20,11 @@ private:
     AudioEngine& engine;
     
     void DrawPlayStop();
+    void DrawAddTrackButton();
     void DrawBPM();
     void DrawCopyPaste();
     void DrawEditShift();
-    void DrawSyncButton();
+    void DrawSyncButton();  // Sync patterns with beatsync enabled
     void DrawSettingsButton();
     void DrawSettingsPopup();
     void DrawRecording();

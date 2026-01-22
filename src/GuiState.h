@@ -32,7 +32,11 @@ struct PatternColumn {
     float dragStartScroll = 0.0f;
     
     // FX Selection (0 = Vol/Pan, 1+ = Insert Slots)
+    // FX Selection (0 = Vol/Pan, 1+ = Insert Slots)
     int selectedFXSlot = 0;
+    
+    // Horizontal scroll for effect selector
+    float mixerEffectScrollX = 0.0f;
 };
 
 struct DragState {
@@ -121,6 +125,10 @@ struct PatternEditorState {
     float editorDragStartY = 0.0f;
     float editorDragStartScrollY = 0.0f;
     
+    // Tap vs drag detection for step grid
+    int pendingStepClick = -1;       // Step index that was pressed (-1 if none)
+    Vector2 stepClickStartPos = {0, 0};  // Position where click started
+    bool stepClickMoved = false;     // True if user moved enough to be a drag
 
     
     // Track which field is being edited
@@ -227,7 +235,6 @@ struct SettingsState {
 };
 
 
-
 struct GuiState {
     std::vector<PatternColumn> columns;
     std::map<int, int> activePatternSlots; // Column Index -> Slot Index (which pattern in that column is selected)
@@ -260,8 +267,7 @@ struct GuiState {
     char globalBpmBuffer[8] = "120";
     PatternChain activeChain; // Current Chain or Song Sequence
     
-    // UI Layout
-    const int COLUMN_WIDTH = 250; // Increased to 250
+    // UI Layout - constants for reference, use getters for dynamic values
     const int PATTERN_HEIGHT = 90;
     const int HEADER_HEIGHT = 60;
     const int FOOTER_HEIGHT = 60;
@@ -269,16 +275,53 @@ struct GuiState {
     // Virtual screen dimensions (for render-texture scaling on mobile)
     int virtualWidth = 960;
     int virtualHeight = 540;
-    Vector2 virtualMouse = {0, 0};  // Transformed mouse position
+    Vector2 virtualMouse = {0, 0};
+    
+    // Constants
+    const int COLUMN_WIDTH = 250;
+    
+    // Dynamic dimensions for portrait mode
+    int getHeaderHeight() const { return isPortrait ? 80 : HEADER_HEIGHT; }
+    int getFooterHeight() const { return isPortrait ? 100 : FOOTER_HEIGHT; }
+    
+    // Dynamic Pattern Height to fit exactly 3 cells + buttons (85px) with a top gap
+    int getPatternHeight() const { 
+        if (isPortrait) {
+            // Subtract top gap (220px) to ensure EVEN LARGER space below header
+            int topGap = 220;
+            int availableH = getScreenHeight() - getHeaderHeight() - getFooterHeight() - topGap;
+            
+            // Large Button Area (160px) 
+            int buttonsH = 160;
+            
+            // Removed safety floor to ensure EXACT fit for 3 cells
+            // Usage: 3 cells with 1px gap between them (total 2px gap) + 30px Track Header
+            return (availableH - buttonsH - 2 - 30) / 3;
+        }
+        return PATTERN_HEIGHT;
+    }
+    
+    // Dynamic Column Width to fit exactly 3 tracks
+    int getColumnWidth() const { 
+        if (isPortrait) {
+            return getScreenWidth() / 3; 
+        }
+        return COLUMN_WIDTH; 
+    }
+    
     float uiScale = 1.0f;           // Current UI scale factor
     
+    bool isPortrait = false;        // Portrait orientation flag
+    
     // Global Click Consumption (prevents click-through)
-    bool clickConsumed = false;
+    bool clickConsumed = false;      // True if a click was handled by overlay/modal
     
     // Helper methods for consistent virtual screen/mouse access
     int getScreenWidth() const { return virtualWidth; }
     int getScreenHeight() const { return virtualHeight; }
     Vector2 getMousePosition() const { return virtualMouse; }
+    
+    // Dynamic layout helpers for responsive UI - (Redefinition removed)
     
     // Click consumption helpers - call consumeClick() when handling a click
     // in overlay/modal UI. Other components check isClickAvailable() before processing.

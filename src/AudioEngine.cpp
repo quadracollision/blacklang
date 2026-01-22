@@ -1123,6 +1123,61 @@ void AudioEngine::resyncAllPatterns() {
     resyncAllPatternsInternal();
 }
 
+// NEW: Sync only patterns with beatsync enabled (syncBase > 0) to their next measure
+void AudioEngine::syncPatternsWithBeatsync(const std::vector<std::string>& patternNames) {
+    std::lock_guard<std::mutex> lock(patternMutex);
+    
+    for (const std::string& name : patternNames) {
+        auto stateIt = patternStates.find(name);
+        if (stateIt == patternStates.end()) continue;
+        
+        auto patIt = patterns.find(name);
+        if (patIt == patterns.end()) continue;
+        
+        Pattern& pattern = patIt->second;
+        
+        // ONLY sync patterns with syncBase > 0 (beatsync enabled)
+        if (pattern.syncBase <= 0) continue;
+        
+        PatternPlayState& state = stateIt->second;
+        int currentStep = state.currentStep;
+        
+        // Calculate next measure boundary based on syncBase
+        int stepsIntoCycle = (currentStep - 1) % pattern.syncBase;
+        int nextBoundary;
+        
+        if (stepsIntoCycle == 0) {
+            // Already at boundary, jump to next one
+            nextBoundary = currentStep + pattern.syncBase;
+        } else {
+            // Jump forward to next boundary
+            nextBoundary = currentStep + (pattern.syncBase - stepsIntoCycle);
+        }
+        
+        // Wrap around if needed
+        if (nextBoundary > pattern.steps) {
+            nextBoundary = 1 + ((nextBoundary - 1) % pattern.steps);
+        }
+        
+        // Jump to the boundary
+        state.currentStep = nextBoundary;
+        state.stepStartSample = audioFrameCount.load();
+        
+        // Reset playback state
+        state.samplePosition = 0;
+        state.sampleIsPlaying = false;
+        state.isStuttering = false;
+        state.isSliding = false;
+        state.fadeInSamplesRemaining = 88;
+        
+        // Trigger note if present
+        if (pattern.shouldTriggerAt(nextBoundary)) {
+            triggerStep(state, pattern);
+        }
+    }
+}
+
+
 // ============================================================================
 // In-Memory Recording (New - for Android)
 // ============================================================================

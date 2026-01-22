@@ -101,7 +101,7 @@ void GuiRenderer::Draw() {
     
     // Calculate Content Width
     float startX = 20;
-    float contentW = startX + state.columns.size() * (state.COLUMN_WIDTH + 10) + 60; // + Add Button + Margin
+    float contentW = startX + state.columns.size() * (state.getColumnWidth() + 10) + 60; // + Add Button + Margin
     state.mainContentWidth = contentW;
     
     // Scroll Input (Shift + Wheel)
