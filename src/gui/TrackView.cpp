@@ -285,8 +285,12 @@ void TrackView::DrawColumn(int index, PatternColumn& col) {
     
     // 0. Mixer Mode Check
     if (col.mixerMode) {
-        state.columns[index].bounds = col.bounds; // Ensure bounds synced
-        DrawTrackMixer(col.bounds, col, state, engine);
+        // Extend bounds to include button area below for full-height mixer
+        float footerY = (float)state.getScreenHeight() - (float)state.getFooterHeight();
+        Rectangle mixerBounds = col.bounds;
+        mixerBounds.height = footerY - col.bounds.y; // Extend to footer
+        state.columns[index].bounds = col.bounds; // Keep original bounds for non-mixer use
+        DrawTrackMixer(mixerBounds, col, state, engine);
         return;
     }
     

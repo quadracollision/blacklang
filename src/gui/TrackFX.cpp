@@ -1,4 +1,5 @@
 #include "TrackFX.h"
+#include "Widgets.h"
 #include "../AudioEngine.h"
 #include <cstdio>
 #include <string>
@@ -19,6 +20,12 @@ namespace gui {
 static void HandleMixerScroll(const Rectangle& bounds, PatternColumn& col, GuiState& state) {
     Vector2 mouse = state.getMousePosition();
     
+    // Reset interaction if mouse released (and NOT just released this frame, to allow release events to read state)
+    if (!IsMouseButtonDown(MOUSE_LEFT_BUTTON) && !IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        col.isDragging = false;
+        col.dragStartY = -99999.0f; // Sentinel
+    }
+
     // Check for scroll start
     if (CheckCollisionPointRec(mouse, bounds)) {
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -29,16 +36,13 @@ static void HandleMixerScroll(const Rectangle& bounds, PatternColumn& col, GuiSt
         }
     }
     
-    // Check for threshold
-    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && !col.isDragging) {
-         // Check if we initiated in bounds
-         // Actually we don't track "initiated" flag in PatternColumn, but we can assume dragStartY is valid if pressed last frame?
-         // Simplification: logic runs every frame.
+    // Check for threshold - but NOT if we're dragging a slider
+    // Also ensure we actually started here (dragStartY != sentinel)
+    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && !col.isDragging && state.drag.activeControlId.empty() && col.dragStartY > -90000.0f) {
          float delta = std::abs(mouse.y - col.dragStartY);
          if (delta > 20.0f) { // 20px threshold for clear intention
              // STEAL FOCUS
              col.isDragging = true;
-             state.drag.activeControlId = ""; // Force release sliders
          }
     }
     
@@ -49,6 +53,7 @@ static void HandleMixerScroll(const Rectangle& bounds, PatternColumn& col, GuiSt
             col.mixerScrollY = col.dragStartScroll + delta;
         } else {
             col.isDragging = false;
+            col.dragStartY = -99999.0f;
         }
     }
     
@@ -78,59 +83,29 @@ static bool DrawGenericFXEditor(const Rectangle& bounds, const Rectangle& clipRe
     for (int i = 0; i < effect->getNumParams(); ++i) {
         fx::TrackFXParam& param = effect->getParam(i);
         
-        // Label
+        // Label + Value on same line
         DrawTextApp(param.name.c_str(), bounds.x + 20, currentY, 16, GRAY);
         
-        // Slider Background
-        Rectangle sliderRect = {bounds.x + 20, currentY + 15, bounds.width - 40, 30};
-        DrawRectangleRec(sliderRect, Color{10, 10, 10, 255});
-        DrawRectangleLinesEx(sliderRect, 1, DARKGRAY);
-        
-        // Slider Handle
-        float normalized = (param.value - param.min) / (param.max - param.min);
-        float handleX = sliderRect.x + (normalized * sliderRect.width);
-        DrawRectangle(handleX - 5, sliderRect.y, 10, sliderRect.height, ORANGE);
-        
-        // Value Text
         char buf[32];
         sprintf(buf, "%.1f%s", param.value, param.suffix.c_str());
-        DrawTextApp(buf, sliderRect.x + sliderRect.width - MeasureTextApp(buf, 14) - 5, currentY, 14, WHITE);
+        DrawTextApp(buf, bounds.x + bounds.width - MeasureTextApp(buf, 14) - 25, currentY, 14, WHITE);
         
-        // Interaction - only start drag if click was available
-        Rectangle hitTest = {sliderRect.x - 10, sliderRect.y - 10, sliderRect.width + 20, sliderRect.height + 20};
-        bool mouseInHitbox = (!col.isDragging && CheckCollisionPointRec(state.getMousePosition(), hitTest) && CheckCollisionPointRec(state.getMousePosition(), clipRect));
+        // Use widget slider (handles all interaction and drawing internally)
+        Rectangle sliderRect = {bounds.x + 15, currentY + 22, bounds.width - 30, 40};
         
-        if (state.editor.isOpen == false) {
-             std::string paramId = col.trackName + "_FX_View_P" + std::to_string(i);
-             
-             // 1. Is locked to something else?
-             bool isLockedToOther = (!state.drag.activeControlId.empty() && state.drag.activeControlId != paramId);
-             
-             // 2. Start Condition: Clicked THIS slider (and allowed)
-             bool startInteract = (!isLockedToOther && mouseInHitbox && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && state.isClickAvailable());
-             
-             // 3. Continue Condition: Locked to THIS slider and holding
-             bool continueInteract = (state.drag.activeControlId == paramId && IsMouseButtonDown(MOUSE_LEFT_BUTTON));
-
-             if (startInteract || continueInteract) {
-                 if (startInteract) {
-                     LOGD("FX Slider Interact Start: %s", paramId.c_str());
-                     state.consumeClick();
-                     state.drag.activeControlId = paramId; // Lock
-                 }
-                 
-                 anyInteraction = true;
-                 float mouseX = state.getMousePosition().x;
-                 float rawNorm = (mouseX - sliderRect.x) / sliderRect.width;
-                 if (rawNorm < 0.0f) rawNorm = 0.0f;
-                 if (rawNorm > 1.0f) rawNorm = 1.0f;
-                 
-                 float newValue = param.min + (rawNorm * (param.max - param.min));
-                 effect->setParam(i, newValue);
-             }
+        bool isDragging = false;
+        float newValue = DrawSlider(sliderRect, param.value, param.min, param.max, 
+                                    Color{10, 10, 10, 255}, ORANGE, 
+                                    state.getMousePosition(), &isDragging);
+        
+        if (isDragging && !state.editor.isOpen && !col.isDragging) {
+            anyInteraction = true;
+            state.consumeClick(); // Ensure click is consumed
+            state.drag.activeControlId = "FX_SLIDER_BUSY_" + param.name; // Lock global drag
+            effect->setParam(i, newValue);
         }
         
-        currentY += 60;
+        currentY += 80;
     }
     return anyInteraction;
 }
@@ -311,38 +286,30 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
         DrawTextApp(buf, volRect.x + 10, volRect.y + volRect.height + 10, 20, Color{255,255,255,100});
 
         // Track volume slider drag
-        Rectangle hitTestVol = {volRect.x - 15, volRect.y, volRect.width + 30, volRect.height};
-        if (canInteract && !col.isDragging && CheckCollisionPointRec(state.getMousePosition(), hitTestVol) && CheckCollisionPointRec(state.getMousePosition(), scrollArea)) {
-             
-             std::string volId = col.trackName + "_Vol";
-             
-             bool isLockedToOther = (!state.drag.activeControlId.empty() && state.drag.activeControlId != volId);
-             bool startInteract = (!isLockedToOther && !col.isDragging && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && state.isClickAvailable());
-             bool continueInteract = (state.drag.activeControlId == volId && IsMouseButtonDown(MOUSE_LEFT_BUTTON));
-             
-             if (startInteract || continueInteract) {
-                 if (startInteract) {
-                     LOGD("Vol Interact Start: %s", volId.c_str());
-                     state.consumeClick();
-                     state.drag.activeControlId = volId; // Lock
-                 }
-                 
-                 isInteracting = true; // Capture interaction
-                 float mouseY = state.getMousePosition().y;
-                 float rawVal = ((volRect.y + volRect.height) - mouseY) / volRect.height;
-                 if (rawVal < 0.0f) rawVal = 0.0f; if (rawVal > 1.0f) rawVal = 1.0f;
-                 col.volume = rawVal;
-                 trackBus->volume = rawVal;
-             }
-        } 
-        else if (state.drag.activeControlId == (col.trackName + "_Vol") && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-              // Handle 'continueInteract' even if mouse left the rect
-              isInteracting = true;
-              float mouseY = state.getMousePosition().y;
-              float rawVal = ((volRect.y + volRect.height) - mouseY) / volRect.height;
-              if (rawVal < 0.0f) rawVal = 0.0f; if (rawVal > 1.0f) rawVal = 1.0f;
-              col.volume = rawVal;
-              trackBus->volume = rawVal;
+        Rectangle hitTestVol = {volRect.x - 15, volRect.y - 15, volRect.width + 30, volRect.height + 30};
+        std::string volId = col.trackName + "_Vol";
+        
+        // Check continueInteract FIRST (works even outside hitbox)
+        bool continueInteract = (state.drag.activeControlId == volId && IsMouseButtonDown(MOUSE_LEFT_BUTTON));
+        
+        // Check startInteract (requires being in hitbox)
+        bool isLockedToOther = (!state.drag.activeControlId.empty() && state.drag.activeControlId != volId);
+        bool inHitbox = (!col.isDragging && CheckCollisionPointRec(state.getMousePosition(), hitTestVol) && CheckCollisionPointRec(state.getMousePosition(), scrollArea));
+        bool startInteract = (canInteract && !isLockedToOther && inHitbox && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && state.isClickAvailable());
+        
+        if (startInteract || continueInteract) {
+            if (startInteract) {
+                LOGD("Vol Interact Start: %s", volId.c_str());
+                state.consumeClick();
+                state.drag.activeControlId = volId; // Lock
+            }
+            
+            isInteracting = true;
+            float mouseY = state.getMousePosition().y;
+            float rawVal = ((volRect.y + volRect.height) - mouseY) / volRect.height;
+            if (rawVal < 0.0f) rawVal = 0.0f; if (rawVal > 1.0f) rawVal = 1.0f;
+            col.volume = rawVal;
+            trackBus->volume = rawVal;
         }
         currentY += faderHeight + 60;
         
@@ -548,47 +515,40 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
                 // 1. Cutoff (Param 0) & Reso (Param 1) - Draw as Sliders
                 for (int i=0; i<2; ++i) {
                      fx::TrackFXParam& param = targetEffect->getParam(i);
+                     
+                     // Label
                      DrawTextApp(param.name.c_str(), contentRect.x + 20, currentY, 16, GRAY);
                      
-                     // Slider
-                     Rectangle sliderRect = {contentRect.x + 20, currentY + 15, contentRect.width - 40, 30};
-                     DrawRectangleRec(sliderRect, Color{10, 10, 10, 255});
-                     DrawRectangleLinesEx(sliderRect, 1, DARKGRAY);
-                     
-                     float range = param.max - param.min;
-                     // Use log scale for cutoff? For now linear to match backend expectations unless we change mapping
-                     float norm = (param.value - param.min) / range;
-                     
-                     float handleX = sliderRect.x + (norm * sliderRect.width);
-                     DrawRectangle(handleX - 5, sliderRect.y, 10, sliderRect.height, ORANGE);
-                     
-                     // Text
+                     // Value (Right aligned)
                      char buf[32];
-                     if (i==0) sprintf(buf, "%.0f%s", param.value, param.suffix.c_str());
+                     if (i==0) sprintf(buf, "%.0f %s", param.value, param.suffix.c_str());
                      else sprintf(buf, "%.1f", param.value);
-                     DrawTextApp(buf, sliderRect.x + sliderRect.width - MeasureTextApp(buf, 14) - 5, currentY, 14, WHITE);
+                     DrawTextApp(buf, contentRect.x + contentRect.width - MeasureTextApp(buf, 14) - 25, currentY, 14, WHITE);
+
+                     // Slider
+                     Rectangle sliderRect = {contentRect.x + 15, currentY + 22, contentRect.width - 30, 40};
                      
-                     // Interaction
-                     std::string paramId = col.trackName + "_Filt_P" + std::to_string(i);
-                     Rectangle hitTest = {sliderRect.x - 10, sliderRect.y - 10, sliderRect.width + 20, sliderRect.height + 20};
-                     
-                     bool isLockedToOther = (!state.drag.activeControlId.empty() && state.drag.activeControlId != paramId);
-                     bool startInteract = (!isLockedToOther && CheckCollisionPointRec(state.getMousePosition(), hitTest) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && state.isClickAvailable());
-                     bool continueInteract = (state.drag.activeControlId == paramId && IsMouseButtonDown(MOUSE_LEFT_BUTTON));
-                     
-                     if (startInteract || continueInteract) {
-                         if (startInteract) {
-                             state.consumeClick();
-                             state.drag.activeControlId = paramId;
-                         }
-                         isInteracting = true;
-                         float mouseX = state.getMousePosition().x;
-                         float rawNorm = (mouseX - sliderRect.x) / sliderRect.width;
-                         if (rawNorm < 0.0f) rawNorm = 0.0f; if (rawNorm > 1.0f) rawNorm = 1.0f;
-                         float newVal = param.min + (rawNorm * range);
-                         targetEffect->setParam(i, newVal);
+                     if (!state.editor.isOpen && !col.isDragging) {
+                        bool isDragging = false;
+                        float newValue = DrawSlider(sliderRect, param.value, param.min, param.max, 
+                                                    Color{10, 10, 10, 255}, ORANGE, 
+                                                    state.getMousePosition(), &isDragging);
+                        
+                        if (isDragging) {
+                            isInteracting = true;
+                            state.consumeClick();
+                            state.drag.activeControlId = "FX_SLIDER_BUSY_" + param.name;
+                            targetEffect->setParam(i, newValue);
+                        }
+                     } else {
+                        // Visual only
+                        DrawRectangleRec(sliderRect, Color{10, 10, 10, 255});
+                        DrawRectangleLinesEx(sliderRect, 2, WHITE);
+                        float norm = (param.value - param.min) / (param.max - param.min);
+                        float handleX = sliderRect.x + norm * (sliderRect.width - 40);
+                        DrawRectangle(handleX, sliderRect.y - 5, 40, sliderRect.height + 10, ORANGE);
                      }
-                     currentY += 60;
+                     currentY += 80;
                 }
                 
                 // 2. Filter Type (Param 2) - CYCLIC SELECTOR (StepFX Style)
@@ -600,7 +560,7 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
                 int currentType = (int)typeParam.value;
                 if (currentType < 0) currentType = 0; if (currentType > 2) currentType = 2;
                 
-                Rectangle selectorRect = {contentRect.x + 20, currentY, 200.0f, 35.0f};
+                Rectangle selectorRect = {contentRect.x + 20, currentY, 140.0f, 35.0f};
                 
                 // Draw Black Box (StepFX Style)
                 DrawRectangleRec(selectorRect, BLACK);
@@ -627,7 +587,7 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
                 if (DrawGenericFXEditor(contentRect, scrollArea, targetEffect, col, state)) {
                     isInteracting = true;
                 }
-                currentY += (targetEffect->getNumParams() * 60); 
+                currentY += (targetEffect->getNumParams() * 80); // Match the 80px spacing in DrawGenericFXEditor
             }
             
             currentY += 50; // Padding before remove parameters 
@@ -720,11 +680,12 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
                 int textW = MeasureTextApp(opt.label, 14);
                 DrawTextApp(opt.label, btn.x + (btn.width - textW)/2, btn.y + (btn.height - 14)/2, 14, WHITE);
                 
-                // Interaction: Trigger on Release, but ONLY if we haven't dragged/scrolled significantly
+                // Interaction: Trigger on Release only if not dragging/scrolling
+                bool inButton = CheckCollisionPointRec(state.getMousePosition(), btn);
                 float dragDist = std::abs(state.getMousePosition().y - col.dragStartY);
-                bool isClick = (!col.isDragging || dragDist < 10.0f);
+                bool wasScrolling = col.isDragging || state.drag.scrollDirection != 0 || dragDist > 20.0f;
                 
-                if (canInteract && state.isClickAvailable() && CheckCollisionPointRec(state.getMousePosition(), btn) && IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && isClick) {
+                if (canInteract && state.isClickAvailable() && inButton && IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && !wasScrolling) {
                      state.consumeClick();
                      std::lock_guard<std::mutex> lock(trackBus->effectsMutex);
                      trackBus->effects[fxIndex] = fx::CreateTrackEffect(opt.type);

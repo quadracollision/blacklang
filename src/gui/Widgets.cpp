@@ -89,15 +89,18 @@ bool DrawButton(Rectangle rect, const char* text, Color bgColor, Color textColor
     return clicked;
 }
 
-// Touch-friendly slider widget with exclusive locking
+// Touch-friendly slider widget with exclusive locking and relative drag
 // Returns new value. Sets outIsDragging to true if actively being manipulated.
-// Uses static lock to ensure only one slider at a time can be dragged.
+// Uses relative drag - doesn't jump to click position, follows finger/mouse movement.
 float DrawSlider(Rectangle rect, float value, float minVal, float maxVal, Color trackColor, Color handleColor, Vector2 mousePos, bool* outIsDragging) {
-    // Static variable to track which slider is currently being dragged
-    // We use the rect position as a simple unique identifier
+    // Static variables for drag state
     static float activeSliderX = -999999.0f;
     static float activeSliderY = -999999.0f;
     static bool anySliderActive = false;
+    static float grabOffsetX = 0.0f;  // Offset from handle center when grabbed
+    static float initialValue = 0.0f; // Value when drag started
+    static float initialMouseX = 0.0f;
+    static float initialMouseY = 0.0f;
     
     Vector2 mouse = (mousePos.x < 0) ? GetMousePosition() : mousePos;
     
@@ -112,19 +115,20 @@ float DrawSlider(Rectangle rect, float value, float minVal, float maxVal, Color 
     
     // Large handle for touch (40px wide, extends above/below track)
     float handleWidth = 40.0f;
+    float handleX = rect.x + norm * (rect.width - handleWidth);
     Rectangle handle = {
-        rect.x + norm * (rect.width - handleWidth), 
+        handleX, 
         rect.y - 5, 
         handleWidth, 
         rect.height + 10
     };
     
-    // Extended hit area for easier touch (20px padding all around)
+    // Extended hit area for easier touch (includes whole track + padding)
     Rectangle hitArea = {
-        rect.x - 20, 
-        rect.y - 25, 
-        rect.width + 40, 
-        rect.height + 50
+        rect.x - 10, 
+        rect.y - 20, 
+        rect.width + 20, 
+        rect.height + 40
     };
     
     bool isHovering = CheckCollisionPointRec(mouse, hitArea);
@@ -145,15 +149,50 @@ float DrawSlider(Rectangle rect, float value, float minVal, float maxVal, Color 
         activeSliderY = rect.y;
         anySliderActive = true;
         isThisSliderActive = true;
+        initialValue = value;
+        initialMouseX = mouse.x;
+        initialMouseY = mouse.y;
+        
+        // Calculate grab offset from handle center
+        float handleCenterX = handleX + handleWidth / 2.0f;
+        grabOffsetX = mouse.x - handleCenterX;
     }
     
     // Only respond if this is the active slider
     if (isThisSliderActive && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-        isDragging = true;
-        float newNorm = (mouse.x - rect.x) / rect.width;
-        if (newNorm < 0) newNorm = 0;
-        if (newNorm > 1) newNorm = 1;
-        newValue = minVal + newNorm * (maxVal - minVal);
+        float deltaX = std::abs(mouse.x - (initialMouseX)); // Need to store initial mouse
+        float deltaY = std::abs(mouse.y - (initialMouseY));
+
+        // Threshold check: Must move horizontally > 5px to engage slider
+        // This allows vertical scrolls to be detected by parent containers first
+        static bool thresholdPassed = false;
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) thresholdPassed = false;
+        
+        if (!thresholdPassed) {
+            if (deltaX > 5.0f || deltaY > 5.0f) {
+               // Movement detected
+               if (deltaX > deltaY) {
+                   thresholdPassed = true; // Horizontal wins -> Slider active
+               } else {
+                   // Vertical wins -> Cancel slider interaction effectively
+                   // We don't unlock explicitly, but we just don't update value
+                   // Actually we should probably unlock if vertical wins?
+                   // But let's just not update specific values yet.
+               }
+            }
+        }
+
+        if (thresholdPassed) {
+            isDragging = true;
+            
+            // Apply mouse position adjusted by grab offset
+            float targetHandleCenterX = mouse.x - grabOffsetX;
+            float targetHandleX = targetHandleCenterX - handleWidth / 2.0f;
+            float newNorm = (targetHandleX - rect.x) / (rect.width - handleWidth);
+            if (newNorm < 0) newNorm = 0;
+            if (newNorm > 1) newNorm = 1;
+            newValue = minVal + newNorm * (maxVal - minVal);
+        }
     }
     
     // Draw handle with visual feedback when dragging
