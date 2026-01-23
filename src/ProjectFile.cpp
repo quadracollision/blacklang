@@ -15,7 +15,8 @@
 bool ProjectFile::save(const std::string& filename,
                        const std::map<std::string, Pattern>& patterns,
                        const PatternChain& currentChain,
-                       const std::vector<SerializedColumn>& columns) {
+                       const std::vector<SerializedColumn>& columns,
+                       const std::vector<SerializedArrangementTrack>& arrangementTracks) {
     juce::DynamicObject::Ptr root = new juce::DynamicObject();
     
     // Save Column Layout
@@ -127,6 +128,25 @@ bool ProjectFile::save(const std::string& filename,
     }
     root->setProperty("chain", chainArray);
     
+    // Save arrangement
+    juce::Array<juce::var> arrangementArray;
+    for (const auto& track : arrangementTracks) {
+        juce::DynamicObject::Ptr trackObj = new juce::DynamicObject();
+        trackObj->setProperty("trackName", juce::String(track.trackName));
+        
+        juce::Array<juce::var> clipsArray;
+        for (const auto& clip : track.clips) {
+            juce::DynamicObject::Ptr clipObj = new juce::DynamicObject();
+            clipObj->setProperty("patternName", juce::String(clip.patternName));
+            clipObj->setProperty("startBeat", clip.startBeat);
+            clipObj->setProperty("lengthBeats", clip.lengthBeats);
+            clipsArray.add(juce::var(clipObj.get()));
+        }
+        trackObj->setProperty("clips", clipsArray);
+        arrangementArray.add(juce::var(trackObj.get()));
+    }
+    root->setProperty("arrangement", arrangementArray);
+    
     // Write to file
     juce::var json(root.get());
     juce::String jsonStr = juce::JSON::toString(json);
@@ -146,7 +166,8 @@ bool ProjectFile::save(const std::string& filename,
 bool ProjectFile::load(const std::string& filename,
                        std::map<std::string, Pattern>& patterns,
                        PatternChain& currentChain,
-                       std::vector<SerializedColumn>& columns) {
+                       std::vector<SerializedColumn>& columns,
+                       std::vector<SerializedArrangementTrack>& arrangementTracks) {
     std::ifstream file(filename);
     if (!file.is_open()) {
         std::cerr << "Cannot open: " << filename << std::endl;
@@ -313,7 +334,33 @@ bool ProjectFile::load(const std::string& filename,
                     }
                 }
                 
-                columns.push_back(col);
+            columns.push_back(col);
+            }
+        }
+    }
+    
+    // Load arrangement
+    arrangementTracks.clear();
+    juce::var arrVar = json["arrangement"];
+    if (arrVar.isArray()) {
+        for (int i = 0; i < arrVar.size(); ++i) {
+            juce::var trackVar = arrVar[i];
+            if (trackVar.isObject()) {
+                SerializedArrangementTrack track;
+                track.trackName = trackVar["trackName"].toString().toStdString();
+                
+                juce::var clipsVar = trackVar["clips"];
+                if (clipsVar.isArray()) {
+                    for (int j = 0; j < clipsVar.size(); ++j) {
+                        juce::var clipVar = clipsVar[j];
+                        SerializedClip clip;
+                        clip.patternName = clipVar["patternName"].toString().toStdString();
+                        clip.startBeat = (double)clipVar["startBeat"];
+                        clip.lengthBeats = (double)clipVar["lengthBeats"];
+                        track.clips.push_back(clip);
+                    }
+                }
+                arrangementTracks.push_back(track);
             }
         }
     }

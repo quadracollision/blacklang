@@ -390,17 +390,15 @@ void ArrangementView::HandleInput(Rectangle bounds) {
         return;
     }
     
-    // ========== TIMELINE PAN (active) ==========
-    if (timelineDragActive) {
-        if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) || IsMouseButtonDown(MOUSE_MIDDLE_BUTTON)) {
-            Vector2 delta = {timelineDragStart.x - state.getMousePosition().x,
-                            timelineDragStart.y - state.getMousePosition().y};
-            scrollX = std::max(0.0f, timelineScrollStartX + delta.x);
-            scrollY = std::max(0.0f, timelineScrollStartY + delta.y);
-        } else {
-            timelineDragActive = false;
-        }
-        return;
+    // ========== TIMELINE PAN (update scroll while dragging) ==========
+    // Skip on pressed frame - let initialization set correct coordinates first
+    if (timelineDragActive && 
+        (IsMouseButtonDown(MOUSE_LEFT_BUTTON) || IsMouseButtonDown(MOUSE_MIDDLE_BUTTON)) &&
+        !IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !IsMouseButtonPressed(MOUSE_MIDDLE_BUTTON)) {
+        Vector2 delta = {timelineDragStart.x - state.getMousePosition().x,
+                        timelineDragStart.y - state.getMousePosition().y};
+        scrollX = std::max(0.0f, timelineScrollStartX + delta.x);
+        scrollY = std::max(0.0f, timelineScrollStartY + delta.y);
     }
     
     // ========== DRAG-AND-DROP FROM PATTERN LIST ==========
@@ -465,45 +463,56 @@ void ArrangementView::HandleInput(Rectangle bounds) {
             }
         }
         
-        // Clicked on empty space - place pattern or pan
+        // Clicked on empty space - always start pan tracking (we decide on release if it was a tap)
         selectedTrackIdx = -1;
         selectedClipIdx = -1;
         
-        // Find selected pattern from TrackView
-        std::string selectedPattern = "";
-        for (auto& pair : state.activePatternSlots) {
-            if (pair.first >= 0 && pair.first < (int)state.columns.size()) {
-                PatternColumn& col = state.columns[pair.first];
-                if (pair.second >= 0 && pair.second < (int)col.patternNames.size() && 
-                    !col.patternNames[pair.second].empty()) {
-                    selectedPattern = col.patternNames[pair.second];
-                    break;
+        // Start pan tracking regardless of pattern selection
+        timelineDragActive = true;
+        timelineDragStart = state.getMousePosition();
+        timelineScrollStartX = scrollX;
+        timelineScrollStartY = scrollY;
+        
+        // Store info for potential tap-to-place
+        pendingPlaceTrackIdx = trackIdx;
+        pendingPlaceBeat = std::max(0.0, snapBeat(pixelToBeat(state.getMousePosition().x, bounds.x + startX)));
+    }
+    
+    // ========== TIMELINE PAN RELEASE (check for tap-to-place) ==========
+    if (timelineDragActive && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        timelineDragActive = false;
+        
+        // Check if this was a tap (minimal movement) vs a scroll
+        float dragDist = Vector2Distance(timelineDragStart, state.getMousePosition());
+        if (dragDist < 10.0f && pendingPlaceTrackIdx >= 0 && pendingPlaceTrackIdx < (int)state.columns.size()) {
+            // It was a tap - try to place pattern
+            std::string selectedPattern = "";
+            for (auto& pair : state.activePatternSlots) {
+                if (pair.first >= 0 && pair.first < (int)state.columns.size()) {
+                    PatternColumn& col = state.columns[pair.first];
+                    if (pair.second >= 0 && pair.second < (int)col.patternNames.size() && 
+                        !col.patternNames[pair.second].empty()) {
+                        selectedPattern = col.patternNames[pair.second];
+                        break;
+                    }
+                }
+            }
+            
+            if (!selectedPattern.empty()) {
+                std::string trackName = state.columns[pendingPlaceTrackIdx].trackName;
+                
+                float length = 4.0f;
+                if (Pattern* p = engine.getPattern(selectedPattern)) {
+                    length = (p->syncBase > 0) ? (float)p->steps / p->syncBase * 4.0f : 4.0f;
+                }
+                
+                if (auto* arr = engine.getArrangement()) {
+                    arr->addClip(trackName, selectedPattern, pendingPlaceBeat, length);
+                    engine.assignPatternToTrack(selectedPattern, state.columns[pendingPlaceTrackIdx].trackName);
                 }
             }
         }
-        
-        if (!selectedPattern.empty() && trackIdx >= 0 && trackIdx < (int)state.columns.size()) {
-            // Place pattern
-            state.consumeClick();
-            std::string trackName = state.columns[trackIdx].trackName;
-            double beat = std::max(0.0, snapBeat(pixelToBeat(state.getMousePosition().x, bounds.x + startX)));
-            
-            float length = 4.0f;
-            if (Pattern* p = engine.getPattern(selectedPattern)) {
-                length = (p->syncBase > 0) ? (float)p->steps / p->syncBase * 4.0f : 4.0f;
-            }
-            
-            if (auto* arr = engine.getArrangement()) {
-                arr->addClip(trackName, selectedPattern, beat, length);
-                engine.assignPatternToTrack(selectedPattern, state.columns[trackIdx].trackName);
-            }
-        } else {
-            // No pattern selected - start pan
-            timelineDragActive = true;
-            timelineDragStart = state.getMousePosition();
-            timelineScrollStartX = scrollX;
-            timelineScrollStartY = scrollY;
-        }
+        pendingPlaceTrackIdx = -1;
     }
     
     // ========== MIDDLE CLICK PAN ==========

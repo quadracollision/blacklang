@@ -1,6 +1,7 @@
 #include "ProjectBrowser.h"
 #include "Widgets.h"
 #include "../ProjectFile.h"
+#include "../Arrangement.h"
 #include <filesystem>
 #include <vector>
 #include <algorithm>
@@ -353,7 +354,25 @@ bool Draw(GuiState& state, AudioEngine& engine) {
                     cols.push_back(sCol);
                 }
                 
-                ProjectFile::save(fullPath.string(), engine.getPatterns(), state.activeChain, cols);
+                
+                // Extract arrangement data
+                std::vector<SerializedArrangementTrack> arrangementTracks;
+                if (Arrangement* arr = engine.getArrangement()) {
+                    for (const auto& track : arr->tracks) {
+                        SerializedArrangementTrack sTrack;
+                        sTrack.trackName = track.trackName;
+                        for (const auto& clip : track.clips) {
+                            SerializedClip sClip;
+                            sClip.patternName = clip.patternName;
+                            sClip.startBeat = clip.startBeat;
+                            sClip.lengthBeats = clip.lengthBeats;
+                            sTrack.clips.push_back(sClip);
+                        }
+                        arrangementTracks.push_back(sTrack);
+                    }
+                }
+                
+                ProjectFile::save(fullPath.string(), engine.getPatterns(), state.activeChain, cols, arrangementTracks);
                 state.projectBrowser.isOpen = false;
             }
         }
@@ -365,8 +384,9 @@ bool Draw(GuiState& state, AudioEngine& engine) {
                 
                 std::map<std::string, Pattern> patterns;
                 std::vector<SerializedColumn> loadedCols;
+                std::vector<SerializedArrangementTrack> arrangementTracks;
                 
-                if (ProjectFile::load(fullPath.string(), patterns, state.activeChain, loadedCols)) {
+                if (ProjectFile::load(fullPath.string(), patterns, state.activeChain, loadedCols, arrangementTracks)) {
                     engine.stop();
                     
                     // Get project directory for resolving relative sample paths
@@ -419,6 +439,17 @@ bool Draw(GuiState& state, AudioEngine& engine) {
                             state.columns[0].patternNames.push_back(name);
                         }
                     }
+                    
+                    // Load arrangement
+                    if (Arrangement* arr = engine.getArrangement()) {
+                        arr->clear();
+                        for (const auto& sTrack : arrangementTracks) {
+                            for (const auto& sClip : sTrack.clips) {
+                                arr->addClip(sTrack.trackName, sClip.patternName, sClip.startBeat, sClip.lengthBeats);
+                            }
+                        }
+                    }
+                    
                     state.projectBrowser.isOpen = false;
                 }
             }

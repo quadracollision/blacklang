@@ -70,6 +70,10 @@ private:
     bool pinchActive = false;
     float lastPinchDist = 0.0f;
     
+    // Pending Tap-to-Place (for touch scroll vs tap disambiguation)
+    int pendingPlaceTrackIdx = -1;
+    double pendingPlaceBeat = 0.0;
+    
     void DrawGrid(Rectangle bounds);
     void DrawTracks(Rectangle bounds);
     void DrawTransportBar(Rectangle bounds);

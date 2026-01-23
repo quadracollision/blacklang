@@ -2,6 +2,7 @@
 #include "Widgets.h"
 #include "../FilePicker.h"
 #include "../ProjectFile.h"
+#include "../Arrangement.h"
 #include <filesystem>
 #include <vector>
 #include <algorithm>
@@ -504,7 +505,25 @@ bool Draw(GuiState& state, AudioEngine& engine) {
                 cols.push_back(c);
             }
             
-            if (ProjectFile::save(fullPath.string(), engine.getPatterns(), state.activeChain, cols)) {
+            
+            // Extract arrangement data
+            std::vector<SerializedArrangementTrack> arrangementTracks;
+            if (auto* arr = engine.getArrangement()) {
+                for (const auto& track : arr->tracks) {
+                    SerializedArrangementTrack sTrack;
+                    sTrack.trackName = track.trackName;
+                    for (const auto& clip : track.clips) {
+                        SerializedClip sClip;
+                        sClip.patternName = clip.patternName;
+                        sClip.startBeat = clip.startBeat;
+                        sClip.lengthBeats = clip.lengthBeats;
+                        sTrack.clips.push_back(sClip);
+                    }
+                    arrangementTracks.push_back(sTrack);
+                }
+            }
+            
+            if (ProjectFile::save(fullPath.string(), engine.getPatterns(), state.activeChain, cols, arrangementTracks)) {
                 LOGD("Project saved successfully");
                 state.editor.showFileBrowser = false;
             } else {
@@ -519,8 +538,9 @@ bool Draw(GuiState& state, AudioEngine& engine) {
                 std::map<std::string, Pattern> patterns;
                 PatternChain chain;
                 std::vector<SerializedColumn> cols;
+                std::vector<SerializedArrangementTrack> arrangementTracks;
                 
-                if (ProjectFile::load(fullPath.string(), patterns, chain, cols)) {
+                if (ProjectFile::load(fullPath.string(), patterns, chain, cols, arrangementTracks)) {
                     // Update engine patterns
                     // Update engine patterns
                     for (const auto& kv : patterns) {
@@ -582,6 +602,17 @@ bool Draw(GuiState& state, AudioEngine& engine) {
                     }
                     
                     state.mainContentWidth = x;
+                    
+                    // Load arrangement
+                    if (auto* arr = engine.getArrangement()) {
+                        arr->clear();
+                        for (const auto& sTrack : arrangementTracks) {
+                            for (const auto& sClip : sTrack.clips) {
+                                arr->addClip(sTrack.trackName, sClip.patternName, sClip.startBeat, sClip.lengthBeats);
+                            }
+                        }
+                    }
+                    
                     state.editor.showFileBrowser = false;
                 }
             }
