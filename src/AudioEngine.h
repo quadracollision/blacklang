@@ -12,6 +12,7 @@
 #include <map>
 #include <atomic>
 #include <mutex>
+#include <tuple>
 
 class AudioEngine : public juce::AudioIODeviceCallback {
 public:
@@ -36,6 +37,7 @@ public:
     void playMultiplePatterns(const std::vector<std::string>& names);
 
     void updateActivePatterns(const std::vector<std::pair<std::string, std::string>>& patternsWithTracks); // Live switching with explicit tracks
+    void updateActivePatternsWithOffset(const std::vector<std::tuple<std::string, std::string, double>>& patternsWithTracksAndOffsets); // With beat offset for seek
     void queuePatternSwitch(const std::string& trackName, const std::string& newPatternName); // Per-slot sync: queue pattern to switch at end of current
     int getPatternProgress(const std::string& name); // Visual feedback
     void stop();

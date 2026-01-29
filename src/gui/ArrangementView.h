@@ -74,6 +74,14 @@ private:
     int pendingPlaceTrackIdx = -1;
     double pendingPlaceBeat = 0.0;
     
+    // Label Area Drag (vertical scrolling from track labels)
+    bool labelDragActive = false;
+    Vector2 labelDragStart = {0, 0};
+    float labelScrollStartY = 0.0f;
+    
+    // Header Seek (click in header to set playhead position)
+    bool headerSeekActive = false;
+    
     void DrawGrid(Rectangle bounds);
     void DrawTracks(Rectangle bounds);
     void DrawTransportBar(Rectangle bounds);

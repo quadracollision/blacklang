@@ -326,6 +326,95 @@ void AudioEngine::updateActivePatterns(const std::vector<std::pair<std::string, 
     }
 }
 
+// Update active patterns with specific track assignments and beat offsets (for seeking)
+void AudioEngine::updateActivePatternsWithOffset(const std::vector<std::tuple<std::string, std::string, double>>& patternsWithTracksAndOffsets) {
+    if (patternsWithTracksAndOffsets.empty()) {
+        stop();
+        return;
+    }
+    
+    std::lock_guard<std::mutex> lock(patternMutex);
+
+    // Build list of composite keys (instances)
+    std::vector<std::string> newActiveInstanceKeys;
+    newActiveInstanceKeys.reserve(patternsWithTracksAndOffsets.size());
+    
+    for (const auto& tuple : patternsWithTracksAndOffsets) {
+        const std::string& patternName = std::get<0>(tuple);
+        const std::string& trackName = std::get<1>(tuple);
+        // key = "PatternName@TrackName" to allow same pattern on multiple tracks
+        std::string key = patternName + "@" + trackName;
+        newActiveInstanceKeys.push_back(key);
+        
+        // Store track mapping for this specific instance
+        patternToTrack[key] = trackName;
+    }
+    
+    // Build set for fast lookup
+    std::set<std::string> newActiveSet(newActiveInstanceKeys.begin(), newActiveInstanceKeys.end());
+    
+    // Initialize new active instances with offset, keep existing ones running
+    for (size_t i = 0; i < newActiveInstanceKeys.size(); ++i) {
+        const std::string& key = newActiveInstanceKeys[i];
+        const std::string& baseName = std::get<0>(patternsWithTracksAndOffsets[i]);
+        double beatOffset = std::get<2>(patternsWithTracksAndOffsets[i]);
+        
+        // Always reinitialize with the new offset (for seek functionality)
+        if (patterns.count(baseName)) {
+            Pattern& pattern = patterns[baseName];
+            PatternPlayState newState;
+            
+            // Calculate starting step from beat offset
+            // beatOffset is beats into the pattern
+            // steps per bar depends on syncBase
+            int stepsPerBar = (pattern.syncBase > 0) ? pattern.syncBase : pattern.steps;
+            double stepsPerBeat = stepsPerBar / 4.0;  // 4 beats per bar
+            double stepOffset = beatOffset * stepsPerBeat;
+            
+            // Wrap if offset exceeds pattern length
+            int startStep = ((int)stepOffset % pattern.steps) + 1; // 1-indexed
+            if (startStep < 1) startStep = 1;
+            if (startStep > pattern.steps) startStep = 1;
+            
+            newState.currentStep = startStep;
+            double stepDur = pattern.getStepDurationSamples(globalBpm.load(), sampleRate);
+            
+            // Calculate how far into the current step we should be
+            double fractionalStep = stepOffset - (int)stepOffset;
+            int64_t samplesIntoStep = (int64_t)(fractionalStep * stepDur);
+            
+            newState.stepStartSample = -samplesIntoStep;
+            newState.samplePosition = 0;
+            patternStates[key] = newState;
+            
+            // Trigger the current step if it should play
+            if (pattern.shouldTriggerAt(startStep)) {
+                triggerStep(patternStates[key], pattern);
+            }
+        }
+    }
+    
+    // Update active list
+    activePatternNames = newActiveInstanceKeys;
+    
+    // Cleanup old states
+    std::vector<std::string> toRemove;
+    for (auto& pair : patternStates) {
+        if (newActiveSet.find(pair.first) == newActiveSet.end()) {
+            toRemove.push_back(pair.first);
+        }
+    }
+    for (const auto& r : toRemove) {
+        patternStates.erase(r);
+        patternToTrack.erase(r);
+    }
+    
+    if (!playing.load()) {
+        playing.store(true);
+        paused.store(false);
+    }
+}
+
 void AudioEngine::queuePatternSwitch(const std::string& trackName, const std::string& newPatternName) {
     std::lock_guard<std::mutex> lock(patternMutex);
     

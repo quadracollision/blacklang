@@ -191,17 +191,16 @@ void ArrangementView::DrawTracks(Rectangle bounds) {
 }
 
 void ArrangementView::DrawPlayhead(Rectangle bounds) {
-    if (!player.isPlaying()) return;
-    
     float headerH = 24.0f;
     float startX = 100.0f;
     
     double beat = player.getPlayheadBeat();
     float x = beatToPixel(beat, bounds.x + startX);
     
-    // Only draw if visible
+    // Always draw playhead position (even when stopped)
     if (x >= bounds.x + startX && x <= bounds.x + bounds.width) {
-        DrawLine((int)x, (int)(bounds.y + headerH), (int)x, (int)(bounds.y + bounds.height), RED);
+        Color playheadColor = player.isPlaying() ? RED : Color{200, 80, 80, 255};
+        DrawLine((int)x, (int)(bounds.y + headerH), (int)x, (int)(bounds.y + bounds.height), playheadColor);
         
         // Draw playhead triangle at top
         Vector2 tri[3] = {
@@ -209,13 +208,15 @@ void ArrangementView::DrawPlayhead(Rectangle bounds) {
             {x + 6, bounds.y + headerH},
             {x, bounds.y + headerH + 10}
         };
-        DrawTriangle(tri[0], tri[1], tri[2], RED);
+        DrawTriangle(tri[0], tri[1], tri[2], playheadColor);
     }
     
-    // Auto-scroll to follow playhead
-    float viewRight = bounds.x + bounds.width - 50;
-    if (x > viewRight) {
-        scrollX += (x - viewRight);
+    // Auto-scroll to follow playhead (only when playing)
+    if (player.isPlaying()) {
+        float viewRight = bounds.x + bounds.width - 50;
+        if (x > viewRight) {
+            scrollX += (x - viewRight);
+        }
     }
 }
 
@@ -260,6 +261,40 @@ void ArrangementView::DrawTransportBar(Rectangle bounds) {
         }
     }
     btnX += btnW + gap;
+    
+    // Go to Start Button (<)
+    float navBtnW = 44.0f;
+    Rectangle startBtn = {btnX, btnY, navBtnW, btnH};
+    DrawRectangleRec(startBtn, Color{50, 50, 60, 255});
+    DrawRectangleLinesEx(startBtn, 1, GRAY);
+    DrawTextApp("<", startBtn.x + 16, startBtn.y + 14, 14, WHITE);
+    
+    if (state.isClickAvailable() && CheckCollisionPointRec(state.getMousePosition(), startBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        state.consumeClick();
+        player.setPlayheadBeat(0.0);
+    }
+    btnX += navBtnW + gap;
+    
+    // Go to End Button (>)
+    Rectangle endBtn = {btnX, btnY, navBtnW, btnH};
+    DrawRectangleRec(endBtn, Color{50, 50, 60, 255});
+    DrawRectangleLinesEx(endBtn, 1, GRAY);
+    DrawTextApp(">", endBtn.x + 16, endBtn.y + 14, 14, WHITE);
+    
+    if (state.isClickAvailable() && CheckCollisionPointRec(state.getMousePosition(), endBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        state.consumeClick();
+        // Find the end of the last pattern
+        double maxEndBeat = 0.0;
+        if (auto* arrangement = engine.getArrangement()) {
+            for (auto& track : arrangement->tracks) {
+                for (auto& clip : track.clips) {
+                    maxEndBeat = std::max(maxEndBeat, clip.startBeat + clip.lengthBeats);
+                }
+            }
+        }
+        player.setPlayheadBeat(maxEndBeat);
+    }
+    btnX += navBtnW + gap;
     
     // Play Button
     Rectangle playBtn = {btnX, btnY, btnW, btnH};
@@ -401,6 +436,21 @@ void ArrangementView::HandleInput(Rectangle bounds) {
         scrollY = std::max(0.0f, timelineScrollStartY + delta.y);
     }
     
+    // ========== LABEL AREA DRAG (vertical scroll only) ==========
+    Rectangle labelArea = {bounds.x, bounds.y + headerH, startX, bounds.height - headerH - transportH};
+    if (labelDragActive && IsMouseButtonDown(MOUSE_LEFT_BUTTON) &&
+        !IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        float deltaY = labelDragStart.y - state.getMousePosition().y;
+        scrollY = std::max(0.0f, labelScrollStartY + deltaY);
+    }
+    
+    // ========== HEADER SEEK DRAG (set playhead position) ==========
+    Rectangle headerArea = {bounds.x + startX, bounds.y, bounds.width - startX, headerH};
+    if (headerSeekActive && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+        double clickBeat = std::max(0.0, pixelToBeat(state.getMousePosition().x, bounds.x + startX));
+        player.setPlayheadBeat(clickBeat);
+    }
+    
     // ========== DRAG-AND-DROP FROM PATTERN LIST ==========
     if (state.drag.isDragging && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
         if (CheckCollisionPointRec(state.getMousePosition(), mainArea)) {
@@ -522,6 +572,34 @@ void ArrangementView::HandleInput(Rectangle bounds) {
         timelineDragStart = state.getMousePosition();
         timelineScrollStartX = scrollX;
         timelineScrollStartY = scrollY;
+    }
+    
+    // ========== LABEL AREA PRESS (initiate vertical scroll) ==========
+    if (CheckCollisionPointRec(state.getMousePosition(), labelArea) && 
+        IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !state.drag.isDragging) {
+        state.consumeClick();
+        labelDragActive = true;
+        labelDragStart = state.getMousePosition();
+        labelScrollStartY = scrollY;
+    }
+    
+    // ========== LABEL AREA RELEASE ==========
+    if (labelDragActive && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        labelDragActive = false;
+    }
+    
+    // ========== HEADER PRESS (initiate seek) ==========
+    if (CheckCollisionPointRec(state.getMousePosition(), headerArea) && 
+        IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !state.drag.isDragging) {
+        state.consumeClick();
+        headerSeekActive = true;
+        double clickBeat = std::max(0.0, pixelToBeat(state.getMousePosition().x, bounds.x + startX));
+        player.setPlayheadBeat(clickBeat);
+    }
+    
+    // ========== HEADER RELEASE ==========
+    if (headerSeekActive && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        headerSeekActive = false;
     }
 }
 

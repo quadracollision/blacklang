@@ -2,6 +2,7 @@
 #include "AudioEngine.h"
 #include "GuiState.h"
 #include <algorithm>
+#include <tuple>
 
 ArrangementPlayer::ArrangementPlayer(AudioEngine& engine, GuiState& state)
     : engine(engine), state(state) {}
@@ -9,11 +10,11 @@ ArrangementPlayer::ArrangementPlayer(AudioEngine& engine, GuiState& state)
 void ArrangementPlayer::start() {
     if (!playing) {
         playing = true;
-        playheadBeat = 0.0;
+        // Note: playheadBeat is NOT reset here - start from current cursor position
         activeClipsPerTrack.clear();
         bpm = engine.getBPM();
         
-        // Trigger patterns immediately for beat 0
+        // Trigger patterns immediately for current beat position
         updateActiveClips();
     }
 }
@@ -30,6 +31,9 @@ void ArrangementPlayer::stop() {
         state.arrangementPlayState.activeClipsPerTrack.clear();
         activeClipsPerTrack.clear();
     }
+    
+    // Always reset cursor to beginning when stopped
+    playheadBeat = 0.0;
 }
 
 void ArrangementPlayer::update(float deltaTime) {
@@ -53,23 +57,27 @@ void ArrangementPlayer::updateActiveClips() {
     if (!arrangement) return;
     
     std::map<std::string, std::string> newActiveClips;
-    std::vector<std::pair<std::string, std::string>> patternsToPlay; // patternName, trackName
+    // Now track beat offset within each clip: patternName, trackName, beatOffset
+    std::vector<std::tuple<std::string, std::string, double>> patternsToPlay;
     
     // For each track, find clip that contains current playhead
     for (auto& track : arrangement->tracks) {
         std::string activePattern = "";
+        double beatOffset = 0.0;
         
         for (auto& clip : track.clips) {
             double clipEnd = clip.startBeat + clip.lengthBeats;
             if (playheadBeat >= clip.startBeat && playheadBeat < clipEnd) {
                 activePattern = clip.patternName;
+                // Calculate how far into the clip (and thus pattern) we are
+                beatOffset = playheadBeat - clip.startBeat;
                 break; // First matching clip wins
             }
         }
         
         if (!activePattern.empty()) {
             newActiveClips[track.trackName] = activePattern;
-            patternsToPlay.push_back({activePattern, track.trackName});
+            patternsToPlay.push_back({activePattern, track.trackName, beatOffset});
         }
     }
     
@@ -77,14 +85,9 @@ void ArrangementPlayer::updateActiveClips() {
     bool changed = (newActiveClips != activeClipsPerTrack);
     
     if (changed) {
-        // Build list of patterns with track assignments
-        std::vector<std::pair<std::string, std::string>> patternTrackPairs;
-        for (auto& pair : newActiveClips) {
-            patternTrackPairs.push_back({pair.second, pair.first}); // patternName, trackName
-        }
-        
-        if (!patternTrackPairs.empty()) {
-            engine.updateActivePatterns(patternTrackPairs);
+        if (!patternsToPlay.empty()) {
+            // Use the offset-aware version for proper seeking
+            engine.updateActivePatternsWithOffset(patternsToPlay);
         } else {
             // No clips active - stop playback
             engine.stop();
@@ -102,7 +105,8 @@ void ArrangementPlayer::updateActiveClips() {
     }
     
     if (maxEndBeat > 0 && playheadBeat >= maxEndBeat) {
-        // Reached end - stop playback
+        // Reached end - stop playback and reset to beginning
         stop();
+        playheadBeat = 0.0;
     }
 }
