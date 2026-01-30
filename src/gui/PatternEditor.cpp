@@ -1160,7 +1160,7 @@ void PatternEditor::Draw() {
     Rectangle scrollArea = {winRect.x, winRect.y + 60, winRect.width, winRect.height - 110};
     float maxScroll = std::max(0.0f, state.editor.contentHeight - (winRect.height - 100));
     
-    if (!state.editor.scrollConsumed && !state.editor.showFileBrowser) {
+    if (!state.editor.scrollConsumed && !state.editor.showFileBrowser && state.drag.activeControlId.empty()) {
         // Mouse wheel (desktop)
         state.editor.scrollOffsetY -= GetMouseWheelMove() * 30.0f;
         

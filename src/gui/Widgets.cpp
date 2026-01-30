@@ -89,19 +89,14 @@ bool DrawButton(Rectangle rect, const char* text, Color bgColor, Color textColor
     return clicked;
 }
 
-// Touch-friendly slider widget with exclusive locking and relative drag
-// Returns new value. Sets outIsDragging to true if actively being manipulated.
-// Uses relative drag - doesn't jump to click position, follows finger/mouse movement.
-float DrawSlider(Rectangle rect, float value, float minVal, float maxVal, Color trackColor, Color handleColor, Vector2 mousePos, bool* outIsDragging) {
-    // Static variables for drag state - per-slider tracking
+// Touch-friendly slider widget 
+// Returns new value. Sets outIsDragging to true when actively dragging.
+// Note: Caller should use state.drag.activeControlId to prevent scroll conflict.
+float DrawSlider(Rectangle rect, float value, float minVal, float maxVal, Color trackColor, Color handleColor, Vector2 mousePos, bool* outIsDragging, bool* outIsCapturing) {
+    // Static state - only one slider can be active at a time
     static float activeSliderX = -999999.0f;
     static float activeSliderY = -999999.0f;
-    static bool anySliderActive = false;
-    static float grabOffsetX = 0.0f;  // Offset from handle center when grabbed
-    static float initialMouseX = 0.0f;
-    static float initialMouseY = 0.0f;
-    static bool thresholdPassed = false;  // Whether we've determined this is a horizontal drag
-    static bool verticalWon = false;       // Whether vertical movement won (scrolling)
+    static float grabOffsetX = 0.0f;
     
     Vector2 mouse = (mousePos.x < 0) ? GetMousePosition() : mousePos;
     
@@ -114,7 +109,7 @@ float DrawSlider(Rectangle rect, float value, float minVal, float maxVal, Color 
     if (norm < 0) norm = 0;
     if (norm > 1) norm = 1;
     
-    // Larger handle for touch (50px wide, extends more above/below track)
+    // Large handle for touch (50px wide)
     float handleWidth = 50.0f;
     float handleX = rect.x + norm * (rect.width - handleWidth);
     Rectangle handle = {
@@ -124,11 +119,11 @@ float DrawSlider(Rectangle rect, float value, float minVal, float maxVal, Color 
         rect.height + 16
     };
     
-    // Extended hit area for easier touch (larger padding for fat fingers)
+    // Hit area covers ENTIRE track with generous padding
     Rectangle hitArea = {
-        rect.x - 15, 
+        rect.x - 20,
         rect.y - 25, 
-        rect.width + 30, 
+        rect.width + 40, 
         rect.height + 50
     };
     
@@ -137,75 +132,46 @@ float DrawSlider(Rectangle rect, float value, float minVal, float maxVal, Color 
     bool isThisSliderActive = (activeSliderX == rect.x && activeSliderY == rect.y);
     float newValue = value;
     
-    // Reset lock when mouse is released
+    // Reset state when mouse is released
     if (!IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-        anySliderActive = false;
         activeSliderX = -999999.0f;
         activeSliderY = -999999.0f;
-        thresholdPassed = false;
-        verticalWon = false;
     }
     
-    // Lock to this slider on initial press
-    if (isHovering && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !anySliderActive) {
+    // On press in hit area: Start dragging immediately
+    if (isHovering && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && activeSliderX < -900000.0f) {
         activeSliderX = rect.x;
         activeSliderY = rect.y;
-        anySliderActive = true;
         isThisSliderActive = true;
-        initialMouseX = mouse.x;
-        initialMouseY = mouse.y;
-        thresholdPassed = false;
-        verticalWon = false;
         
         // Calculate grab offset from handle center
         float handleCenterX = handleX + handleWidth / 2.0f;
         grabOffsetX = mouse.x - handleCenterX;
     }
     
-    // Only respond if this is the active slider and vertical didn't win
-    if (isThisSliderActive && IsMouseButtonDown(MOUSE_LEFT_BUTTON) && !verticalWon) {
-        float deltaX = std::abs(mouse.x - initialMouseX);
-        float deltaY = std::abs(mouse.y - initialMouseY);
-
-        // Threshold check: Must move enough in one direction to determine intent
-        // Movement threshold of 8px before deciding direction
-        if (!thresholdPassed) {
-            if (deltaX > 8.0f || deltaY > 8.0f) {
-               // Movement detected - determine direction
-               if (deltaX > deltaY * 1.2f) {
-                   // Horizontal wins (with 20% bias to help horizontal detection)
-                   thresholdPassed = true;
-               } else {
-                   // Vertical wins -> Release lock so parent can scroll
-                   verticalWon = true;
-                   anySliderActive = false;
-                   activeSliderX = -999999.0f;
-                   activeSliderY = -999999.0f;
-               }
-            }
-        }
-
-        if (thresholdPassed) {
-            isDragging = true;
-            
-            // Apply mouse position adjusted by grab offset
-            float targetHandleCenterX = mouse.x - grabOffsetX;
-            float targetHandleX = targetHandleCenterX - handleWidth / 2.0f;
-            float newNorm = (targetHandleX - rect.x) / (rect.width - handleWidth);
-            if (newNorm < 0) newNorm = 0;
-            if (newNorm > 1) newNorm = 1;
-            newValue = minVal + newNorm * (maxVal - minVal);
-        }
+    // If this slider is active, update value
+    if (isThisSliderActive && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+        isDragging = true;
+        
+        float targetHandleCenterX = mouse.x - grabOffsetX;
+        float targetHandleX = targetHandleCenterX - handleWidth / 2.0f;
+        float newNorm = (targetHandleX - rect.x) / (rect.width - handleWidth);
+        if (newNorm < 0) newNorm = 0;
+        if (newNorm > 1) newNorm = 1;
+        newValue = minVal + newNorm * (maxVal - minVal);
     }
     
-    // Draw handle with visual feedback when dragging
+    // Draw handle with visual feedback
     Color actualHandleColor = isDragging ? WHITE : handleColor;
     DrawRectangleRec(handle, actualHandleColor);
     DrawRectangleLinesEx(handle, 2, isDragging ? GREEN : WHITE);
     
-    // Output dragging state if requested
+    // Output states
     if (outIsDragging) {
         *outIsDragging = isDragging;
+    }
+    if (outIsCapturing) {
+        *outIsCapturing = isDragging; // Same as dragging now
     }
     
     return newValue;

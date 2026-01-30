@@ -308,11 +308,11 @@ float FXControls::Draw(Rectangle area, Pattern& pattern, Rectangle parentScissor
         // Add extra height for parameter panel
         if (state.editor.selectedAppliedFxId != -1) {
              if (state.editor.selectedAppliedFxId == Pattern::FX_ADSR) {
-                 startY += 280; // 4 sliders with larger spacing
+                 startY += 400; // 4 sliders with 90px spacing
              } else if (state.editor.selectedAppliedFxId == Pattern::FX_EQ) {
                  startY += 230; // EQ graph panel
              } else {
-                 startY += 180; // Standard params (2 sliders + header)
+                 startY += 250; // Standard params (2 sliders with 90px spacing + header)
              }
         }
     } else {
@@ -334,17 +334,20 @@ void FXControls::DrawStutterParams(float x, float paramPanelY, Pattern& p, int s
     }
     
     bool rateDragging = false;
-    Rectangle rateSlider = {x + 120, paramPanelY, 200, 50};
+    Rectangle rateSlider = {x + 120, paramPanelY, 250, 70};
     float newRate = DrawSlider(rateSlider, currentRate, 1.0f, 16.0f, DARKGRAY, LIGHTGRAY, state.getMousePosition(), &rateDragging);
-    if (rateDragging) {
-        state.editor.scrollConsumed = true;
+    
+    // Use activeControlId pattern like TrackFX mixer
+    if (rateDragging && !state.editor.editorDragging) {
+        state.drag.activeControlId = "STEPFX_STUTTER_RATE";
+        state.consumeClick();
         p.stepFXParams[step][Pattern::PAR_STUTTER_RATE] = newRate;
         engine.addPattern(p);
     }
     DrawTextApp(TextFormat("%.1f", newRate), rateSlider.x + rateSlider.width + 15, paramPanelY + 18, 18, WHITE);
 
     // Speed Control
-    paramPanelY += 65;
+    paramPanelY += 90;
     DrawTextApp("SPEED:", x, paramPanelY + 15, 22, WHITE);
     
     float currentSpeed = 1.0f;
@@ -353,10 +356,12 @@ void FXControls::DrawStutterParams(float x, float paramPanelY, Pattern& p, int s
     }
     
     bool speedDragging = false;
-    Rectangle speedSlider = {x + 120, paramPanelY, 200, 50};
+    Rectangle speedSlider = {x + 120, paramPanelY, 250, 70};
     float newSpeed = DrawSlider(speedSlider, currentSpeed, 0.5f, 4.0f, DARKGRAY, LIGHTGRAY, state.getMousePosition(), &speedDragging);
-    if (speedDragging) {
-        state.editor.scrollConsumed = true;
+    
+    if (speedDragging && !state.editor.editorDragging) {
+        state.drag.activeControlId = "STEPFX_STUTTER_SPEED";
+        state.consumeClick();
         p.stepFXParams[step][Pattern::PAR_STUTTER_SPEED] = newSpeed;
         engine.addPattern(p);
     }
@@ -373,17 +378,19 @@ void FXControls::DrawSlideParams(float x, float paramPanelY, Pattern& p, int ste
     }
     
     bool timeDragging = false;
-    Rectangle timeSlider = {x + 120, paramPanelY, 200, 50};
+    Rectangle timeSlider = {x + 120, paramPanelY, 250, 70};
     float newTime = DrawSlider(timeSlider, currentTime, 0.1f, 1.0f, DARKGRAY, LIGHTGRAY, state.getMousePosition(), &timeDragging);
-    if (timeDragging) {
-        state.editor.scrollConsumed = true;
+    
+    if (timeDragging && !state.editor.editorDragging) {
+        state.drag.activeControlId = "STEPFX_SLIDE_TIME";
+        state.consumeClick();
         p.stepFXParams[step][Pattern::PAR_SLIDE_TIME] = newTime;
         engine.addPattern(p);
     }
     DrawTextApp(TextFormat("%.2f", newTime), timeSlider.x + timeSlider.width + 15, paramPanelY + 18, 18, WHITE);
 
     // Squelch Control
-    paramPanelY += 65;
+    paramPanelY += 90;
     DrawTextApp("SQUELCH:", x, paramPanelY + 15, 22, WHITE);
     
     float currentSquelch = 0.0f;
@@ -392,10 +399,12 @@ void FXControls::DrawSlideParams(float x, float paramPanelY, Pattern& p, int ste
     }
     
     bool squelchDragging = false;
-    Rectangle squelchSlider = {x + 120, paramPanelY, 200, 50};
+    Rectangle squelchSlider = {x + 120, paramPanelY, 250, 70};
     float newSquelch = DrawSlider(squelchSlider, currentSquelch, 0.0f, 1.0f, DARKGRAY, LIGHTGRAY, state.getMousePosition(), &squelchDragging);
-    if (squelchDragging) {
-        state.editor.scrollConsumed = true;
+    
+    if (squelchDragging && !state.editor.editorDragging) {
+        state.drag.activeControlId = "STEPFX_SLIDE_SQUELCH";
+        state.consumeClick();
         p.stepFXParams[step][Pattern::PAR_SLIDE_SQUELCH] = newSquelch;
         engine.addPattern(p);
     }
@@ -411,10 +420,12 @@ void FXControls::DrawNudgeParams(float x, float paramPanelY, Pattern& p, int ste
     }
     
     bool offsetDragging = false;
-    Rectangle offsetSlider = {x + 120, paramPanelY, 200, 50};
+    Rectangle offsetSlider = {x + 120, paramPanelY, 250, 70};
     float newOffset = DrawSlider(offsetSlider, currentOffset, 0.0f, 1.0f, DARKGRAY, ORANGE, state.getMousePosition(), &offsetDragging);
-    if (offsetDragging) {
-        state.editor.scrollConsumed = true;
+    
+    if (offsetDragging && !state.editor.editorDragging) {
+        state.drag.activeControlId = "STEPFX_NUDGE_OFFSET";
+        state.consumeClick();
         p.stepFXParams[step][Pattern::PAR_NUDGE_OFFSET] = newOffset;
         engine.addPattern(p);
     }
@@ -439,10 +450,12 @@ void FXControls::DrawADSRParams(float x, float y, Pattern& p, int step) {
         }
         
         bool isDragging = false;
-        Rectangle slider = {x + 120, y + yOffset, 200, 50};
+        Rectangle slider = {x + 120, y + yOffset, 250, 70};
         float newVal = DrawSlider(slider, currentVal, min, max, DARKGRAY, LIGHTGRAY, state.getMousePosition(), &isDragging);
-        if (isDragging) {
-            state.editor.scrollConsumed = true;
+        
+        if (isDragging && !state.editor.editorDragging) {
+            state.drag.activeControlId = std::string("STEPFX_ADSR_") + label;
+            state.consumeClick();
             p.stepFXParams[step][paramId] = newVal;
             engine.addPattern(p);
         }
@@ -450,9 +463,9 @@ void FXControls::DrawADSRParams(float x, float y, Pattern& p, int step) {
     };
     
     drawParamSlider("ATTACK:", Pattern::PAR_ATTACK_TIME, 0.05f, 0.0f, 1.0f, 0);
-    drawParamSlider("DECAY:", Pattern::PAR_DECAY_TIME, 0.1f, 0.0f, 1.0f, 60);
-    drawParamSlider("SUSTAIN:", Pattern::PAR_SUSTAIN_LEVEL, 0.8f, 0.0f, 1.0f, 120);
-    drawParamSlider("RELEASE:", Pattern::PAR_RELEASE_TIME, 0.2f, 0.0f, 1.0f, 180);
+    drawParamSlider("DECAY:", Pattern::PAR_DECAY_TIME, 0.1f, 0.0f, 1.0f, 90);
+    drawParamSlider("SUSTAIN:", Pattern::PAR_SUSTAIN_LEVEL, 0.8f, 0.0f, 1.0f, 180);
+    drawParamSlider("RELEASE:", Pattern::PAR_RELEASE_TIME, 0.2f, 0.0f, 1.0f, 270);
 }
 
 void FXControls::DrawEQParams(float x, float y, Pattern& p, int step) {
