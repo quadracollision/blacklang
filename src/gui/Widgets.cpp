@@ -93,14 +93,15 @@ bool DrawButton(Rectangle rect, const char* text, Color bgColor, Color textColor
 // Returns new value. Sets outIsDragging to true if actively being manipulated.
 // Uses relative drag - doesn't jump to click position, follows finger/mouse movement.
 float DrawSlider(Rectangle rect, float value, float minVal, float maxVal, Color trackColor, Color handleColor, Vector2 mousePos, bool* outIsDragging) {
-    // Static variables for drag state
+    // Static variables for drag state - per-slider tracking
     static float activeSliderX = -999999.0f;
     static float activeSliderY = -999999.0f;
     static bool anySliderActive = false;
     static float grabOffsetX = 0.0f;  // Offset from handle center when grabbed
-    static float initialValue = 0.0f; // Value when drag started
     static float initialMouseX = 0.0f;
     static float initialMouseY = 0.0f;
+    static bool thresholdPassed = false;  // Whether we've determined this is a horizontal drag
+    static bool verticalWon = false;       // Whether vertical movement won (scrolling)
     
     Vector2 mouse = (mousePos.x < 0) ? GetMousePosition() : mousePos;
     
@@ -113,22 +114,22 @@ float DrawSlider(Rectangle rect, float value, float minVal, float maxVal, Color 
     if (norm < 0) norm = 0;
     if (norm > 1) norm = 1;
     
-    // Large handle for touch (40px wide, extends above/below track)
-    float handleWidth = 40.0f;
+    // Larger handle for touch (50px wide, extends more above/below track)
+    float handleWidth = 50.0f;
     float handleX = rect.x + norm * (rect.width - handleWidth);
     Rectangle handle = {
         handleX, 
-        rect.y - 5, 
+        rect.y - 8, 
         handleWidth, 
-        rect.height + 10
+        rect.height + 16
     };
     
-    // Extended hit area for easier touch (includes whole track + padding)
+    // Extended hit area for easier touch (larger padding for fat fingers)
     Rectangle hitArea = {
-        rect.x - 10, 
-        rect.y - 20, 
-        rect.width + 20, 
-        rect.height + 40
+        rect.x - 15, 
+        rect.y - 25, 
+        rect.width + 30, 
+        rect.height + 50
     };
     
     bool isHovering = CheckCollisionPointRec(mouse, hitArea);
@@ -141,6 +142,8 @@ float DrawSlider(Rectangle rect, float value, float minVal, float maxVal, Color 
         anySliderActive = false;
         activeSliderX = -999999.0f;
         activeSliderY = -999999.0f;
+        thresholdPassed = false;
+        verticalWon = false;
     }
     
     // Lock to this slider on initial press
@@ -149,35 +152,35 @@ float DrawSlider(Rectangle rect, float value, float minVal, float maxVal, Color 
         activeSliderY = rect.y;
         anySliderActive = true;
         isThisSliderActive = true;
-        initialValue = value;
         initialMouseX = mouse.x;
         initialMouseY = mouse.y;
+        thresholdPassed = false;
+        verticalWon = false;
         
         // Calculate grab offset from handle center
         float handleCenterX = handleX + handleWidth / 2.0f;
         grabOffsetX = mouse.x - handleCenterX;
     }
     
-    // Only respond if this is the active slider
-    if (isThisSliderActive && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-        float deltaX = std::abs(mouse.x - (initialMouseX)); // Need to store initial mouse
-        float deltaY = std::abs(mouse.y - (initialMouseY));
+    // Only respond if this is the active slider and vertical didn't win
+    if (isThisSliderActive && IsMouseButtonDown(MOUSE_LEFT_BUTTON) && !verticalWon) {
+        float deltaX = std::abs(mouse.x - initialMouseX);
+        float deltaY = std::abs(mouse.y - initialMouseY);
 
-        // Threshold check: Must move horizontally > 5px to engage slider
-        // This allows vertical scrolls to be detected by parent containers first
-        static bool thresholdPassed = false;
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) thresholdPassed = false;
-        
+        // Threshold check: Must move enough in one direction to determine intent
+        // Movement threshold of 8px before deciding direction
         if (!thresholdPassed) {
-            if (deltaX > 5.0f || deltaY > 5.0f) {
-               // Movement detected
-               if (deltaX > deltaY) {
-                   thresholdPassed = true; // Horizontal wins -> Slider active
+            if (deltaX > 8.0f || deltaY > 8.0f) {
+               // Movement detected - determine direction
+               if (deltaX > deltaY * 1.2f) {
+                   // Horizontal wins (with 20% bias to help horizontal detection)
+                   thresholdPassed = true;
                } else {
-                   // Vertical wins -> Cancel slider interaction effectively
-                   // We don't unlock explicitly, but we just don't update value
-                   // Actually we should probably unlock if vertical wins?
-                   // But let's just not update specific values yet.
+                   // Vertical wins -> Release lock so parent can scroll
+                   verticalWon = true;
+                   anySliderActive = false;
+                   activeSliderX = -999999.0f;
+                   activeSliderY = -999999.0f;
                }
             }
         }
