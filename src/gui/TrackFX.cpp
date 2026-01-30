@@ -68,16 +68,75 @@ static void HandleMixerScroll(const Rectangle& bounds, PatternColumn& col, GuiSt
     if (col.mixerScrollY > maxScroll) col.mixerScrollY = maxScroll;
 }
 
-static bool DrawGenericFXEditor(const Rectangle& bounds, const Rectangle& clipRect, std::shared_ptr<fx::TrackEffect> effect, PatternColumn& col, GuiState& state) {
+static bool DrawGenericFXEditor(const Rectangle& bounds, const Rectangle& clipRect, std::shared_ptr<fx::TrackEffect> effect, PatternColumn& col, GuiState& state, bool* outRemove) {
     float startY = bounds.y;
     float currentY = startY;
     bool anyInteraction = false;
+    bool canInteract = !state.editor.isOpen;
     
     // FX Title
-    int nameWidth = MeasureTextApp(effect->getName().c_str(), 20);
-    DrawTextApp(effect->getName().c_str(), bounds.x + 20, currentY, 20, ORANGE);
-
-    currentY += 40;
+    // FX Title (Dynamic Size)
+    const char* nameStr = effect->getName().c_str();
+    int titleSize = 20;
+    if (MeasureTextApp(nameStr, titleSize) > (bounds.width - 30)) titleSize = 16;
+    if (MeasureTextApp(nameStr, titleSize) > (bounds.width - 30)) titleSize = 14;
+    DrawTextApp(nameStr, bounds.x + 15, currentY, titleSize, ORANGE);
+    currentY += 28;
+    
+    // Buttons Row: Remove | On/Off
+    float btnH = 24.0f;
+    float removeW = 80.0f;
+    float switchW = 60.0f;
+    float gap = 15.0f;
+    float startX = bounds.x + 20;
+    
+    // Remove Button
+    Rectangle removeBtn = {startX, currentY, removeW, btnH};
+    DrawRectangleRec(removeBtn, RED);
+    DrawTextApp("REMOVE", removeBtn.x + 15, removeBtn.y + 6, 12, WHITE);
+    
+    // On/Off Toggle
+    Rectangle switchRect = {startX + removeW + gap, currentY, switchW, btnH};
+    Rectangle offRect = {switchRect.x, switchRect.y, switchW/2, btnH};
+    Rectangle onRect = {switchRect.x + switchW/2, switchRect.y, switchW/2, btnH};
+    
+    bool isActive = effect->isActive();
+    if (!isActive) {
+        DrawRectangleRec(offRect, WHITE);
+        DrawTextApp("OFF", offRect.x + 3, offRect.y + 6, 10, BLACK);
+        DrawRectangleRec(onRect, GRAY);
+        DrawTextApp("ON", onRect.x + 8, onRect.y + 6, 10, WHITE);
+    } else {
+        DrawRectangleRec(offRect, GRAY);
+        DrawTextApp("OFF", offRect.x + 3, offRect.y + 6, 10, WHITE);
+        DrawRectangleRec(onRect, WHITE);
+        DrawTextApp("ON", onRect.x + 8, onRect.y + 6, 10, BLACK);
+    }
+    
+    // Interactions
+    if (canInteract && state.isClickAvailable()) {
+        // Remove Click
+        if (CheckCollisionPointRec(state.getMousePosition(), removeBtn) && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+            state.consumeClick();
+            if (outRemove) *outRemove = true;
+            anyInteraction = true;
+        }
+        
+        // Toggle OFF
+        if (CheckCollisionPointRec(state.getMousePosition(), offRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            state.consumeClick();
+            effect->setActive(false);
+            anyInteraction = true;
+        }
+        // Toggle ON
+        if (CheckCollisionPointRec(state.getMousePosition(), onRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            state.consumeClick();
+            effect->setActive(true);
+            anyInteraction = true;
+        }
+    }
+    
+    currentY += 35;
     
     // Params
     for (int i = 0; i < effect->getNumParams(); ++i) {
@@ -336,6 +395,60 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
                 // --- EQ EDITOR ---
                 std::shared_ptr<fx::TrackEffect> effect = targetEffect;
                 
+                // HEADER (Title + Remove/Toggle)
+                // Title (Dynamic Size)
+                const char* eqTitle = "Equalizer";
+                int eqSize = 20;
+                if (MeasureTextApp(eqTitle, eqSize) > (contentRect.width - 30)) eqSize = 16;
+                DrawTextApp(eqTitle, contentRect.x + 15, currentY, eqSize, ORANGE);
+                currentY += 28;
+                
+                float btnH = 24.0f;
+                float removeW = 80.0f;
+                float switchW = 60.0f;
+                float gap = 15.0f;
+                float startX = contentRect.x + 20;
+
+                Rectangle removeBtn = {startX, currentY, removeW, btnH};
+                DrawRectangleRec(removeBtn, RED);
+                DrawTextApp("REMOVE", removeBtn.x + 15, removeBtn.y + 6, 12, WHITE);
+
+                Rectangle switchRect = {startX + removeW + gap, currentY, switchW, btnH};
+                Rectangle offRect = {switchRect.x, switchRect.y, switchW/2, btnH};
+                Rectangle onRect = {switchRect.x + switchW/2, switchRect.y, switchW/2, btnH};
+
+                if (!effect->isActive()) {
+                    DrawRectangleRec(offRect, WHITE);
+                    DrawTextApp("OFF", offRect.x + 3, offRect.y + 6, 10, BLACK);
+                    DrawRectangleRec(onRect, GRAY);
+                    DrawTextApp("ON", onRect.x + 8, onRect.y + 6, 10, WHITE);
+                } else {
+                    DrawRectangleRec(offRect, GRAY);
+                    DrawTextApp("OFF", offRect.x + 3, offRect.y + 6, 10, WHITE);
+                    DrawRectangleRec(onRect, WHITE);
+                    DrawTextApp("ON", onRect.x + 8, onRect.y + 6, 10, BLACK);
+                }
+
+                if (canInteract && state.isClickAvailable()) {
+                     if (CheckCollisionPointRec(state.getMousePosition(), removeBtn) && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+                          state.consumeClick();
+                          std::lock_guard<std::mutex> lock(trackBus->effectsMutex);
+                          trackBus->effects[fxIndex] = nullptr;
+                          return; 
+                     }
+                     if (CheckCollisionPointRec(state.getMousePosition(), offRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                        state.consumeClick();
+                        effect->setActive(false);
+                        isInteracting = true;
+                    }
+                    if (CheckCollisionPointRec(state.getMousePosition(), onRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                        state.consumeClick();
+                        effect->setActive(true);
+                        isInteracting = true;
+                    }
+                }
+                currentY += 40;
+                
                 // 1. Band Selection (Param 0)
                 fx::TrackFXParam& bandsParam = effect->getParam(0);
                 DrawTextApp("Bands:", contentRect.x + 20, currentY, 10, GRAY);
@@ -512,6 +625,60 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
             } else if (targetEffect->getType() == fx::FX_FILTER) {
                 // --- FILTER EDITOR (Custom UI) ---
                 
+                // HEADER (Title + Remove/Toggle)
+                // Title (Dynamic Size)
+                const char* fltTitle = "Filter";
+                int fltSize = 20;
+                if (MeasureTextApp(fltTitle, fltSize) > (contentRect.width - 30)) fltSize = 16;
+                DrawTextApp(fltTitle, contentRect.x + 15, currentY, fltSize, ORANGE);
+                currentY += 28;
+                
+                float btnH = 24.0f;
+                float removeW = 80.0f;
+                float switchW = 60.0f;
+                float gap = 15.0f;
+                float startX = contentRect.x + 20;
+
+                Rectangle removeBtn = {startX, currentY, removeW, btnH};
+                DrawRectangleRec(removeBtn, RED);
+                DrawTextApp("REMOVE", removeBtn.x + 15, removeBtn.y + 6, 12, WHITE);
+
+                Rectangle switchRect = {startX + removeW + gap, currentY, switchW, btnH};
+                Rectangle offRect = {switchRect.x, switchRect.y, switchW/2, btnH};
+                Rectangle onRect = {switchRect.x + switchW/2, switchRect.y, switchW/2, btnH};
+
+                if (!targetEffect->isActive()) {
+                    DrawRectangleRec(offRect, WHITE);
+                    DrawTextApp("OFF", offRect.x + 3, offRect.y + 6, 10, BLACK);
+                    DrawRectangleRec(onRect, GRAY);
+                    DrawTextApp("ON", onRect.x + 8, onRect.y + 6, 10, WHITE);
+                } else {
+                    DrawRectangleRec(offRect, GRAY);
+                    DrawTextApp("OFF", offRect.x + 3, offRect.y + 6, 10, WHITE);
+                    DrawRectangleRec(onRect, WHITE);
+                    DrawTextApp("ON", onRect.x + 8, onRect.y + 6, 10, BLACK);
+                }
+
+                if (canInteract && state.isClickAvailable()) {
+                     if (CheckCollisionPointRec(state.getMousePosition(), removeBtn) && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+                          state.consumeClick();
+                          std::lock_guard<std::mutex> lock(trackBus->effectsMutex);
+                          trackBus->effects[fxIndex] = nullptr;
+                          return; 
+                     }
+                     if (CheckCollisionPointRec(state.getMousePosition(), offRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                        state.consumeClick();
+                        targetEffect->setActive(false);
+                        isInteracting = true;
+                    }
+                    if (CheckCollisionPointRec(state.getMousePosition(), onRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                        state.consumeClick();
+                        targetEffect->setActive(true);
+                        isInteracting = true;
+                    }
+                }
+                currentY += 40;
+                
                 // 1. Cutoff (Param 0) & Reso (Param 1) - Draw as Sliders
                 for (int i=0; i<2; ++i) {
                      fx::TrackFXParam& param = targetEffect->getParam(i);
@@ -584,63 +751,22 @@ void DrawTrackMixer(const Rectangle& bounds, PatternColumn& col, GuiState& state
 
             } else {
                 // Generic Editor
-                if (DrawGenericFXEditor(contentRect, scrollArea, targetEffect, col, state)) {
+                bool shouldRemove = false;
+                if (DrawGenericFXEditor(contentRect, scrollArea, targetEffect, col, state, &shouldRemove)) {
                     isInteracting = true;
                 }
-                currentY += (targetEffect->getNumParams() * 80); // Match the 80px spacing in DrawGenericFXEditor
-            }
-            
-            currentY += 50; // Padding before remove parameters 
-            
-            // Remove Button + Toggle (Side by Side)
-            float totalW = 170.0f; // 80 + 10 + 80
-            float startX = bounds.x + (bounds.width - totalW) / 2.0f;
-            
-            Rectangle removeBtn = {startX, currentY, 80, 30};
-            DrawRectangleRec(removeBtn, RED);
-            DrawTextApp("Remove", removeBtn.x + 10, removeBtn.y + 8, 10, WHITE);
-            if (canInteract && state.isClickAvailable() && CheckCollisionPointRec(state.getMousePosition(), removeBtn) && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-                 state.consumeClick();
-                 std::lock_guard<std::mutex> lock(trackBus->effectsMutex);
-                 trackBus->effects[fxIndex] = nullptr;
-                 isInteracting = true; // Button click counts as interaction
-            }
-            
-            // Toggle Switch
-            if (targetEffect) {
-                float switchW = 80.0f;
-                float switchH = 30.0f;
-                Rectangle switchRect = {startX + 90, currentY, switchW, switchH};
-                Rectangle offRect = {switchRect.x, switchRect.y, switchW/2, switchH};
-                Rectangle onRect = {switchRect.x + switchW/2, switchRect.y, switchW/2, switchH};
                 
-                bool isActive = targetEffect->isActive();
-                if (!isActive) {
-                    DrawRectangleRec(offRect, WHITE);
-                    DrawTextApp("OFF", offRect.x + 5, offRect.y + 8, 10, BLACK);
-                    DrawRectangleRec(onRect, GRAY);
-                    DrawTextApp("ON", onRect.x + 10, onRect.y + 8, 10, WHITE);
-                } else {
-                    DrawRectangleRec(offRect, GRAY);
-                    DrawTextApp("OFF", offRect.x + 5, offRect.y + 8, 10, WHITE);
-                    DrawRectangleRec(onRect, WHITE);
-                    DrawTextApp("ON", onRect.x + 10, onRect.y + 8, 10, BLACK);
+                if (shouldRemove) {
+                     state.consumeClick();
+                     std::lock_guard<std::mutex> lock(trackBus->effectsMutex);
+                     trackBus->effects[fxIndex] = nullptr;
+                     return;
                 }
                 
-                // Toggle Interaction
-                if (canInteract && state.isClickAvailable()) {
-                    if (CheckCollisionPointRec(state.getMousePosition(), offRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                        state.consumeClick();
-                        targetEffect->setActive(false);
-                        isInteracting = true;
-                    }
-                    if (CheckCollisionPointRec(state.getMousePosition(), onRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                        state.consumeClick();
-                        targetEffect->setActive(true);
-                        isInteracting = true;
-                    }
-                }
+                currentY += (targetEffect->getNumParams() * 80); 
             }
+            
+            // Padding
             currentY += 50;
             
         } else {
